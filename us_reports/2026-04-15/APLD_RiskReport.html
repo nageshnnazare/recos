@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APLD · Risk Score Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090d; --bg2: #0d0e14; --bg3: #12131a; --bg4: #181922;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+    --green: #00e5a0; --green-dim: rgba(0,229,160,0.12);
+    --red: #ff4d6d; --red-dim: rgba(255,77,109,0.12);
+    --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
+    --blue: #3d9cf5; --blue-dim: rgba(61,156,245,0.12);
+    --purple: #9b7fff;
+    --text: #e8e9f0; --text2: #9899a8; --text3: #5c5d6e;
+    --mono: 'Fira Code', monospace; --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .page { max-width: 1120px; margin: 0 auto; padding: 32px 24px; }
+  .stock-header { display:flex; align-items:flex-start; justify-content:space-between; padding:28px 32px; background:linear-gradient(135deg,#0f1018,#131420 60%,#0d1020); border:1px solid var(--border2); border-radius:16px; position:relative; overflow:hidden; margin-bottom:20px; }
+  .stock-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--green),transparent); opacity:0.4; }
+  .sh-ticker { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--green); letter-spacing:2px; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+  .badge { border-radius:4px; padding:1px 6px; font-size:9px; font-weight:600; }
+  .badge-nse { background:var(--green-dim); color:var(--green); border:1px solid rgba(0,229,160,0.2); }
+  .badge-sector { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(61,156,245,0.2); }
+  .sh-name { font-family:var(--mono); font-size:26px; font-weight:700; color:#fff; letter-spacing:-0.5px; margin-bottom:8px; }
+  .sh-meta { display:flex; gap:16px; flex-wrap:wrap; font-family:var(--mono); font-size:10px; color:var(--text2); }
+  .sh-right { text-align:right; }
+  .sh-price { font-family:var(--mono); font-size:36px; font-weight:700; color:#fff; letter-spacing:-1px; }
+  .sh-change { font-family:var(--mono); font-size:13px; font-weight:600; margin-top:4px; }
+  .sh-volume { font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:8px; }
+  .sh-timestamp { font-family:var(--mono); font-size:9px; color:var(--text3); margin-top:4px; }
+  .gauge-kpi-row { display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }
+  .gauge-card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; }
+  .gauge-title { font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+  .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .kpi-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; transition:border-color 0.3s; }
+  .kpi-card:hover { border-color:var(--border2); }
+  .kpi-label { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:4px; }
+  .kpi-value { font-family:var(--mono); font-size:18px; font-weight:700; color:#fff; }
+  .kpi-sub { font-size:10px; color:var(--text2); margin-top:2px; }
+  .section { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:20px; }
+  .section-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  .card-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+  .metric-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:16px; position:relative; transition:transform 0.2s,box-shadow 0.2s; }
+  .metric-card:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+  .metric-card.beat { border-color:rgba(0,229,160,0.25); background:linear-gradient(145deg,var(--bg3),rgba(0,229,160,0.04)); }
+  .metric-card.beat::before { content:'✓ BEAT'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--green); background:var(--green-dim); border:1px solid rgba(0,229,160,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card.miss { border-color:rgba(255,77,109,0.25); background:linear-gradient(145deg,var(--bg3),rgba(255,77,109,0.04)); }
+  .metric-card.miss::before { content:'✕ MISS'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--red); background:var(--red-dim); border:1px solid rgba(255,77,109,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card.caution { border-color:rgba(245,166,35,0.25); background:linear-gradient(145deg,var(--bg3),rgba(245,166,35,0.04)); }
+  .metric-card.caution::before { content:'⚠ CAUTION'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--amber); background:var(--amber-dim); border:1px solid rgba(245,166,35,0.2); border-radius:3px; padding:1px 5px; }
+  .mc-label { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+  .mc-value { font-family:var(--mono); font-size:22px; font-weight:700; color:#fff; }
+  .mc-bench { font-size:10px; color:var(--text2); margin-top:4px; }
+  .breakdown-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+  .breakdown-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .bc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .bc-title { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); }
+  .bc-score { font-family:var(--mono); font-size:28px; font-weight:700; }
+  .bc-max { font-family:var(--mono); font-size:12px; color:var(--text3); }
+  .bc-bar-track { height:4px; background:var(--bg4); border-radius:2px; overflow:hidden; margin-bottom:12px; }
+  .bc-bar-fill { height:100%; border-radius:2px; }
+  .bc-items { list-style:none; } .bc-items li { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text2); padding:3px 0; font-family:var(--mono); }
+  .bc-items li::before { content:'›'; color:var(--text3); }
+  .page-break { border:none; border-top:2px dashed var(--border2); margin:36px 0; position:relative; }
+  .page-break::after { content:'PAGE 2'; position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:var(--bg); padding:0 12px; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:2px; }
+  table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
+  thead th { padding:10px 12px; text-align:right; color:var(--text3); font-weight:500; font-size:9px; letter-spacing:1px; text-transform:uppercase; border-bottom:2px solid var(--border2); }
+  thead th:first-child { text-align:left; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background 0.2s; } tbody tr:hover { background:rgba(255,255,255,0.02); }
+  tbody td { padding:10px 12px; text-align:right; } tbody td:first-child { text-align:left; color:var(--text2); }
+  .tg { color:var(--green)!important; } .tr { color:var(--red)!important; } .ta { color:var(--amber)!important; }
+  .dual-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .col-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .col-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:12px; }
+  .col-item { display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; color:var(--text2); line-height:1.5; }
+  .col-item:last-child { border-bottom:none; }
+  .col-icon { font-size:14px; min-width:20px; text-align:center; }
+  .verdict-card { background:linear-gradient(135deg,#0d0e18,#10111e); border:1px solid var(--border2); border-radius:16px; padding:28px; position:relative; overflow:hidden; margin-bottom:20px; }
+  .verdict-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--red),var(--amber),var(--green)); }
+  .verdict-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+  .verdict-rec { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--text3); }
+  .verdict-rating { font-family:var(--mono); font-size:32px; font-weight:700; }
+  .verdict-score { font-family:var(--mono); font-size:14px; }
+  .rating-bar-track { width:100%; height:6px; background:linear-gradient(90deg,var(--red) 0%,var(--amber) 50%,var(--green) 100%); border-radius:3px; position:relative; margin-bottom:24px; }
+  .rating-needle { position:absolute; top:-4px; width:14px; height:14px; background:#fff; border-radius:50%; transform:translateX(-50%); box-shadow:0 0 8px rgba(255,255,255,0.4); }
+  .verdict-text { font-size:13px; color:var(--text2); line-height:1.7; border-left:3px solid var(--amber); padding-left:16px; }
+  .verdict-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .vtag { font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 10px; border-radius:4px; border:1px solid; }
+  .vtag.green { color:var(--green); border-color:rgba(0,229,160,0.3); background:var(--green-dim); }
+  .vtag.red { color:var(--red); border-color:rgba(255,77,109,0.3); background:var(--red-dim); }
+  .vtag.amber { color:var(--amber); border-color:rgba(245,166,35,0.3); background:var(--amber-dim); }
+  .vtag.blue { color:var(--blue); border-color:rgba(61,156,245,0.3); background:var(--blue-dim); }
+  .copy-btn { position:fixed; bottom:24px; right:24px; background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:10px 16px; font-family:var(--mono); font-size:10px; color:var(--text2); cursor:pointer; display:flex; align-items:center; gap:6px; z-index:100; letter-spacing:1px; transition:all 0.3s; }
+  .copy-btn:hover { background:var(--bg4); color:#fff; border-color:var(--green); box-shadow:0 0 20px rgba(0,229,160,0.15); }
+  .footer { text-align:center; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:1px; padding:24px 0; border-top:1px solid var(--border); margin-top:8px; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .section, .stock-header, .gauge-kpi-row, .breakdown-grid, .verdict-card { animation: fadeIn 0.6s ease both; }
+  @media (max-width: 768px) { .stock-header { flex-direction:column; gap:16px; } .gauge-kpi-row { grid-template-columns:1fr; } .card-grid { grid-template-columns:1fr 1fr; } .breakdown-grid { grid-template-columns:1fr; } .dual-col { grid-template-columns:1fr; } .kpi-strip { grid-template-columns:repeat(2,1fr); } }
+  @media print { .copy-btn { display:none; } .page { padding:16px; } .page-break { page-break-before:always; border:none; margin:0; } }
+</style>
+</head>
+<body>
+<div id="report-content">
+<div class="page">
+
+  <div class="stock-header">
+    <div>
+      <div class="sh-ticker"><span>APLD</span><span class="badge badge-nse">US</span><span class="badge badge-sector">Technology</span></div>
+      <div class="sh-name">Applied Digital Corporation</div>
+      <div class="sh-meta"><span>📊 Information Technology Services</span><span>📍 52W: $3.31 — $42.27</span></div>
+    </div>
+    <div class="sh-right">
+      <div class="sh-price">$30.81</div>
+      <div class="sh-change" style="color:#ff4d6d">▼ $0.67 (-2.11%)</div>
+      <div class="sh-volume">Vol: 22,975,239 · Avg: 24,046,823</div>
+      <div class="sh-timestamp">As of April 15, 2026 · 20:05 ET</div>
+    </div>
+  </div>
+
+  <div class="gauge-kpi-row">
+    <div class="gauge-card">
+      <div class="gauge-title">COMPOSITE RISK SCORE</div>
+      <svg viewBox="0 0 260 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:260px;">
+  <defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff4d6d"/>
+      <stop offset="50%" stop-color="#f5a623"/>
+      <stop offset="100%" stop-color="#00e5a0"/>
+    </linearGradient>
+  </defs>
+  <path d="M 59.3 200.7 A 100 100 0 0 1 58.2 60.4" fill="none" stroke="#ff4d6d22" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 58.2 60.4 A 100 100 0 0 1 198.5 57.1" fill="none" stroke="#f5a62322" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 198.5 57.1 A 100 100 0 0 1 200.7 200.7" fill="none" stroke="#00e5a022" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 59.3 200.7 A 100 100 0 0 1 198.5 57.1" fill="none" stroke="url(#arcGrad)" stroke-width="8" stroke-linecap="round" filter="url(#glow)"/>
+  <line x1="55.0" y1="205.0" x2="50.8" y2="209.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="29.2" y1="162.8" x2="23.5" y2="164.6" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="25.3" y1="113.4" x2="19.4" y2="112.5" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="44.2" y1="67.7" x2="39.4" y2="64.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="81.9" y1="35.6" x2="79.2" y2="30.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="130.0" y1="24.0" x2="130.0" y2="18.0" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="178.1" y1="35.6" x2="180.8" y2="30.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="215.8" y1="67.7" x2="220.6" y2="64.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="234.7" y1="113.4" x2="240.6" y2="112.5" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="230.8" y1="162.8" x2="236.5" y2="164.6" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="205.0" y1="205.0" x2="209.2" y2="209.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="130" y1="130" x2="181.3" y2="75.3" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)"/>
+  <circle cx="130" cy="130" r="6" fill="#f5a623" filter="url(#glow)"/>
+  <circle cx="130" cy="130" r="3" fill="#08090d"/>
+  <text x="130" y="165" text-anchor="middle" font-family="'Fira Code',monospace" font-size="32" font-weight="700" fill="#fff">66</text>
+  <text x="130" y="182" text-anchor="middle" font-family="'Fira Code',monospace" font-size="9" fill="#f5a623" letter-spacing="2">MODERATE</text>
+</svg>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:8px;letter-spacing:1px;">
+        VAL:33/35 · FIN:11/35 · GRO:22/30
+      </div>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card"><div class="kpi-label">📈 P/E RATIO</div><div class="kpi-value">-57.1x</div><div class="kpi-sub">Trailing</div></div>
+      <div class="kpi-card"><div class="kpi-label">📖 P/B RATIO</div><div class="kpi-value">5.6x</div><div class="kpi-sub">Price to Book</div></div>
+      <div class="kpi-card"><div class="kpi-label">💰 EPS</div><div class="kpi-value">$-0.38</div><div class="kpi-sub">TTM</div></div>
+      <div class="kpi-card"><div class="kpi-label">🏛 MARKET CAP</div><div class="kpi-value">$8.8B</div><div class="kpi-sub">Mid Cap</div></div>
+      <div class="kpi-card"><div class="kpi-label">📊 ROE</div><div class="kpi-value">-5.6%</div><div class="kpi-sub">Return on Equity</div></div>
+      <div class="kpi-card"><div class="kpi-label">📈 REV GROWTH</div><div class="kpi-value">139.3%</div><div class="kpi-sub">YoY</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📈 12-Month Price Movement · Annotated</div>
+    <svg viewBox="0 0 1040 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <defs>
+    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00e5a0" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#00e5a0" stop-opacity="0.01"/>
+    </linearGradient>
+    <filter id="lineGlow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <line x1="60" y1="30.0" x2="1020" y2="30.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="34.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">$44</text>
+  <line x1="60" y1="72.0" x2="1020" y2="72.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="76.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">$35</text>
+  <line x1="60" y1="114.0" x2="1020" y2="114.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="118.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">$27</text>
+  <line x1="60" y1="156.0" x2="1020" y2="156.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="160.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">$19</text>
+  <line x1="60" y1="198.0" x2="1020" y2="198.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="202.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">$11</text>
+  <line x1="60" y1="240.0" x2="1020" y2="240.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="244.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">$3</text>
+  <text x="98.6" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">May'25</text>
+  <text x="179.5" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Jun'25</text>
+  <text x="256.6" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Jul'25</text>
+  <text x="341.4" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Aug'25</text>
+  <text x="422.4" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Sep'25</text>
+  <text x="503.4" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Oct'25</text>
+  <text x="592.0" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Nov'25</text>
+  <text x="665.3" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Dec'25</text>
+  <text x="750.1" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Jan'26</text>
+  <text x="827.2" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Feb'26</text>
+  <text x="900.5" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Mar'26</text>
+  <text x="985.3" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Apr'26</text>
+  <path d="M 60.0 235.5 L 63.9 236.2 L 67.7 236.2 L 71.6 235.7 L 75.4 235.5 L 79.3 233.1 L 83.1 232.2 L 87.0 232.2 L 90.8 233.4 L 94.7 233.1 L 98.6 229.6 L 102.4 229.1 L 106.3 229.8 L 110.1 229.6 L 114.0 229.4 L 117.8 228.1 L 121.7 228.7 L 125.5 229.1 L 129.4 227.5 L 133.3 225.6 L 137.1 227.6 L 141.0 221.2 L 144.8 221.2 L 148.7 221.7 L 152.5 221.4 L 156.4 217.8 L 160.2 218.4 L 164.1 217.2 L 168.0 218.9 L 171.8 220.1 L 175.7 221.2 L 179.5 203.9 L 183.4 203.3 L 187.2 187.7 L 191.1 190.2 L 194.9 184.5 L 198.8 188.9 L 202.7 191.7 L 206.5 194.0 L 210.4 191.6 L 214.2 198.5 L 218.1 196.6 L 221.9 199.5 L 225.8 201.5 L 229.6 202.9 L 233.5 205.3 L 237.3 203.0 L 241.2 205.6 L 245.1 201.7 L 248.9 202.7 L 252.8 204.3 L 256.6 205.9 L 260.5 201.7 L 264.3 202.3 L 268.2 206.4 L 272.0 208.7 L 275.9 207.2 L 279.8 208.1 L 283.6 208.9 L 287.5 207.1 L 291.3 204.8 L 295.2 204.3 L 299.0 199.9 L 302.9 194.6 L 306.7 199.0 L 310.6 199.7 L 314.5 199.8 L 318.3 198.4 L 322.2 200.7 L 326.0 201.6 L 329.9 204.0 L 333.7 204.5 L 337.6 188.3 L 341.4 191.5 L 345.3 184.1 L 349.2 179.2 L 353.0 179.7 L 356.9 182.6 L 360.7 182.8 L 364.6 183.7 L 368.4 178.8 L 372.3 179.7 L 376.1 181.0 L 380.0 183.3 L 383.9 171.6 L 387.7 176.8 L 391.6 174.9 L 395.4 174.6 L 399.3 173.1 L 403.1 173.7 L 407.0 171.0 L 410.8 169.8 L 414.7 170.3 L 418.6 173.5 L 422.4 177.3 L 426.3 181.8 L 430.1 182.1 L 434.0 184.4 L 437.8 184.3 L 441.7 177.6 L 445.5 168.3 L 449.4 167.3 L 453.3 159.4 L 457.1 156.0 L 461.0 155.4 L 464.8 153.5 L 468.7 153.0 L 472.5 150.1 L 476.4 129.4 L 480.2 128.3 L 484.1 134.6 L 488.0 139.1 L 491.8 143.7 L 495.7 141.4 L 499.5 137.3 L 503.4 126.5 L 507.2 118.9 L 511.1 118.6 L 514.9 112.4 L 518.8 114.6 L 522.7 111.2 L 526.5 104.2 L 530.4 79.7 L 534.2 78.4 L 538.1 74.3 L 541.9 60.1 L 545.8 65.9 L 549.6 78.4 L 553.5 69.8 L 557.3 87.3 L 561.2 97.3 L 565.1 82.9 L 568.9 82.6 L 572.8 77.8 L 576.6 78.0 L 580.5 77.5 L 584.3 79.9 L 588.2 76.2 L 592.0 85.6 L 595.9 95.0 L 599.8 84.4 L 603.6 94.9 L 607.5 95.4 L 611.3 93.0 L 615.2 107.9 L 619.0 119.2 L 622.9 136.6 L 626.7 133.6 L 630.6 137.3 L 634.5 137.8 L 638.3 136.5 L 642.2 145.4 L 646.0 146.9 L 649.9 132.8 L 653.7 133.1 L 657.6 126.8 L 661.4 115.6 L 665.3 109.8 L 669.2 110.7 L 673.0 103.8 L 676.9 94.6 L 680.7 94.1 L 684.6 89.5 L 688.4 86.1 L 692.3 95.3 L 696.1 96.5 L 700.0 111.6 L 703.9 137.1 L 707.7 130.5 L 711.6 142.2 L 715.4 132.3 L 719.3 111.7 L 723.1 112.1 L 727.0 120.9 L 730.8 122.8 L 734.7 131.5 L 738.6 127.5 L 742.4 131.3 L 746.3 129.0 L 750.1 110.3 L 754.0 99.5 L 757.8 99.1 L 761.7 102.8 L 765.5 90.4 L 769.4 60.5 L 773.3 57.7 L 777.1 65.6 L 781.0 68.7 L 784.8 73.3 L 788.7 62.0 L 792.5 72.1 L 796.4 74.1 L 800.2 75.8 L 804.1 60.5 L 808.0 68.3 L 811.8 41.4 L 815.7 47.3 L 819.5 58.5 L 823.4 80.3 L 827.2 75.5 L 831.1 65.6 L 834.9 92.5 L 838.8 111.7 L 842.7 74.7 L 846.5 57.5 L 850.4 61.6 L 854.2 66.1 L 858.1 68.4 L 861.9 73.0 L 865.8 82.0 L 869.6 90.6 L 873.5 92.5 L 877.3 105.5 L 881.2 100.5 L 885.1 97.1 L 888.9 105.3 L 892.8 107.5 L 896.6 114.7 L 900.5 111.3 L 904.3 120.5 L 908.2 107.5 L 912.0 110.4 L 915.9 125.8 L 919.8 116.0 L 923.6 114.0 L 927.5 108.2 L 931.3 113.6 L 935.2 115.9 L 939.0 112.4 L 942.9 113.5 L 946.7 117.9 L 950.6 117.7 L 954.5 121.7 L 958.3 114.8 L 962.2 117.2 L 966.0 109.0 L 969.9 122.8 L 973.7 133.0 L 977.6 149.7 L 981.4 133.1 L 985.3 129.2 L 989.2 128.8 L 993.0 125.5 L 996.9 125.6 L 1000.7 112.0 L 1004.6 123.6 L 1008.4 120.0 L 1012.3 113.0 L 1016.1 92.8 L 1020.0 96.3 L 1020.0 240.0 L 60.0 240.0 Z" fill="url(#areaGrad)"/>
+  <polyline points="60.0,235.5 63.9,236.2 67.7,236.2 71.6,235.7 75.4,235.5 79.3,233.1 83.1,232.2 87.0,232.2 90.8,233.4 94.7,233.1 98.6,229.6 102.4,229.1 106.3,229.8 110.1,229.6 114.0,229.4 117.8,228.1 121.7,228.7 125.5,229.1 129.4,227.5 133.3,225.6 137.1,227.6 141.0,221.2 144.8,221.2 148.7,221.7 152.5,221.4 156.4,217.8 160.2,218.4 164.1,217.2 168.0,218.9 171.8,220.1 175.7,221.2 179.5,203.9 183.4,203.3 187.2,187.7 191.1,190.2 194.9,184.5 198.8,188.9 202.7,191.7 206.5,194.0 210.4,191.6 214.2,198.5 218.1,196.6 221.9,199.5 225.8,201.5 229.6,202.9 233.5,205.3 237.3,203.0 241.2,205.6 245.1,201.7 248.9,202.7 252.8,204.3 256.6,205.9 260.5,201.7 264.3,202.3 268.2,206.4 272.0,208.7 275.9,207.2 279.8,208.1 283.6,208.9 287.5,207.1 291.3,204.8 295.2,204.3 299.0,199.9 302.9,194.6 306.7,199.0 310.6,199.7 314.5,199.8 318.3,198.4 322.2,200.7 326.0,201.6 329.9,204.0 333.7,204.5 337.6,188.3 341.4,191.5 345.3,184.1 349.2,179.2 353.0,179.7 356.9,182.6 360.7,182.8 364.6,183.7 368.4,178.8 372.3,179.7 376.1,181.0 380.0,183.3 383.9,171.6 387.7,176.8 391.6,174.9 395.4,174.6 399.3,173.1 403.1,173.7 407.0,171.0 410.8,169.8 414.7,170.3 418.6,173.5 422.4,177.3 426.3,181.8 430.1,182.1 434.0,184.4 437.8,184.3 441.7,177.6 445.5,168.3 449.4,167.3 453.3,159.4 457.1,156.0 461.0,155.4 464.8,153.5 468.7,153.0 472.5,150.1 476.4,129.4 480.2,128.3 484.1,134.6 488.0,139.1 491.8,143.7 495.7,141.4 499.5,137.3 503.4,126.5 507.2,118.9 511.1,118.6 514.9,112.4 518.8,114.6 522.7,111.2 526.5,104.2 530.4,79.7 534.2,78.4 538.1,74.3 541.9,60.1 545.8,65.9 549.6,78.4 553.5,69.8 557.3,87.3 561.2,97.3 565.1,82.9 568.9,82.6 572.8,77.8 576.6,78.0 580.5,77.5 584.3,79.9 588.2,76.2 592.0,85.6 595.9,95.0 599.8,84.4 603.6,94.9 607.5,95.4 611.3,93.0 615.2,107.9 619.0,119.2 622.9,136.6 626.7,133.6 630.6,137.3 634.5,137.8 638.3,136.5 642.2,145.4 646.0,146.9 649.9,132.8 653.7,133.1 657.6,126.8 661.4,115.6 665.3,109.8 669.2,110.7 673.0,103.8 676.9,94.6 680.7,94.1 684.6,89.5 688.4,86.1 692.3,95.3 696.1,96.5 700.0,111.6 703.9,137.1 707.7,130.5 711.6,142.2 715.4,132.3 719.3,111.7 723.1,112.1 727.0,120.9 730.8,122.8 734.7,131.5 738.6,127.5 742.4,131.3 746.3,129.0 750.1,110.3 754.0,99.5 757.8,99.1 761.7,102.8 765.5,90.4 769.4,60.5 773.3,57.7 777.1,65.6 781.0,68.7 784.8,73.3 788.7,62.0 792.5,72.1 796.4,74.1 800.2,75.8 804.1,60.5 808.0,68.3 811.8,41.4 815.7,47.3 819.5,58.5 823.4,80.3 827.2,75.5 831.1,65.6 834.9,92.5 838.8,111.7 842.7,74.7 846.5,57.5 850.4,61.6 854.2,66.1 858.1,68.4 861.9,73.0 865.8,82.0 869.6,90.6 873.5,92.5 877.3,105.5 881.2,100.5 885.1,97.1 888.9,105.3 892.8,107.5 896.6,114.7 900.5,111.3 904.3,120.5 908.2,107.5 912.0,110.4 915.9,125.8 919.8,116.0 923.6,114.0 927.5,108.2 931.3,113.6 935.2,115.9 939.0,112.4 942.9,113.5 946.7,117.9 950.6,117.7 954.5,121.7 958.3,114.8 962.2,117.2 966.0,109.0 969.9,122.8 973.7,133.0 977.6,149.7 981.4,133.1 985.3,129.2 989.2,128.8 993.0,125.5 996.9,125.6 1000.7,112.0 1004.6,123.6 1008.4,120.0 1012.3,113.0 1016.1,92.8 1020.0,96.3" fill="none" stroke="#00e5a0" stroke-width="2" stroke-linejoin="round" filter="url(#lineGlow)"/>
+  <line x1="1020.0" y1="96.3" x2="1020.0" y2="240.0" stroke="#3d9cf5" stroke-width="0.5" stroke-dasharray="3,3" opacity="0.5"/>
+  <circle cx="1020.0" cy="96.3" r="4" fill="#3d9cf5" stroke="#08090d" stroke-width="2"/>
+  <text x="1020.0" y="84.3" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#3d9cf5">CMP: $30.8</text>
+</svg>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🕯 Daily Candlestick Chart · 50 EMA & 200 DMA</div>
+    <svg viewBox="0 0 1040 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <line x1="60" y1="20.0" x2="1020" y2="20.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="24.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$44</text>
+  <line x1="60" y1="64.0" x2="1020" y2="64.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="68.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$39</text>
+  <line x1="60" y1="108.0" x2="1020" y2="108.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="112.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$34</text>
+  <line x1="60" y1="152.0" x2="1020" y2="152.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="156.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$29</text>
+  <line x1="60" y1="196.0" x2="1020" y2="196.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="200.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$24</text>
+  <line x1="60" y1="240.0" x2="1020" y2="240.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="244.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$19</text>
+  <text x="65.3" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Dec'25</text>
+  <text x="268.0" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Jan'26</text>
+  <text x="481.3" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Feb'26</text>
+  <text x="684.0" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Mar'26</text>
+  <text x="918.7" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Apr'26</text>
+  <polyline points="481.3,234.7 492.0,233.2 502.7,232.0 513.3,230.9 524.0,229.5 534.7,228.0 545.3,226.5 556.0,225.1 566.7,223.7 577.3,222.3 588.0,221.0 598.7,219.8 609.3,218.6 620.0,217.5 630.7,216.4 641.3,215.3 652.0,214.2 662.7,213.2 673.3,212.2 684.0,211.2 694.7,210.3 705.3,209.2 716.0,208.3 726.7,207.5 737.3,206.6 748.0,205.6 758.7,204.7 769.3,203.8 780.0,202.9 790.7,202.0 801.3,201.1 812.0,200.2 822.7,199.4 833.3,198.7 844.0,198.1 854.7,197.5 865.3,196.8 876.0,196.2 886.7,195.7 897.3,195.4 908.0,194.9 918.7,194.3 929.3,193.7 940.0,193.0 950.7,192.4 961.3,191.6 972.0,190.9 982.7,190.2 993.3,189.4 1004.0,188.4 1014.7,187.5" fill="none" stroke="#f5a623" stroke-width="1.5" opacity="0.5" stroke-dasharray="6,3"/>
+  <polyline points="65.3,172.4 76.0,170.7 86.7,168.8 97.3,166.8 108.0,165.5 118.7,164.3 129.3,164.1 140.0,165.7 150.7,166.8 161.3,168.6 172.0,169.7 182.7,169.4 193.3,169.1 204.0,169.4 214.7,169.8 225.3,170.8 236.0,171.5 246.7,172.4 257.3,173.1 268.0,172.6 278.7,171.3 289.3,170.0 300.0,169.1 310.7,167.3 321.3,163.6 332.0,159.8 342.7,156.8 353.3,154.0 364.0,151.7 374.7,148.7 385.3,146.5 396.0,144.5 406.7,142.7 417.3,140.0 428.0,137.9 438.7,134.0 449.3,130.7 460.0,128.3 470.7,127.5 481.3,126.3 492.0,124.6 502.7,124.7 513.3,126.1 524.0,125.0 534.7,122.7 545.3,120.8 556.0,119.3 566.7,118.0 577.3,117.1 588.0,116.8 598.7,117.1 609.3,117.5 620.0,118.8 630.7,119.7 641.3,120.3 652.0,121.5 662.7,122.8 673.3,124.5 684.0,125.9 694.7,127.8 705.3,128.9 716.0,130.0 726.7,132.2 737.3,133.6 748.0,134.9 758.7,135.6 769.3,136.8 780.0,138.0 790.7,138.9 801.3,139.9 812.0,141.2 822.7,142.4 833.3,143.8 844.0,144.7 854.7,145.7 865.3,146.1 876.0,147.4 886.7,149.4 897.3,152.4 908.0,154.2 918.7,155.7 929.3,157.0 940.0,158.1 950.7,159.2 961.3,159.3 972.0,160.1 982.7,160.7 993.3,160.8 1004.0,159.6 1014.7,158.6" fill="none" stroke="#9b7fff" stroke-width="1.5" opacity="0.7"/>
+  <line x1="65.3" y1="126.5" x2="65.3" y2="153.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="61.9" y="131.4" width="6.9" height="17.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="76.0" y1="124.0" x2="76.0" y2="145.3" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="72.5" y="125.2" width="6.9" height="5.5" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="86.7" y1="120.6" x2="86.7" y2="137.9" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="83.2" y="122.7" width="6.9" height="5.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="97.3" y1="98.0" x2="97.3" y2="124.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="93.9" y="116.8" width="6.9" height="7.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="108.0" y1="118.3" x2="108.0" y2="133.4" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="104.5" y="121.9" width="6.9" height="10.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="118.7" y1="134.0" x2="118.7" y2="151.4" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="115.2" y="134.8" width="6.9" height="3.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="129.3" y1="125.6" x2="129.3" y2="161.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="125.9" y="139.3" width="6.9" height="21.6" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="140.0" y1="160.9" x2="140.0" y2="205.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="136.5" y="160.9" width="6.9" height="43.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="150.7" y1="192.9" x2="150.7" y2="212.2" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="147.2" y="193.4" width="6.9" height="7.9" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="161.3" y1="187.1" x2="161.3" y2="214.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="157.9" y="191.7" width="6.9" height="21.8" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="172.0" y1="188.1" x2="172.0" y2="204.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="168.5" y="196.5" width="6.9" height="8.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="182.7" y1="160.6" x2="182.7" y2="192.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="179.2" y="161.0" width="6.9" height="29.5" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="193.3" y1="146.5" x2="193.3" y2="162.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="189.9" y="149.2" width="6.9" height="12.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="204.0" y1="162.5" x2="204.0" y2="178.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="200.5" y="170.2" width="6.9" height="6.6" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="214.7" y1="172.8" x2="214.7" y2="181.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="211.2" y="177.8" width="6.9" height="2.3" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="225.3" y1="179.8" x2="225.3" y2="195.9" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="221.9" y="179.8" width="6.9" height="15.3" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="236.0" y1="186.9" x2="236.0" y2="200.8" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="232.5" y="188.3" width="6.9" height="11.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="246.7" y1="174.3" x2="246.7" y2="194.9" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="243.2" y="178.7" width="6.9" height="16.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="257.3" y1="178.1" x2="257.3" y2="193.4" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="253.9" y="190.9" width="6.9" height="1.9" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="268.0" y1="155.7" x2="268.0" y2="189.7" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="264.5" y="158.6" width="6.9" height="25.2" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="278.7" y1="135.5" x2="278.7" y2="154.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="275.2" y="139.9" width="6.9" height="9.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="289.3" y1="136.0" x2="289.3" y2="151.7" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="285.9" y="139.3" width="6.9" height="3.9" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="300.0" y1="128.6" x2="300.0" y2="146.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="296.5" y="132.7" width="6.9" height="12.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="310.7" y1="92.2" x2="310.7" y2="132.1" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="307.2" y="124.2" width="6.9" height="2.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="321.3" y1="66.9" x2="321.3" y2="125.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="317.9" y="72.6" width="6.9" height="42.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="332.0" y1="56.2" x2="332.0" y2="88.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="328.5" y="67.9" width="6.9" height="14.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="342.7" y1="60.8" x2="342.7" y2="84.8" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="339.2" y="66.5" width="6.9" height="14.8" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="353.3" y1="85.5" x2="353.3" y2="99.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="349.9" y="86.8" width="6.9" height="1.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="364.0" y1="78.2" x2="364.0" y2="96.3" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="360.5" y="80.1" width="6.9" height="14.6" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="374.7" y1="74.5" x2="374.7" y2="101.0" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="371.2" y="75.2" width="6.9" height="19.9" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="385.3" y1="76.5" x2="385.3" y2="109.1" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="381.9" y="92.6" width="6.9" height="1.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="396.0" y1="69.8" x2="396.0" y2="120.8" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="392.5" y="84.8" width="6.9" height="11.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="406.7" y1="86.5" x2="406.7" y2="106.8" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="403.2" y="92.7" width="6.9" height="6.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="417.3" y1="60.8" x2="417.3" y2="112.8" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="413.9" y="72.6" width="6.9" height="30.5" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="428.0" y1="37.3" x2="428.0" y2="90.3" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="424.5" y="63.9" width="6.9" height="22.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="438.7" y1="32.9" x2="438.7" y2="83.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="435.2" y="39.7" width="6.9" height="41.2" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="449.3" y1="31.4" x2="449.3" y2="62.1" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="445.9" y="32.5" width="6.9" height="17.3" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="460.0" y1="52.8" x2="460.0" y2="78.8" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="456.5" y="54.7" width="6.9" height="14.5" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="470.7" y1="70.1" x2="470.7" y2="109.9" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="467.2" y="76.8" width="6.9" height="30.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="481.3" y1="86.3" x2="481.3" y2="118.1" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="477.9" y="98.5" width="6.9" height="12.2" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="492.0" y1="81.2" x2="492.0" y2="104.4" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="488.5" y="81.4" width="6.9" height="10.5" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="502.7" y1="82.5" x2="502.7" y2="143.9" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="499.2" y="83.8" width="6.9" height="44.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="513.3" y1="128.4" x2="513.3" y2="163.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="509.9" y="141.6" width="6.9" height="19.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="524.0" y1="96.0" x2="524.0" y2="148.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="520.5" y="97.2" width="6.9" height="48.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="534.7" y1="57.6" x2="534.7" y2="104.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="531.2" y="67.4" width="6.9" height="35.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="545.3" y1="52.0" x2="545.3" y2="75.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="541.9" y="73.0" width="6.9" height="1.5" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="556.0" y1="57.7" x2="556.0" y2="95.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="552.5" y="66.4" width="6.9" height="15.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="566.7" y1="76.7" x2="566.7" y2="100.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="563.2" y="77.9" width="6.9" height="8.3" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="577.3" y1="74.5" x2="577.3" y2="110.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="573.9" y="88.9" width="6.9" height="5.3" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="588.0" y1="99.6" x2="588.0" y2="120.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="584.5" y="103.5" width="6.9" height="6.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="598.7" y1="110.7" x2="598.7" y2="139.0" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="595.2" y="124.5" width="6.9" height="5.3" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="609.3" y1="125.9" x2="609.3" y2="136.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="605.9" y="127.9" width="6.9" height="2.2" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="620.0" y1="130.1" x2="620.0" y2="156.3" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="616.5" y="133.8" width="6.9" height="16.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="630.7" y1="140.9" x2="630.7" y2="157.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="627.2" y="141.7" width="6.9" height="14.2" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="641.3" y1="130.1" x2="641.3" y2="151.0" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="637.9" y="135.7" width="6.9" height="9.8" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="652.0" y1="126.6" x2="652.0" y2="152.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="648.5" y="128.2" width="6.9" height="21.7" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="662.7" y1="146.5" x2="662.7" y2="157.4" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="659.2" y="149.7" width="6.9" height="4.1" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="673.3" y1="162.0" x2="673.3" y2="176.9" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="669.9" y="164.0" width="6.9" height="2.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="684.0" y1="157.9" x2="684.0" y2="178.2" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="680.5" y="160.3" width="6.9" height="14.9" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="694.7" y1="169.2" x2="694.7" y2="184.1" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="691.2" y="174.3" width="6.9" height="2.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="705.3" y1="151.1" x2="705.3" y2="168.2" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="701.9" y="153.8" width="6.9" height="13.5" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="716.0" y1="153.7" x2="716.0" y2="172.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="712.5" y="158.8" width="6.9" height="1.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="726.7" y1="155.9" x2="726.7" y2="186.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="723.2" y="168.4" width="6.9" height="16.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="737.3" y1="167.1" x2="737.3" y2="191.9" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="733.9" y="168.3" width="6.9" height="17.9" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="748.0" y1="156.5" x2="748.0" y2="168.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="744.5" y="165.0" width="6.9" height="3.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="758.7" y1="146.8" x2="758.7" y2="161.9" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="755.2" y="155.0" width="6.9" height="5.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="769.3" y1="161.5" x2="769.3" y2="172.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="765.9" y="163.9" width="6.9" height="1.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="780.0" y1="148.4" x2="780.0" y2="170.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="776.5" y="158.7" width="6.9" height="9.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="790.7" y1="149.9" x2="790.7" y2="165.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="787.2" y="154.4" width="6.9" height="7.8" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="801.3" y1="159.7" x2="801.3" y2="169.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="797.9" y="164.0" width="6.9" height="1.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="812.0" y1="161.8" x2="812.0" y2="172.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="808.5" y="165.0" width="6.9" height="6.7" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="822.7" y1="169.9" x2="822.7" y2="182.8" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="819.2" y="171.3" width="6.9" height="5.8" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="833.3" y1="172.2" x2="833.3" y2="187.8" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="829.9" y="172.7" width="6.9" height="5.6" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="844.0" y1="162.8" x2="844.0" y2="176.2" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="840.5" y="166.3" width="6.9" height="7.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="854.7" y1="164.0" x2="854.7" y2="176.9" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="851.2" y="170.5" width="6.9" height="1.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="865.3" y1="153.7" x2="865.3" y2="170.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="861.9" y="156.3" width="6.9" height="6.9" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="876.0" y1="163.0" x2="876.0" y2="183.9" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="872.5" y="163.0" width="6.9" height="17.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="886.7" y1="182.5" x2="886.7" y2="202.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="883.2" y="182.5" width="6.9" height="15.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="897.3" y1="194.4" x2="897.3" y2="231.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="893.9" y="194.9" width="6.9" height="31.7" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="908.0" y1="197.5" x2="908.0" y2="222.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="904.5" y="197.9" width="6.9" height="22.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="918.7" y1="178.0" x2="918.7" y2="193.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="915.2" y="191.2" width="6.9" height="1.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="929.3" y1="187.0" x2="929.3" y2="208.0" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="925.9" y="190.5" width="6.9" height="16.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="940.0" y1="176.1" x2="940.0" y2="188.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="936.5" y="184.9" width="6.9" height="2.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="950.7" y1="181.3" x2="950.7" y2="192.2" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="947.2" y="185.0" width="6.9" height="1.2" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="961.3" y1="147.1" x2="961.3" y2="165.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="957.9" y="155.6" width="6.9" height="5.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="972.0" y1="165.0" x2="972.0" y2="186.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="968.5" y="177.2" width="6.9" height="4.3" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="982.7" y1="157.4" x2="982.7" y2="176.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="979.2" y="174.2" width="6.9" height="1.1" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="993.3" y1="160.8" x2="993.3" y2="181.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="989.9" y="163.2" width="6.9" height="17.5" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="1004.0" y1="124.4" x2="1004.0" y2="151.7" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="1000.5" y="128.4" width="6.9" height="21.3" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="1014.7" y1="125.6" x2="1014.7" y2="144.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="1011.2" y="129.5" width="6.9" height="4.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+
+  <text x="1020" y="32" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#9b7fff">── 50 EMA</text>
+  <text x="1020" y="44" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#f5a623">╌╌ 200 DMA</text>
+</svg>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets</div>
+    <svg viewBox="0 0 480 90" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <rect x="107.0" y="25" width="252.6" height="30" rx="4" fill="rgba(0,229,160,0.08)" stroke="rgba(0,229,160,0.2)" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="233.3" y="20" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#00e5a0">FAIR VALUE ZONE</text>
+  <line x1="165.4" y1="22" x2="165.4" y2="58" stroke="#00e5a0" stroke-width="2"/>
+  <text x="165.4" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#00e5a0">$50</text>
+  <text x="165.4" y="82" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">FAIR VALUE</text>
+  <text x="107.0" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$36</text>
+  <text x="359.7" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$97</text>
+  <line x1="85.5" y1="22" x2="85.5" y2="58" stroke="#00e5a0" stroke-width="3"/>
+  <polygon points="85.5,20 80.5,12 90.5,12" fill="#00e5a0"/>
+  <text x="85.5" y="8" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="#00e5a0">$30.81 CMP</text>
+</svg>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💎 Valuation & Financial Metrics</div>
+    <div class="card-grid">
+      <div class="metric-card beat"><div class="mc-label">P/E RATIO</div><div class="mc-value">-57.1x</div><div class="mc-bench">Trailing twelve months</div></div>
+      <div class="metric-card caution"><div class="mc-label">P/B RATIO</div><div class="mc-value">5.6x</div><div class="mc-bench">Price to Book value</div></div>
+      <div class="metric-card miss"><div class="mc-label">ROE</div><div class="mc-value">-5.6%</div><div class="mc-bench">Return on Equity</div></div>
+      <div class="metric-card miss"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">-59.5%</div><div class="mc-bench">Net profit margin</div></div>
+      <div class="metric-card beat"><div class="mc-label">1Y RETURN</div><div class="mc-value" style="color:#00e5a0">+655.1%</div><div class="mc-bench">12-month return</div></div>
+      <div class="metric-card beat"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">$50.09</div><div class="mc-bench">Range: $36.00 - $97.00</div></div>
+    </div>
+  </div>
+
+  <div class="breakdown-grid">
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">VALUATION</div><div class="bc-score" style="color:#00e5a0">33<span class="bc-max">/35</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">35% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:94%;background:#00e5a0;box-shadow:0 0 8px #00e5a044;"></div></div>
+      <ul class="bc-items">
+        <li>P/E at -57x</li>
+        <li>P/B at 5.6x</li>
+        <li>Analyst target: $50.09 (+62.6%)</li>
+        <li>1Y return: +655.1%</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">FINANCIAL HEALTH</div><div class="bc-score" style="color:#ff4d6d">11<span class="bc-max">/35</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">35% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:31%;background:#ff4d6d;box-shadow:0 0 8px #ff4d6d44;"></div></div>
+      <ul class="bc-items">
+        <li>ROE: -5.6%</li>
+        <li>Profit margin: -59.5%</li>
+        <li>Revenue growth: 139.3%</li>
+        <li>Debt/Equity: 110%</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">GROWTH</div><div class="bc-score" style="color:#00e5a0">22<span class="bc-max">/30</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">30% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:73%;background:#00e5a0;box-shadow:0 0 8px #00e5a044;"></div></div>
+      <ul class="bc-items">
+        <li>Revenue growth: 139.3%</li>
+        <li>Earnings growth: 0.0%</li>
+        <li>Beta: 7.27</li>
+        <li>Sector: Technology</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="page-break">
+
+  <div class="section">
+    <div class="section-title">📋 Quarterly Performance Trend</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Quarter</th><th>Revenue</th><th>Net Profit</th><th>EBITDA Margin</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Q3 '24</td>
+          <td class="">N/A</td>
+          <td class="">N/A</td>
+          <td>N/A</td>
+        </tr>
+        <tr>
+          <td>Q4 '24</td>
+          <td class="">N/A</td>
+          <td class="">N/A</td>
+          <td>N/A</td>
+        </tr>
+        <tr>
+          <td>Q1 '25</td>
+          <td class="">$52.9M</td>
+          <td class="tr">$-35.6M</td>
+          <td>-14.7%</td>
+        </tr>
+        <tr>
+          <td>Q2 '25</td>
+          <td class="">$-33.3M</td>
+          <td class="tr">$-52.5M</td>
+          <td>N/A</td>
+        </tr>
+        <tr>
+          <td>Q3 '25</td>
+          <td class="">$64.2M</td>
+          <td class="tr">$-16.9M</td>
+          <td>-28.2%</td>
+        </tr>
+        <tr>
+          <td>Q4 '25</td>
+          <td class="">$126.6M</td>
+          <td class="tr">$-17.5M</td>
+          <td>-5.1%</td>
+        </tr>
+        <tr>
+          <td>Q1 '26</td>
+          <td class="">$126.6M</td>
+          <td class="tr">$-99.3M</td>
+          <td>-4.0%</td>
+        </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="dual-col">
+    <div class="col-card">
+      <div class="col-title" style="color:var(--green);">🟢 CATALYSTS</div>
+      <div class="col-item"><span class="col-icon">🏆</span><span><strong>Revenue Growth 139%:</strong> Strong top-line momentum indicating market demand.</span></div>
+<div class="col-item"><span class="col-icon">💹</span><span><strong>Analyst Upside (63%):</strong> Mean target of $50.09 above current price.</span></div>
+<div class="col-item"><span class="col-icon">🔀</span><span><strong>Sector Opportunity:</strong> Technology / Information Technology Services — positioned in growth sector.</span></div>
+    </div>
+    <div class="col-card">
+      <div class="col-title" style="color:var(--red);">🔴 RISKS</div>
+      <div class="col-item"><span class="col-icon">📜</span><span><strong>High Debt/Equity (110%):</strong> Leverage could amplify downside risk.</span></div>
+<div class="col-item"><span class="col-icon">💰</span><span><strong>High Beta (7.27):</strong> More volatile than market — higher swing risk.</span></div>
+<div class="col-item"><span class="col-icon">🔓</span><span><strong>Loss-Making:</strong> Negative profit margin — path to profitability unclear.</span></div>
+    </div>
+  </div>
+
+  <div class="verdict-card">
+    <div class="verdict-header">
+      <div><div class="verdict-rec">RECOMMENDATION</div><div class="verdict-rating" style="color:#00e5a0">BUY</div></div>
+      <div style="text-align:right;"><div class="verdict-rec">COMPOSITE SCORE</div><div class="verdict-score" style="color:#00e5a0"><span style="font-size:28px;font-weight:700;">66</span>/100</div></div>
+    </div>
+    <div class="rating-bar-track"><div class="rating-needle" style="left:75%;"></div></div>
+    <div class="verdict-text"><strong>Applied Digital Corporation</strong> trades at $30.81 with a composite risk score of 66/100.
+    The stock scores 33/35 on valuation, 11/35 on financial health, and 22/30 on growth.
+    The company is currently loss-making with negative return on equity.
+    <br><br>
+    Analyst consensus suggests upside of 62.6% with a mean target of $50.09.
+    Revenue growth is at 139.3% — a strong positive signal.
+    <br><br>
+    <strong>Bottom Line:</strong> Attractive risk/reward at current levels. The current recommendation is <strong style="color:#00e5a0">BUY</strong>.</div>
+    <div class="verdict-tags"><span class="vtag green">STRONG GROWTH</span>
+<span class="vtag green">UPSIDE POTENTIAL</span>
+<span class="vtag red">VOLATILE</span>
+<span class="vtag red">HIGH DEBT</span>
+<span class="vtag red">LOSS-MAKING</span></div>
+  </div>
+
+  <div class="footer">
+    RISK SCORE REPORT · APLD · GENERATED APR 15, 2026 20:05 ET · DATA VIA YAHOO FINANCE<br>
+    DISCLAIMER: THIS IS NOT FINANCIAL ADVICE. DATA MAY BE DELAYED. ALWAYS VERIFY WITH OFFICIAL SOURCES BEFORE INVESTING.
+  </div>
+
+</div>
+</div>
+
+<button class="copy-btn" onclick="copyReport()" id="copyBtn">📋 COPY REPORT</button>
+<script>
+function copyReport() {
+  const content = document.getElementById('report-content').innerText;
+  navigator.clipboard.writeText(content).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.innerHTML = '✓ COPIED!';
+    btn.style.borderColor = '#00e5a0';
+    setTimeout(() => { btn.innerHTML = '📋 COPY REPORT'; btn.style.borderColor = ''; }, 2000);
+  });
+}
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => { if (entry.isIntersecting) { entry.target.style.opacity = '1'; entry.target.style.transform = 'translateY(0)'; } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section, .breakdown-card, .metric-card').forEach(el => {
+  el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
