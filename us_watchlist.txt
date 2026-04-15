@@ -1,0 +1,21 @@
+# US Stock Watchlist
+# One ticker per line. Lines starting with # are comments.
+# Format: TICKER (Yahoo Finance symbols — no suffix needed)
+AAPL
+MSFT
+GOOGL
+AMZN
+NVDA
+META
+TSLA
+AMD
+ASML
+TSM
+NUAI
+STX
+MU
+RTX
+HOOD
+RKLB
+APLD
+
