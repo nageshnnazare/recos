@@ -1,1 +1,3 @@
 ignore/
+venv/
+.DS_STORE

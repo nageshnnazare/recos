@@ -4,6 +4,8 @@ on:
   schedule:
     # Run at 7:00 PM IST (1:30 PM UTC) — after market close
     - cron: '30 13 * * 1-5'
+  push:
+    branches: [ main ]
   workflow_dispatch:  # Allow manual trigger
 
 permissions:
@@ -20,10 +22,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       - name: Install dependencies
-        run: pip install yfinance
+        run: pip install yfinance pandas requests beautifulsoup4 lxml
 
       - name: Generate NSE reports
         run: |
@@ -54,12 +56,12 @@ jobs:
             echo "has_alerts=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit reports
+      - name: Commit reports and README
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add reports/ us_reports/
-          git diff --cached --quiet || git commit -m "📊 Daily stock reports (NSE & US) — $(date +%Y-%m-%d)"
+          git add reports/ us_reports/ README.md
+          git diff --cached --quiet || git commit -m "📊 Daily stock reports & README update — $(date +%Y-%m-%d)"
           git push
 
       - name: Create GitHub Issue for alerts

@@ -43,6 +43,33 @@ except ImportError:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# SECTOR-SPECIFIC BENCHMARKS
+# ─────────────────────────────────────────────────────────────────────────────
+# pe: (cheap, fair, expensive)   pb: (cheap, fair, expensive)
+# roe: (moderate, good) as decimal   margin: (moderate, good) as decimal
+# de: (comfortable, high)
+
+_DEFAULT_BENCH = {"pe": (15, 25, 50), "pb": (2, 5, 12), "roe": (0.10, 0.18), "margin": (0.08, 0.18), "de": (40, 100)}
+
+SECTOR_BENCHMARKS = {
+    "Financial Services": {"pe": (12, 22, 35), "pb": (1.5, 3, 5),  "roe": (0.12, 0.18), "margin": (0.15, 0.30), "de": (200, 500)},
+    "Technology":         {"pe": (20, 35, 60), "pb": (3, 8, 15),   "roe": (0.15, 0.25), "margin": (0.15, 0.25), "de": (20, 60)},
+    "Energy":             {"pe": (8, 15, 25),  "pb": (1, 2, 4),    "roe": (0.10, 0.18), "margin": (0.05, 0.12), "de": (40, 100)},
+    "Industrials":        {"pe": (15, 30, 50), "pb": (2, 5, 10),   "roe": (0.12, 0.20), "margin": (0.10, 0.20), "de": (30, 80)},
+    "Healthcare":         {"pe": (18, 30, 50), "pb": (2, 5, 10),   "roe": (0.12, 0.20), "margin": (0.12, 0.22), "de": (20, 60)},
+    "Consumer Cyclical":  {"pe": (15, 25, 45), "pb": (2, 5, 12),   "roe": (0.12, 0.20), "margin": (0.08, 0.18), "de": (30, 80)},
+    "Consumer Defensive": {"pe": (18, 30, 50), "pb": (3, 8, 15),   "roe": (0.15, 0.25), "margin": (0.10, 0.20), "de": (30, 80)},
+    "Basic Materials":    {"pe": (8, 15, 30),  "pb": (1, 2.5, 6),  "roe": (0.10, 0.18), "margin": (0.08, 0.15), "de": (40, 100)},
+    "Communication Services": {"pe": (12, 25, 45), "pb": (1.5, 4, 10), "roe": (0.08, 0.15), "margin": (0.10, 0.20), "de": (50, 120)},
+    "Real Estate":        {"pe": (10, 20, 40), "pb": (1, 2.5, 6),  "roe": (0.08, 0.15), "margin": (0.10, 0.25), "de": (50, 120)},
+    "Utilities":          {"pe": (10, 18, 30), "pb": (1, 2, 4),    "roe": (0.10, 0.15), "margin": (0.10, 0.20), "de": (80, 200)},
+}
+
+def get_sector_bench(sector):
+    return SECTOR_BENCHMARKS.get(sector, _DEFAULT_BENCH)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # DATA FETCHING (Generic for any NSE ticker)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -104,8 +131,322 @@ def fetch_stock_data(ticker_symbol):
         print(f"    ⚠ Could not fetch annual balance sheet: {e}")
         result["annual_balance_sheet"] = None
 
+    # Quarterly cash flow
+    try:
+        result["quarterly_cash_flow"] = ticker.quarterly_cash_flow
+    except Exception as e:
+        print(f"    ⚠ Could not fetch quarterly cash flow: {e}")
+        result["quarterly_cash_flow"] = None
+
+    # Annual cash flow
+    try:
+        result["annual_cash_flow"] = ticker.cash_flow
+    except Exception as e:
+        print(f"    ⚠ Could not fetch annual cash flow: {e}")
+        result["annual_cash_flow"] = None
+
+    # Additional history periods for multi-period returns
+    for period_key, period_val in [("hist_5d", "5d"), ("hist_1mo", "1mo"), ("hist_3y", "3y"), ("hist_5y", "5y")]:
+        try:
+            result[period_key] = ticker.history(period=period_val)
+        except Exception:
+            result[period_key] = None
+
+    # Holder data
+    try:
+        result["major_holders"] = ticker.major_holders
+    except Exception:
+        result["major_holders"] = None
+    try:
+        result["institutional_holders"] = ticker.institutional_holders
+    except Exception:
+        result["institutional_holders"] = None
+    try:
+        result["mutualfund_holders"] = ticker.mutualfund_holders
+    except Exception:
+        result["mutualfund_holders"] = None
+
+    # News
+    try:
+        result["news"] = ticker.get_news(count=8)
+    except Exception:
+        result["news"] = None
+
     result["ticker_obj"] = ticker
+
+    # Enrich with Screener.in data (fallback for missing yfinance fields)
+    try:
+        screener = fetch_screener_data(ticker_symbol)
+        result["screener"] = screener
+        if screener:
+            info = result["info"]
+            # Backfill ratios that yfinance doesn't provide for many NSE stocks
+            if not info.get("trailingPegRatio") and not info.get("pegRatio") and screener.get("peg_ratio"):
+                info["pegRatio"] = screener["peg_ratio"]
+            if not info.get("returnOnAssets") and screener.get("roa"):
+                info["returnOnAssets"] = screener["roa"]
+            if not info.get("currentRatio") and screener.get("current_ratio"):
+                info["currentRatio"] = screener["current_ratio"]
+            if not info.get("operatingMargins") and screener.get("opm") is not None:
+                info["operatingMargins"] = screener["opm"] / 100
+            if screener.get("roce"):
+                info["_roce"] = screener["roce"]
+    except Exception as e:
+        print(f"    ⚠ Screener.in fallback failed: {e}")
+        result["screener"] = None
+
+    # Fetch industry peers from Screener.in
+    try:
+        screener = result.get("screener") or {}
+        industry_url = screener.get("industry_url", "")
+        if industry_url:
+            peers, peers_page_url = fetch_industry_peers(industry_url, ticker_symbol)
+            result["peers"] = peers
+            result["peers_page_url"] = peers_page_url
+            result["industry_name"] = screener.get("industry_name", "")
+        else:
+            result["peers"] = []
+            result["peers_page_url"] = ""
+            result["industry_name"] = ""
+    except Exception as e:
+        print(f"    ⚠ Peer fetch failed: {e}")
+        result["peers"] = []
+        result["peers_page_url"] = ""
+        result["industry_name"] = ""
+
     return result
+
+
+def fetch_screener_data(ticker_symbol):
+    """Scrape Screener.in for fundamental ratios and shareholding data."""
+    import requests
+    from bs4 import BeautifulSoup
+
+    url = f"https://www.screener.in/company/{ticker_symbol}/consolidated/"
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+
+    resp = requests.get(url, headers=headers, timeout=12)
+    if resp.status_code == 404:
+        url = f"https://www.screener.in/company/{ticker_symbol}/"
+        resp = requests.get(url, headers=headers, timeout=12)
+    if resp.status_code != 200:
+        return None
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+    result = {}
+
+    # ── Top ratios (P/E, ROE, ROCE, Dividend Yield, etc.) ──
+    for li in soup.select("#top-ratios li"):
+        name_el = li.select_one(".name")
+        val_el = li.select_one(".value, .number")
+        if not name_el:
+            continue
+        name = name_el.text.strip().lower()
+        raw = val_el.text.strip().replace("₹", "").replace(",", "").replace("Cr.", "").replace("%", "").strip() if val_el else ""
+        try:
+            val = float(raw)
+        except (ValueError, TypeError):
+            continue
+        if "stock p/e" in name:
+            result["pe"] = val
+        elif "roe" in name and "roce" not in name:
+            result["roe"] = val
+        elif "roce" in name:
+            result["roce"] = val
+        elif "dividend yield" in name:
+            result["dividend_yield"] = val
+
+    # ── P&L table: OPM %, Net Profit, EPS ──
+    pl_section = soup.find("h2", string=lambda x: x and "profit" in x.lower() if x else False)
+    if pl_section:
+        table = pl_section.find_next("table")
+        if table:
+            for row in table.select("tr"):
+                cells = [c.text.strip() for c in row.select("th, td")]
+                if not cells:
+                    continue
+                label = cells[0].lower()
+                last_val = cells[-1].replace(",", "").replace("%", "").strip() if len(cells) > 1 else ""
+                try:
+                    num = float(last_val)
+                except (ValueError, TypeError):
+                    num = None
+                if "opm" in label and num is not None:
+                    result["opm"] = num
+                elif label.startswith("net profit") and num is not None:
+                    result["net_profit_cr"] = num
+                elif "eps" in label and num is not None:
+                    result["eps"] = num
+
+    # ── Ratios table: ROCE historical ──
+    ratio_section = soup.find("h2", string=lambda x: x and "ratio" in x.lower() if x else False)
+    if ratio_section:
+        table = ratio_section.find_next("table")
+        if table:
+            for row in table.select("tr"):
+                cells = [c.text.strip() for c in row.select("th, td")]
+                if cells and "roce" in cells[0].lower():
+                    vals = [c.replace("%", "").strip() for c in cells[1:] if c.strip()]
+                    try:
+                        result["roce_history"] = [float(v) for v in vals if v]
+                    except ValueError:
+                        pass
+
+    # ── Balance sheet: compute Current Ratio if possible ──
+    bs_section = soup.find("h2", string=lambda x: x and "balance sheet" in x.lower() if x else False)
+    if bs_section:
+        table = bs_section.find_next("table")
+        if table:
+            bs_data = {}
+            for row in table.select("tr"):
+                cells = [c.text.strip() for c in row.select("th, td")]
+                if len(cells) > 1:
+                    label = cells[0].lower().replace("\xa0", " ").strip()
+                    last_val = cells[-1].replace(",", "").strip()
+                    try:
+                        bs_data[label] = float(last_val)
+                    except (ValueError, TypeError):
+                        pass
+            total_assets = bs_data.get("total assets")
+            if result.get("net_profit_cr") and total_assets and total_assets > 0:
+                result["roa"] = result["net_profit_cr"] / total_assets
+
+    # ── PEG ratio: P/E ÷ earnings growth ──
+    growth_sections = soup.select(".ranges-table")
+    for section in growth_sections:
+        text = section.get_text()
+        if "Compounded Profit Growth" in text:
+            items = section.select("li, tr")
+            for item in items:
+                t = item.get_text()
+                if "3 Years" in t or "3Years" in t:
+                    pct = t.split(":")[-1].strip().replace("%", "")
+                    try:
+                        growth_3y = float(pct)
+                        if result.get("pe") and growth_3y > 0:
+                            result["peg_ratio"] = result["pe"] / growth_3y
+                    except (ValueError, TypeError):
+                        pass
+                    break
+
+    # ── Industry peer URL from section#peers breadcrumb ──
+    peer_section = soup.select_one("section#peers")
+    if peer_section:
+        industry_links = peer_section.select('p.sub a[href*="/market/"]')
+        if industry_links:
+            last_link = industry_links[-1]
+            result["industry_url"] = last_link.get("href", "")
+            result["industry_name"] = last_link.text.strip()
+
+    # ── Shareholding pattern (QoQ with Promoter, FII, DII, Public) ──
+    sh_section = soup.find("h2", string=lambda x: x and "shareholding" in x.lower() if x else False)
+    if sh_section:
+        table = sh_section.find_next("table")
+        if table:
+            headers = [th.text.strip() for th in table.select("tr")[0].select("th, td")]
+            sh_data = []
+            for row in table.select("tr")[1:]:
+                cells = [c.text.strip().replace("\xa0", " ") for c in row.select("th, td")]
+                if len(cells) >= 2:
+                    category = cells[0].replace("+", "").strip()
+                    values = cells[1:]
+                    sh_data.append({"category": category, "values": values})
+            result["shareholding_headers"] = headers[1:]
+            result["shareholding_rows"] = sh_data
+
+    return result
+
+
+def fetch_industry_peers(industry_url, current_ticker, limit=8):
+    """Fetch peer comparison table from Screener.in industry page."""
+    import requests
+    from bs4 import BeautifulSoup
+
+    if not industry_url:
+        return [], ""
+    base = "https://www.screener.in"
+    url = base + industry_url if industry_url.startswith("/") else industry_url
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+
+    try:
+        resp = requests.get(url, headers=headers, timeout=12)
+        if resp.status_code != 200:
+            return [], ""
+    except Exception:
+        return [], ""
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+    table = soup.select_one("table")
+    if not table:
+        return [], ""
+
+    peers = []
+    current_upper = current_ticker.upper()
+    for row in table.select("tbody tr"):
+        cells = [c.text.strip().replace("\n", " ").replace(",", "") for c in row.select("td")]
+        if len(cells) < 10:
+            continue
+        link = row.select_one("td a")
+        href = link.get("href", "") if link else ""
+        # Extract ticker from href like /company/BEL/consolidated/
+        ticker_from_href = href.split("/company/")[-1].split("/")[0].upper() if "/company/" in href else ""
+
+        try:
+            name = cells[1].strip()
+            cmp = float(cells[2]) if cells[2] else None
+            pe = float(cells[3]) if cells[3] else None
+            mcap = float(cells[4]) if cells[4] else None
+            div_yield = float(cells[5]) if cells[5] else None
+            np_qtr = float(cells[6]) if cells[6] else None
+            qtr_profit_var = float(cells[7]) if cells[7] else None
+            sales_qtr = float(cells[8]) if cells[8] else None
+            qtr_sales_var = float(cells[9]) if cells[9] else None
+            roce = float(cells[10]) if len(cells) > 10 and cells[10] else None
+        except (ValueError, TypeError, IndexError):
+            continue
+
+        is_self = ticker_from_href == current_upper
+        peers.append({
+            "name": name, "ticker": ticker_from_href, "cmp": cmp, "pe": pe,
+            "mcap": mcap, "div_yield": div_yield, "roce": roce,
+            "qtr_profit_var": qtr_profit_var, "qtr_sales_var": qtr_sales_var,
+            "is_self": is_self, "screener_url": base + href if href else "",
+        })
+
+    # Compute techno-fundamental composite score for ranking
+    if peers:
+        pe_vals = [p["pe"] for p in peers if p["pe"] and p["pe"] > 0]
+        roce_vals = [p["roce"] for p in peers if p["roce"] is not None]
+        growth_vals = [p["qtr_profit_var"] for p in peers if p["qtr_profit_var"] is not None]
+        mcap_vals = [p["mcap"] for p in peers if p["mcap"] is not None]
+
+        def _norm(val, vals, invert=False):
+            if val is None or not vals:
+                return 0.5
+            mn, mx = min(vals), max(vals)
+            if mx == mn:
+                return 0.5
+            n = (val - mn) / (mx - mn)
+            return (1 - n) if invert else n
+
+        for p in peers:
+            p["tf_score"] = (
+                _norm(p["pe"], pe_vals, invert=True) * 30 +
+                _norm(p["roce"], roce_vals) * 30 +
+                _norm(p["qtr_profit_var"], growth_vals) * 20 +
+                _norm(p["mcap"], mcap_vals) * 20
+            )
+
+        peers.sort(key=lambda x: x.get("tf_score", 0), reverse=True)
+
+    # Keep top N but always include self
+    self_peer = next((p for p in peers if p["is_self"]), None)
+    top_peers = [p for p in peers if not p["is_self"]][:limit]
+    if self_peer:
+        top_peers.append(self_peer)
+        top_peers.sort(key=lambda x: x.get("tf_score", 0), reverse=True)
+
+    return top_peers, url
 
 
 def calculate_roe_manual(data):
@@ -177,45 +518,50 @@ def fmt_cr(val):
 
 def calculate_risk_scores(data):
     """
-    Calculate risk scores based on 35/35/30 weighting.
+    Calculate risk scores based on 35/35/30 weighting with sector-specific thresholds.
     Higher score = Lower risk = Better.
-    Works generically for any stock using yfinance data.
     """
     info = data["info"]
+    sector = safe_get(info, "sector", "")
+    bench = get_sector_bench(sector)
+    pe_cheap, pe_fair, pe_exp = bench["pe"]
+    pb_cheap, pb_fair, pb_exp = bench["pb"]
+    roe_mod, roe_good = bench["roe"]
+    margin_mod, margin_good = bench["margin"]
+    de_ok, de_high = bench["de"]
 
     # ── VALUATION SCORE /35 ──
-    val_score = 17  # start neutral
+    val_score = 17
 
     pe = safe_get(info, "trailingPE", safe_get(info, "forwardPE"))
     pb = safe_get(info, "priceToBook")
 
     if pe:
-        if pe < 15:
+        if pe < pe_cheap:
             val_score += 10
-        elif pe < 25:
+        elif pe < pe_fair:
             val_score += 7
-        elif pe < 40:
+        elif pe < pe_exp:
             val_score += 4
-        elif pe < 60:
+        elif pe < pe_exp * 1.5:
             val_score += 0
-        elif pe < 100:
+        elif pe < pe_exp * 2.5:
             val_score -= 3
         else:
             val_score -= 7
 
     if pb:
-        if pb < 2:
+        if pb < pb_cheap:
             val_score += 5
-        elif pb < 5:
+        elif pb < pb_fair:
             val_score += 3
-        elif pb < 10:
+        elif pb < pb_exp:
             val_score += 1
-        elif pb < 20:
+        elif pb < pb_exp * 2:
             val_score -= 2
         else:
             val_score -= 5
 
-    # Analyst target vs current price
     target = safe_get(info, "targetMeanPrice")
     current = safe_get(info, "currentPrice", safe_get(info, "regularMarketPrice"))
     if target and current and current > 0:
@@ -240,11 +586,11 @@ def calculate_risk_scores(data):
 
     roe = calculate_roe_manual(data)
     if roe:
-        if roe > 0.25:
+        if roe > roe_good * 1.4:
             fin_score += 7
-        elif roe > 0.15:
+        elif roe > roe_good:
             fin_score += 5
-        elif roe > 0.08:
+        elif roe > roe_mod:
             fin_score += 2
         elif roe > 0:
             fin_score += 0
@@ -253,9 +599,9 @@ def calculate_risk_scores(data):
 
     profit_margin = safe_get(info, "profitMargins")
     if profit_margin:
-        if profit_margin > 0.25:
+        if profit_margin > margin_good * 1.3:
             fin_score += 6
-        elif profit_margin > 0.1:
+        elif profit_margin > margin_mod:
             fin_score += 3
         elif profit_margin > 0:
             fin_score += 1
@@ -277,11 +623,11 @@ def calculate_risk_scores(data):
 
     debt_equity = safe_get(info, "debtToEquity")
     if debt_equity is not None:
-        if debt_equity < 30:
+        if debt_equity < de_ok:
             fin_score += 3
-        elif debt_equity < 80:
+        elif debt_equity < de_high:
             fin_score += 1
-        elif debt_equity < 150:
+        elif debt_equity < de_high * 1.5:
             fin_score -= 1
         else:
             fin_score -= 3
@@ -314,15 +660,14 @@ def calculate_risk_scores(data):
         else:
             growth_score -= 3
 
-    # Beta assessment (stability)
     beta = safe_get(info, "beta")
     if beta:
         if beta < 0.8:
-            growth_score += 2  # Defensive
+            growth_score += 2
         elif beta < 1.2:
-            growth_score += 1  # Moderate
+            growth_score += 1
         else:
-            growth_score -= 1  # Volatile
+            growth_score -= 1
 
     growth_score = max(0, min(30, growth_score))
 
@@ -341,24 +686,25 @@ def get_signal(scores, info):
     composite = scores["composite"]
     current = safe_get(info, "currentPrice", safe_get(info, "regularMarketPrice"))
     target = safe_get(info, "targetMeanPrice")
-    target_low = safe_get(info, "targetLowPrice")
+    sector = safe_get(info, "sector", "")
+    sector_tag = f" for {sector}" if sector else ""
 
     upside = 0
     if target and current and current > 0:
         upside = (target - current) / current * 100
 
     if composite >= 75 and upside > 15:
-        return "🟢 STRONG BUY", True, "Value buy — strong score with significant upside"
+        return "🟢 STRONG BUY", True, f"Strong score with significant upside{sector_tag}"
     elif composite >= 65 and upside > 5:
-        return "🟢 BUY", True, "Attractive risk/reward at current levels"
+        return "🟢 BUY", True, f"Attractive risk/reward{sector_tag} at current levels"
     elif composite >= 55:
-        return "🟡 SPECULATIVE BUY", False, "Positive but monitor closely"
+        return "🟡 SPECULATIVE BUY", False, f"Positive{sector_tag} but monitor closely"
     elif composite >= 40:
-        return "🟡 HOLD", False, "Neutral — wait for better entry or catalyst"
+        return "🟡 HOLD", False, f"Neutral{sector_tag} — wait for better entry or catalyst"
     elif composite >= 25:
-        return "🔴 SELL", False, "Elevated risk — consider exiting"
+        return "🔴 SELL", False, f"Elevated risk{sector_tag} — consider exiting"
     else:
-        return "🔴 STRONG SELL", False, "High risk — exit recommended"
+        return "🔴 STRONG SELL", False, f"High risk{sector_tag} — exit recommended"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -560,7 +906,7 @@ def generate_candle_chart_svg(hist_data, width=1040, height=280):
     ema50_display = ema50_all[display_start:]
     dma200_display = dma200_all[display_start:]
 
-    pad_left, pad_right, pad_top, pad_bottom = 60, 20, 20, 40
+    pad_left, pad_right, pad_top, pad_bottom = 60, 70, 20, 40
     chart_w = width - pad_left - pad_right
     chart_h = height - pad_top - pad_bottom
 
@@ -608,23 +954,35 @@ def generate_candle_chart_svg(hist_data, width=1040, height=280):
 
     # 200 DMA line (drawn first, behind candles)
     dma_points = []
+    dma_last_val = None
     for i in range(n):
         if dma200_display[i] is not None:
             x = pad_left + (i + 0.5) * gap
             y = y_pos(dma200_display[i])
             dma_points.append(f"{x:.1f},{y:.1f}")
+            dma_last_val = dma200_display[i]
     if dma_points:
         svg += f'  <polyline points="{" ".join(dma_points)}" fill="none" stroke="#f5a623" stroke-width="1.5" opacity="0.5" stroke-dasharray="6,3"/>\n'
+        if dma_last_val is not None:
+            lx = pad_left + (n - 0.5) * gap + 4
+            ly = y_pos(dma_last_val)
+            svg += f'  <text x="{lx:.1f}" y="{ly + 3:.1f}" font-family="Fira Code,monospace" font-size="8" font-weight="600" fill="#f5a623">₹{dma_last_val:,.0f}</text>\n'
 
     # 50 EMA line
     ema_points = []
+    ema_last_val = None
     for i in range(n):
         if ema50_display[i] is not None:
             x = pad_left + (i + 0.5) * gap
             y = y_pos(ema50_display[i])
             ema_points.append(f"{x:.1f},{y:.1f}")
+            ema_last_val = ema50_display[i]
     if ema_points:
         svg += f'  <polyline points="{" ".join(ema_points)}" fill="none" stroke="#9b7fff" stroke-width="1.5" opacity="0.7"/>\n'
+        if ema_last_val is not None:
+            lx = pad_left + (n - 0.5) * gap + 4
+            ly = y_pos(ema_last_val)
+            svg += f'  <text x="{lx:.1f}" y="{ly + 3:.1f}" font-family="Fira Code,monospace" font-size="8" font-weight="600" fill="#9b7fff">₹{ema_last_val:,.0f}</text>\n'
 
     # Daily candles
     for i in range(n):
@@ -640,9 +998,11 @@ def generate_candle_chart_svg(hist_data, width=1040, height=280):
         svg += f'  <rect x="{x_center - candle_w/2:.1f}" y="{body_top:.1f}" width="{candle_w:.1f}" height="{body_h:.1f}" fill="{fill}" stroke="{color}" stroke-width="1" rx="1"/>\n'
 
     # Legend
+    ema_legend = f"── 50 EMA (₹{ema_last_val:,.0f})" if ema_last_val else "── 50 EMA"
+    dma_legend = f"╌╌ 200 DMA (₹{dma_last_val:,.0f})" if dma_last_val else "╌╌ 200 DMA"
     svg += f'''
-  <text x="{width - 20}" y="{pad_top + 12}" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#9b7fff">── 50 EMA</text>
-  <text x="{width - 20}" y="{pad_top + 24}" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#f5a623">╌╌ 200 DMA</text>
+  <text x="{pad_left + 4}" y="{pad_top + 12}" font-family="Fira Code,monospace" font-size="8" fill="#9b7fff">{ema_legend}</text>
+  <text x="{pad_left + 4}" y="{pad_top + 24}" font-family="Fira Code,monospace" font-size="8" fill="#f5a623">{dma_legend}</text>
 '''
     svg += '</svg>'
     return svg
@@ -687,66 +1047,473 @@ def generate_fair_value_svg(current_price, fair_value_low, fair_value_mid, fair_
 # QUARTERLY DATA EXTRACTION
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _get_fiscal_quarter(dt):
+    """Return Indian fiscal quarter label from a datetime."""
+    month, year = dt.month, dt.year
+    if month in [1, 2, 3]:
+        return f"Q4 FY{year % 100}"
+    elif month in [4, 5, 6]:
+        return f"Q1 FY{(year + 1) % 100}"
+    elif month in [7, 8, 9]:
+        return f"Q2 FY{(year + 1) % 100}"
+    return f"Q3 FY{(year + 1) % 100}"
+
+
+def _safe_df_value(df, col, key_list):
+    """Try multiple row keys in a DataFrame column, return value in Crores or None."""
+    for key in key_list:
+        if key in df.index:
+            val = df.loc[key, col]
+            if val is not None and not (isinstance(val, float) and math.isnan(val)):
+                return val / 1e7
+    return None
+
+
 def extract_quarterly_data(data):
-    """Extract quarterly financial data from yfinance income statement."""
+    """Extract quarterly financial data with QoQ % changes and operating cash flow."""
     qi = data.get("quarterly_income")
+    qcf = data.get("quarterly_cash_flow")
     rows = []
+
     if qi is not None and not qi.empty:
-        for col in qi.columns[:8]:  # last 8 quarters max
+        for col in qi.columns[:8]:
             try:
                 dt = col.to_pydatetime() if hasattr(col, 'to_pydatetime') else col
-                month = dt.month
-                year = dt.year
-                # Determine Indian fiscal quarter
-                if month in [1, 2, 3]:
-                    q_label = f"Q4 FY{year % 100}"
-                elif month in [4, 5, 6]:
-                    q_label = f"Q1 FY{(year + 1) % 100}"
-                elif month in [7, 8, 9]:
-                    q_label = f"Q2 FY{(year + 1) % 100}"
-                else:
-                    q_label = f"Q3 FY{(year + 1) % 100}"
 
-                rev = None
-                for key in ["Total Revenue", "Operating Revenue", "Revenue"]:
-                    if key in qi.index:
-                        val = qi.loc[key, col]
-                        if val is not None and not (isinstance(val, float) and math.isnan(val)):
-                            rev = val / 1e7  # Convert to Crores
-                            break
-
-                profit = None
-                for key in ["Net Income", "Net Income Common Stockholders", "Net Income From Continuing Operations"]:
-                    if key in qi.index:
-                        val = qi.loc[key, col]
-                        if val is not None and not (isinstance(val, float) and math.isnan(val)):
-                            profit = val / 1e7
-                            break
-
-                ebitda = None
-                for key in ["EBITDA", "Normalized EBITDA"]:
-                    if key in qi.index:
-                        val = qi.loc[key, col]
-                        if val is not None and not (isinstance(val, float) and math.isnan(val)):
-                            ebitda = val / 1e7
-                            break
+                rev = _safe_df_value(qi, col, ["Total Revenue", "Operating Revenue", "Revenue"])
+                profit = _safe_df_value(qi, col, ["Net Income", "Net Income Common Stockholders", "Net Income From Continuing Operations"])
+                ebitda = _safe_df_value(qi, col, ["EBITDA", "Normalized EBITDA"])
 
                 ebitda_margin = None
                 if ebitda and rev and rev > 0:
                     ebitda_margin = (ebitda / rev) * 100
 
+                op_cf = None
+                if qcf is not None and not qcf.empty and col in qcf.columns:
+                    op_cf = _safe_df_value(qcf, col, ["Operating Cash Flow", "Cash Flow From Continuing Operating Activities", "Free Cash Flow"])
+
                 rows.append({
-                    "quarter": q_label,
+                    "quarter": _get_fiscal_quarter(dt),
                     "date": dt,
                     "revenue_cr": rev,
                     "profit_cr": profit,
                     "ebitda_margin": ebitda_margin,
+                    "op_cash_flow_cr": op_cf,
                 })
-            except Exception as e:
+            except Exception:
                 continue
 
     rows.sort(key=lambda x: x.get("date", datetime.min))
+
+    for i in range(len(rows)):
+        prev = rows[i - 1] if i > 0 else None
+        rows[i]["rev_qoq_pct"] = _pct_change(rows[i]["revenue_cr"], prev["revenue_cr"] if prev else None)
+        rows[i]["profit_qoq_pct"] = _pct_change(rows[i]["profit_cr"], prev["profit_cr"] if prev else None)
+
     return rows
+
+
+def _pct_change(current, previous):
+    """Compute % change; returns None if either value is missing or previous is zero."""
+    if current is None or previous is None or previous == 0:
+        return None
+    return ((current - previous) / abs(previous)) * 100
+
+
+def extract_annual_data(data):
+    """Extract annual revenue, net profit, operating cash flow with YoY % changes."""
+    fi = data.get("financials")
+    acf = data.get("annual_cash_flow")
+    rows = []
+
+    if fi is not None and not fi.empty:
+        for col in fi.columns[:5]:
+            try:
+                dt = col.to_pydatetime() if hasattr(col, 'to_pydatetime') else col
+                fy_label = f"FY{dt.year % 100}" if dt.month <= 3 else f"FY{(dt.year + 1) % 100}"
+
+                rev = _safe_df_value(fi, col, ["Total Revenue", "Operating Revenue", "Revenue"])
+                profit = _safe_df_value(fi, col, ["Net Income", "Net Income Common Stockholders", "Diluted NI Availto Com Stockholders"])
+
+                op_cf = None
+                if acf is not None and not acf.empty and col in acf.columns:
+                    op_cf = _safe_df_value(acf, col, ["Operating Cash Flow", "Cash Flow From Continuing Operating Activities", "Free Cash Flow"])
+
+                rows.append({"fy": fy_label, "date": dt, "revenue_cr": rev, "profit_cr": profit, "op_cash_flow_cr": op_cf})
+            except Exception:
+                continue
+
+    rows.sort(key=lambda x: x.get("date", datetime.min))
+
+    for i in range(len(rows)):
+        prev = rows[i - 1] if i > 0 else None
+        rows[i]["rev_yoy_pct"] = _pct_change(rows[i]["revenue_cr"], prev["revenue_cr"] if prev else None)
+        rows[i]["profit_yoy_pct"] = _pct_change(rows[i]["profit_cr"], prev["profit_cr"] if prev else None)
+        rows[i]["cf_yoy_pct"] = _pct_change(rows[i]["op_cash_flow_cr"], prev["op_cash_flow_cr"] if prev else None)
+
+    return rows
+
+
+def extract_holder_data(data):
+    """Parse major_holders and top institutional/MF holders from yfinance."""
+    mh = data.get("major_holders")
+    ih = data.get("institutional_holders")
+    mfh = data.get("mutualfund_holders")
+
+    summary = {}
+    if mh is not None and not mh.empty:
+        try:
+            for idx, row in mh.iterrows():
+                # yfinance major_holders: index is the breakdown key, columns may be
+                # ["Value"] or [0, 1] depending on version. Try both layouts.
+                label = str(idx).lower()
+                if len(row) > 1:
+                    label = str(row.iloc[1]).lower()
+                    val = row.iloc[0]
+                elif "Value" in row.index:
+                    val = row["Value"]
+                else:
+                    val = row.iloc[0]
+                if "count" in label:
+                    summary["num_institutions"] = val
+                elif "insider" in label:
+                    summary["insiders"] = val
+                elif "float" in label:
+                    summary["float_held"] = val
+                elif "institution" in label:
+                    summary["institutions"] = val
+        except Exception:
+            pass
+
+    top_inst = []
+    if ih is not None and not ih.empty and len(ih.columns) > 0:
+        for _, row in ih.head(5).iterrows():
+            try:
+                name = str(row.get("Holder", row.iloc[0]) if "Holder" in row.index else row.iloc[0])
+                top_inst.append({
+                    "name": name,
+                    "shares": row.get("Shares", 0),
+                    "pct": row.get("pctHeld", row.get("% Out", 0)),
+                })
+            except Exception:
+                continue
+
+    top_mf = []
+    if mfh is not None and not mfh.empty and len(mfh.columns) > 0:
+        for _, row in mfh.head(5).iterrows():
+            try:
+                name = str(row.get("Holder", row.iloc[0]) if "Holder" in row.index else row.iloc[0])
+                top_mf.append({
+                    "name": name,
+                    "shares": row.get("Shares", 0),
+                    "pct": row.get("pctHeld", row.get("% Out", 0)),
+                })
+            except Exception:
+                continue
+
+    return summary, top_inst, top_mf
+
+
+def extract_news(data):
+    """Parse news items from yfinance into a clean list."""
+    raw = data.get("news")
+    if not raw:
+        return []
+    items = []
+    for article in raw[:6]:
+        try:
+            content = article.get("content", article) if isinstance(article, dict) else article
+            title = content.get("title", "")
+            if not title:
+                continue
+            provider = content.get("provider", {})
+            publisher = provider.get("displayName", "") if isinstance(provider, dict) else str(provider)
+            pub_time = content.get("pubDate", content.get("providerPublishTime", ""))
+            link = content.get("canonicalUrl", {}).get("url", content.get("link", "")) if isinstance(content.get("canonicalUrl"), dict) else content.get("link", "")
+
+            date_str = ""
+            if pub_time:
+                try:
+                    if isinstance(pub_time, (int, float)):
+                        date_str = datetime.fromtimestamp(pub_time).strftime("%b %d, %Y")
+                    else:
+                        date_str = str(pub_time)[:16]
+                except Exception:
+                    date_str = str(pub_time)[:16]
+
+            items.append({"title": title, "publisher": publisher, "date_str": date_str, "link": link})
+        except Exception:
+            continue
+    return items
+
+
+def calculate_returns(data, current_price):
+    """Calculate returns across multiple time horizons."""
+    info = data.get("info", {})
+    prev_close = safe_get(info, "previousClose", safe_get(info, "regularMarketPreviousClose"))
+    ret = {}
+
+    ret["1D"] = ((current_price - prev_close) / prev_close * 100) if prev_close and prev_close > 0 else None
+
+    period_map = [("1W", "hist_5d"), ("1M", "hist_1mo"), ("6M", "hist_6m"), ("1Y", "hist_1y"), ("3Y", "hist_3y"), ("5Y", "hist_5y")]
+    for label, key in period_map:
+        hist = data.get(key)
+        if hist is not None and not hist.empty and len(hist) > 1:
+            first_close = hist["Close"].iloc[0]
+            if first_close and first_close > 0:
+                ret[label] = ((current_price - first_close) / first_close) * 100
+            else:
+                ret[label] = None
+        else:
+            ret[label] = None
+
+    return ret
+
+
+def calculate_factor_scores(data, scores, returns):
+    """Calculate 5 factor scores (0-10 each) for the radar chart, with reasoning."""
+    info = data.get("info", {})
+    reasons = {}
+
+    # Momentum: based on short/medium-term returns
+    momentum = 5
+    mom_parts = []
+    r1m = returns.get("1M")
+    r6m = returns.get("6M")
+    if r1m is not None:
+        mom_parts.append(f"1M return {r1m:+.1f}%")
+        if r1m > 10:
+            momentum += 2
+        elif r1m > 3:
+            momentum += 1
+        elif r1m < -10:
+            momentum -= 2
+        elif r1m < -3:
+            momentum -= 1
+    if r6m is not None:
+        mom_parts.append(f"6M return {r6m:+.1f}%")
+        if r6m > 20:
+            momentum += 2
+        elif r6m > 5:
+            momentum += 1
+        elif r6m < -20:
+            momentum -= 2
+        elif r6m < -5:
+            momentum -= 1
+    reasons["Momentum"] = ", ".join(mom_parts) if mom_parts else "No return data"
+
+    # Sentiment: analyst upside and recommendation key
+    sentiment = 5
+    sent_parts = []
+    target = safe_get(info, "targetMeanPrice")
+    current = safe_get(info, "currentPrice", safe_get(info, "regularMarketPrice"))
+    if target and current and current > 0:
+        upside = (target - current) / current * 100
+        sent_parts.append(f"Analyst upside {upside:+.1f}%")
+        if upside > 30:
+            sentiment += 3
+        elif upside > 15:
+            sentiment += 2
+        elif upside > 5:
+            sentiment += 1
+        elif upside < -10:
+            sentiment -= 2
+        elif upside < 0:
+            sentiment -= 1
+    rec_key = safe_get(info, "recommendationKey", "")
+    if rec_key:
+        sent_parts.append(f"Rec: {rec_key.replace('_', ' ')}")
+    if rec_key in ("strong_buy", "buy"):
+        sentiment += 1
+    elif rec_key in ("sell", "strong_sell"):
+        sentiment -= 1
+    reasons["Sentiment"] = ", ".join(sent_parts) if sent_parts else "No analyst data"
+
+    # Value: P/E, P/B, PEG, EV/EBITDA
+    value = 5
+    val_parts = []
+    pe = safe_get(info, "trailingPE")
+    pb = safe_get(info, "priceToBook")
+    peg = safe_get(info, "trailingPegRatio", safe_get(info, "pegRatio"))
+    ev_ebitda = safe_get(info, "enterpriseToEbitda")
+    if pe:
+        val_parts.append(f"P/E {pe:.1f}")
+        if pe < 15:
+            value += 2
+        elif pe < 25:
+            value += 1
+        elif pe > 60:
+            value -= 2
+        elif pe > 40:
+            value -= 1
+    if pb:
+        val_parts.append(f"P/B {pb:.1f}")
+        if pb < 2:
+            value += 1
+        elif pb > 10:
+            value -= 1
+    if peg:
+        val_parts.append(f"PEG {peg:.2f}")
+        if peg < 1:
+            value += 1
+        elif peg > 2:
+            value -= 1
+    if ev_ebitda:
+        val_parts.append(f"EV/EBITDA {ev_ebitda:.1f}")
+        if ev_ebitda < 12:
+            value += 1
+        elif ev_ebitda > 25:
+            value -= 1
+    reasons["Value"] = ", ".join(val_parts) if val_parts else "No valuation data"
+
+    # Quality: ROE, profit margin, debt/equity, current ratio
+    quality = 5
+    qual_parts = []
+    roe = safe_get(info, "returnOnEquity")
+    pm = safe_get(info, "profitMargins")
+    de = safe_get(info, "debtToEquity")
+    cr = safe_get(info, "currentRatio")
+    if roe:
+        qual_parts.append(f"ROE {roe*100:.1f}%")
+        if roe > 0.25:
+            quality += 2
+        elif roe > 0.15:
+            quality += 1
+        elif roe < 0:
+            quality -= 2
+    if pm:
+        qual_parts.append(f"Margin {pm*100:.1f}%")
+        if pm > 0.2:
+            quality += 1
+        elif pm < 0:
+            quality -= 2
+        elif pm < 0.05:
+            quality -= 1
+    if de is not None:
+        qual_parts.append(f"D/E {de:.0f}")
+        if de < 30:
+            quality += 1
+        elif de > 150:
+            quality -= 1
+    if cr:
+        qual_parts.append(f"CR {cr:.2f}")
+        if cr > 1.5:
+            quality += 1
+        elif cr < 1.0:
+            quality -= 1
+    reasons["Quality"] = ", ".join(qual_parts) if qual_parts else "No quality data"
+
+    # Low Volatility: beta and price stability
+    low_vol = 5
+    lv_parts = []
+    beta = safe_get(info, "beta")
+    if beta:
+        lv_parts.append(f"Beta {beta:.2f}")
+        if beta < 0.6:
+            low_vol += 3
+        elif beta < 0.8:
+            low_vol += 2
+        elif beta < 1.0:
+            low_vol += 1
+        elif beta > 1.5:
+            low_vol -= 3
+        elif beta > 1.3:
+            low_vol -= 2
+        elif beta > 1.1:
+            low_vol -= 1
+    hist = data.get("hist_1y")
+    if hist is not None and not hist.empty and len(hist) > 20:
+        daily_returns = hist["Close"].pct_change().dropna()
+        if len(daily_returns) > 0:
+            vol = daily_returns.std() * (252 ** 0.5)
+            lv_parts.append(f"Ann. vol {vol*100:.0f}%")
+            if vol < 0.25:
+                low_vol += 2
+            elif vol < 0.35:
+                low_vol += 1
+            elif vol > 0.6:
+                low_vol -= 2
+            elif vol > 0.45:
+                low_vol -= 1
+    reasons["Low Volatility"] = ", ".join(lv_parts) if lv_parts else "No volatility data"
+
+    factor_scores = {
+        "Momentum": max(0, min(10, momentum)),
+        "Sentiment": max(0, min(10, sentiment)),
+        "Value": max(0, min(10, value)),
+        "Quality": max(0, min(10, quality)),
+        "Low Volatility": max(0, min(10, low_vol)),
+    }
+    return factor_scores, reasons
+
+
+def generate_spider_chart_svg(factors, reasons=None, width=480, height=440):
+    """Generate a radar/spider chart SVG for 5 factor scores with hover tooltips."""
+    short_labels = {"Low Volatility": "Low Vol"}
+    labels = list(factors.keys())
+    values = list(factors.values())
+    n = len(labels)
+    cx, cy = width / 2, height / 2
+    max_r = 130
+    if reasons is None:
+        reasons = {}
+
+    angle_offset = -math.pi / 2
+
+    def polar(i, r):
+        angle = angle_offset + (2 * math.pi * i / n)
+        return (cx + r * math.cos(angle), cy + r * math.sin(angle))
+
+    svg = f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:{width}px;">\n'
+    svg += '  <defs><filter id="spiderGlow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>\n'
+
+    for ring in [2, 4, 6, 8, 10]:
+        r = max_r * ring / 10
+        points = " ".join([f"{polar(i, r)[0]:.1f},{polar(i, r)[1]:.1f}" for i in range(n)])
+        opacity = "0.08" if ring < 10 else "0.15"
+        svg += f'  <polygon points="{points}" fill="none" stroke="rgba(255,255,255,{opacity})" stroke-width="1"/>\n'
+
+    for i in range(n):
+        px, py = polar(i, max_r)
+        svg += f'  <line x1="{cx:.1f}" y1="{cy:.1f}" x2="{px:.1f}" y2="{py:.1f}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>\n'
+
+    data_points = []
+    for i, v in enumerate(values):
+        r = max_r * v / 10
+        data_points.append(polar(i, r))
+
+    points_str = " ".join([f"{p[0]:.1f},{p[1]:.1f}" for p in data_points])
+    svg += f'  <polygon points="{points_str}" fill="rgba(0,229,160,0.12)" stroke="#00e5a0" stroke-width="2" filter="url(#spiderGlow)"/>\n'
+
+    for i, (px, py) in enumerate(data_points):
+        tip = reasons.get(labels[i], "")
+        svg += f'  <circle cx="{px:.1f}" cy="{py:.1f}" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>{labels[i]} {values[i]}/10: {tip}</title></circle>\n'
+
+    for i, label in enumerate(labels):
+        display_label = short_labels.get(label, label)
+        lx, ly = polar(i, max_r + 24)
+        anchor = "middle"
+        dy = 0
+        if lx < cx - 10:
+            anchor = "end"
+            lx -= 4
+        elif lx > cx + 10:
+            anchor = "start"
+            lx += 4
+        if ly < cy:
+            dy = -4
+        elif ly > cy:
+            dy = 8
+        svg += f'  <text x="{lx:.1f}" y="{ly + dy:.1f}" text-anchor="{anchor}" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">{display_label}</text>\n'
+        sx, sy = polar(i, max_r + 38)
+        if sx < cx - 10:
+            sx -= 4
+        elif sx > cx + 10:
+            sx += 4
+        svg += f'  <text x="{sx:.1f}" y="{sy + dy:.1f}" text-anchor="{anchor}" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">{values[i]}</text>\n'
+
+    svg += '</svg>'
+    return svg
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -767,6 +1534,8 @@ def generate_html_report(data, scores):
     change_pct = (change / prev_close * 100) if prev_close and prev_close > 0 else 0
     high_52w = safe_get(info, "fiftyTwoWeekHigh", 0)
     low_52w = safe_get(info, "fiftyTwoWeekLow", 0)
+    day_high = safe_get(info, "dayHigh", safe_get(info, "regularMarketDayHigh", 0))
+    day_low = safe_get(info, "dayLow", safe_get(info, "regularMarketDayLow", 0))
     market_cap = safe_get(info, "marketCap", 0)
     pe_ratio = safe_get(info, "trailingPE", safe_get(info, "forwardPE", 0))
     pb_ratio = safe_get(info, "priceToBook", 0)
@@ -777,7 +1546,7 @@ def generate_html_report(data, scores):
     target_mean = safe_get(info, "targetMeanPrice", 0)
     target_high = safe_get(info, "targetHighPrice", 0)
     target_low = safe_get(info, "targetLowPrice", 0)
-    dividend_yield = safe_get(info, "dividendYield", 0)
+    dividend_yield = safe_get(info, "dividendYield")
     beta = safe_get(info, "beta", 0)
     volume = safe_get(info, "volume", safe_get(info, "regularMarketVolume", 0))
     avg_volume = safe_get(info, "averageVolume", 0)
@@ -786,13 +1555,22 @@ def generate_html_report(data, scores):
     company_name = safe_get(info, "longName", safe_get(info, "shortName", ticker_symbol))
     total_revenue = safe_get(info, "totalRevenue", 0)
     debt_equity = safe_get(info, "debtToEquity", 0)
-    gross_margin = safe_get(info, "grossMargins", 0)
-    operating_margin = safe_get(info, "operatingMargins", 0)
+    gross_margin = safe_get(info, "grossMargins")
+    operating_margin = safe_get(info, "operatingMargins")
     earnings_growth = safe_get(info, "earningsGrowth", 0)
+    peg_ratio = safe_get(info, "trailingPegRatio", safe_get(info, "pegRatio"))
+    ev_ebitda = safe_get(info, "enterpriseToEbitda")
+    current_ratio = safe_get(info, "currentRatio")
+    roa = safe_get(info, "returnOnAssets")
 
     mcap_cr = market_cap / 1e7 if market_cap else 0
     change_color = "#00e5a0" if change >= 0 else "#ff4d6d"
     change_icon = "▲" if change >= 0 else "▼"
+
+    day_range = day_high - day_low if day_high and day_low and day_high > day_low else 0
+    day_pct = max(0, min(100, ((current_price - day_low) / day_range * 100))) if day_range > 0 else 50
+    w52_range = high_52w - low_52w if high_52w and low_52w and high_52w > low_52w else 0
+    w52_pct = max(0, min(100, ((current_price - low_52w) / w52_range * 100))) if w52_range > 0 else 50
 
     def score_color(score, max_score):
         pct = score / max_score * 100 if max_score > 0 else 0
@@ -818,29 +1596,220 @@ def generate_html_report(data, scores):
     else:
         return_1y = 0
 
-    # Extract quarterly data from yfinance
+    # Extract data for new sections
     quarterly_rows = extract_quarterly_data(data)
+    annual_rows = extract_annual_data(data)
+    holder_summary, top_inst, top_mf = extract_holder_data(data)
+    news_items = extract_news(data)
+    returns = calculate_returns(data, current_price)
+    factor_scores, factor_reasons = calculate_factor_scores(data, scores, returns)
+    spider_svg = generate_spider_chart_svg(factor_scores, factor_reasons)
     roe = calculate_roe_manual(data)
-    
+
+    # ── Quarterly table HTML (with QoQ %) ──
     qt_rows_html = ""
     for q in quarterly_rows:
         rev_str = f"₹{q['revenue_cr']:,.0f} Cr" if q['revenue_cr'] else "N/A"
         profit_str = f"₹{q['profit_cr']:,.0f} Cr" if q['profit_cr'] else "N/A"
         ebitda_str = f"{q['ebitda_margin']:.1f}%" if q['ebitda_margin'] else "N/A"
+        cf_str = f"₹{q['op_cash_flow_cr']:,.0f} Cr" if q.get('op_cash_flow_cr') else "N/A"
 
-        rev_class = "tg" if q['revenue_cr'] and q.get('_prev_rev') and q['revenue_cr'] > q['_prev_rev'] else ""
+        def _qoq_cell(pct):
+            if pct is None:
+                return '<td style="color:var(--text3)">—</td>'
+            cls = "tg" if pct >= 0 else "tr"
+            return f'<td class="{cls}">{pct:+.1f}%</td>'
+
         profit_class = "tg" if q['profit_cr'] and q['profit_cr'] > 0 else "tr" if q['profit_cr'] and q['profit_cr'] < 0 else ""
 
         qt_rows_html += f'''
         <tr>
           <td>{q["quarter"]}</td>
-          <td class="{rev_class}">{rev_str}</td>
-          <td class="{profit_class}">{profit_str}</td>
+          <td>{rev_str}</td>{_qoq_cell(q.get("rev_qoq_pct"))}
+          <td class="{profit_class}">{profit_str}</td>{_qoq_cell(q.get("profit_qoq_pct"))}
+          <td>{cf_str}</td>
           <td>{ebitda_str}</td>
         </tr>'''
 
     if not qt_rows_html:
-        qt_rows_html = '<tr><td colspan="4" style="text-align:center;color:var(--text3);">Quarterly data not available from yfinance</td></tr>'
+        qt_rows_html = '<tr><td colspan="7" style="text-align:center;color:var(--text3);">Quarterly data not available from yfinance</td></tr>'
+
+    # ── Annual YoY table HTML ──
+    yoy_rows_html = ""
+    for a in annual_rows:
+        rev_str = f"₹{a['revenue_cr']:,.0f} Cr" if a['revenue_cr'] else "N/A"
+        profit_str = f"₹{a['profit_cr']:,.0f} Cr" if a['profit_cr'] else "N/A"
+        cf_str = f"₹{a['op_cash_flow_cr']:,.0f} Cr" if a.get('op_cash_flow_cr') else "N/A"
+
+        def _yoy_cell(pct):
+            if pct is None:
+                return '<td style="color:var(--text3)">—</td>'
+            cls = "tg" if pct >= 0 else "tr"
+            return f'<td class="{cls}">{pct:+.1f}%</td>'
+
+        yoy_rows_html += f'''
+        <tr>
+          <td>{a["fy"]}</td>
+          <td>{rev_str}</td>{_yoy_cell(a.get("rev_yoy_pct"))}
+          <td>{profit_str}</td>{_yoy_cell(a.get("profit_yoy_pct"))}
+          <td>{cf_str}</td>{_yoy_cell(a.get("cf_yoy_pct"))}
+        </tr>'''
+
+    if not yoy_rows_html:
+        yoy_rows_html = '<tr><td colspan="7" style="text-align:center;color:var(--text3);">Annual data not available</td></tr>'
+
+    # ── Shareholding section HTML (prefer Screener.in QoQ data) ──
+    screener = data.get("screener") or {}
+    sh_headers = screener.get("shareholding_headers", [])
+    sh_rows = screener.get("shareholding_rows", [])
+
+    use_screener_sh = bool(sh_headers and sh_rows)
+
+    if use_screener_sh:
+        # Show last N quarters as a proper QoQ table
+        n_cols = min(6, len(sh_headers))
+        display_headers = sh_headers[-n_cols:]
+        sh_table_head = "".join(f"<th>{h}</th>" for h in display_headers)
+        sh_table_body = ""
+        for row_data in sh_rows:
+            cat = row_data["category"]
+            vals = row_data["values"][-n_cols:]
+            if cat.lower().startswith("no. of share") or cat.lower().startswith("no."):
+                cells = "".join(f"<td>{v}</td>" for v in vals)
+            else:
+                # Color-code: compare each quarter to previous
+                cells = ""
+                for j, v in enumerate(vals):
+                    try:
+                        pct_val = float(v.replace("%", ""))
+                        prev_val = float(vals[j - 1].replace("%", "")) if j > 0 else pct_val
+                        diff = pct_val - prev_val
+                        cls = "tg" if diff > 0.01 else "tr" if diff < -0.01 else ""
+                        cells += f'<td class="{cls}">{v}</td>'
+                    except (ValueError, TypeError):
+                        cells += f"<td>{v}</td>"
+            sh_table_body += f"<tr><td><strong>{cat}</strong></td>{cells}</tr>"
+
+        holder_summary_html = ""
+        holders_table_html = ""
+        shareholding_section_html = f'''
+        <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th></th>{sh_table_head}</tr></thead>
+          <tbody>{sh_table_body}</tbody>
+        </table>
+        </div>'''
+    else:
+        # Fallback to yfinance holder data
+        holder_summary_html = ""
+        if holder_summary:
+            for label, key in [("Insiders", "insiders"), ("Institutions", "institutions"), ("Float Held by Inst.", "float_held"), ("No. of Institutions", "num_institutions")]:
+                val = holder_summary.get(key)
+                if val is not None:
+                    if key == "num_institutions":
+                        display = f"{int(val):,}"
+                    elif isinstance(val, float) and val <= 1:
+                        display = f"{val*100:.1f}%"
+                    elif isinstance(val, float):
+                        display = f"{val:.1f}%"
+                    else:
+                        display = str(val)
+                    holder_summary_html += f'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;"><span style="color:var(--text2)">{label}</span><span style="color:#fff">{display}</span></div>'
+        if not holder_summary_html:
+            holder_summary_html = '<div style="color:var(--text3);font-size:11px;text-align:center;padding:20px 0;">Holder summary not available</div>'
+
+        holders_table_html = ""
+        all_holders = [(h, "Inst") for h in top_inst] + [(h, "MF") for h in top_mf]
+        if all_holders:
+            for h, htype in all_holders:
+                pct_val = h.get("pct", 0)
+                pct_str = f"{pct_val*100:.2f}%" if isinstance(pct_val, float) and pct_val < 1 else f"{pct_val:.2f}%" if isinstance(pct_val, float) else "N/A"
+                shares = h.get("shares", 0)
+                shares_str = f"{shares:,.0f}" if shares else "N/A"
+                holders_table_html += f'<tr><td>{h["name"][:35]}</td><td>{htype}</td><td>{shares_str}</td><td>{pct_str}</td></tr>'
+        else:
+            holders_table_html = '<tr><td colspan="4" style="text-align:center;color:var(--text3);">Holder data not available</td></tr>'
+
+        shareholding_section_html = f'''
+        <div class="dual-col">
+          <div class="col-card">
+            <div class="col-title">HOLDER SUMMARY</div>
+            {holder_summary_html}
+          </div>
+          <div class="col-card">
+            <div class="col-title">TOP HOLDERS</div>
+            <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Holder</th><th>Type</th><th>Shares</th><th>% Held</th></tr></thead>
+              <tbody>{holders_table_html}</tbody>
+            </table>
+            </div>
+          </div>
+        </div>'''
+
+    # ── Returns strip HTML ──
+    returns_html = ""
+    for period in ["1D", "1W", "1M", "6M", "1Y", "3Y", "5Y"]:
+        val = returns.get(period)
+        if val is not None:
+            color = "#00e5a0" if val >= 0 else "#ff4d6d"
+            icon = "▲" if val >= 0 else "▼"
+            returns_html += f'<div class="kpi-card" style="text-align:center;"><div class="kpi-label">{period}</div><div class="kpi-value" style="color:{color};font-size:16px;">{icon} {val:+.1f}%</div></div>'
+        else:
+            returns_html += f'<div class="kpi-card" style="text-align:center;"><div class="kpi-label">{period}</div><div class="kpi-value" style="color:var(--text3);font-size:16px;">N/A</div></div>'
+
+    # ── News section HTML ──
+    news_html = ""
+    if news_items:
+        for item in news_items:
+            link_open = f'<a href="{item["link"]}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">' if item["link"] else ""
+            link_close = "</a>" if item["link"] else ""
+            news_html += f'''<div class="news-card">{link_open}<div class="news-title">{item["title"]}</div>{link_close}<div class="news-meta">{item["publisher"]}{" · " + item["date_str"] if item["date_str"] else ""}</div></div>'''
+    else:
+        news_html = '<div style="color:var(--text3);font-size:11px;text-align:center;padding:20px 0;">No recent news available for this stock</div>'
+
+    # ── Industry peers section HTML ──
+    peers = data.get("peers", [])
+    industry_name = data.get("industry_name", "") or safe_get(info, "industry", "")
+    best_peer = peers[0] if peers else None
+
+    peers_html = ""
+    peers_note_html = ""
+    if peers:
+        rows_html = ""
+        for rank, p in enumerate(peers, 1):
+            is_best = (rank == 1)
+            is_you = p.get("is_self", False)
+            name_display = p["name"]
+            if is_best:
+                name_display += ' <span style="color:var(--green);font-size:9px;">★</span>'
+            name_link = f'<a href="{p["screener_url"]}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">{name_display}</a>' if p.get("screener_url") else name_display
+            if is_best:
+                row_style = ' style="border-left:3px solid var(--green);background:rgba(0,229,160,0.04);"'
+            elif is_you:
+                row_style = ' style="border-left:3px solid var(--amber);background:rgba(245,166,35,0.04);"'
+            else:
+                row_style = ""
+            pe_str = f'{p["pe"]:.1f}' if p.get("pe") else "—"
+            mcap_str = f'₹{p["mcap"]:,.0f}' if p.get("mcap") else "—"
+            roce_str = f'{p["roce"]:.1f}%' if p.get("roce") is not None else "—"
+            gpv = p.get("qtr_profit_var")
+            gpv_str = f'<span class="{"tg" if gpv >= 0 else "tr"}">{gpv:+.1f}%</span>' if gpv is not None else "—"
+            score_str = f'{p.get("tf_score", 0):.0f}'
+
+            rows_html += f'<tr{row_style}><td>{rank}</td><td>{name_link}</td><td>₹{p["cmp"]:,.0f}</td><td>{pe_str}</td><td>{mcap_str}</td><td>{roce_str}</td><td>{gpv_str}</td><td>{score_str}</td></tr>'
+
+        peers_html = f'''<div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>#</th><th>Company</th><th>CMP</th><th>P/E</th><th>Mkt Cap</th><th>ROCE</th><th>Qtr Profit</th><th>Score</th></tr></thead>
+          <tbody>{rows_html}</tbody>
+        </table></div>'''
+
+        if best_peer:
+            if best_peer.get("is_self"):
+                peers_note_html = f'<div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-top:10px;text-align:center;">★ {ticker_symbol} is the top-ranked techno-fundamental pick in {industry_name}</div>'
+            else:
+                peers_note_html = f'<div style="font-family:var(--mono);font-size:10px;color:var(--amber);margin-top:10px;text-align:center;">★ {best_peer["name"]} ranks higher on combined P/E, ROCE, and growth metrics in {industry_name}</div>'
 
     val_color = score_color(scores["valuation"], 35)
     fin_color = score_color(scores["financial"], 35)
@@ -881,13 +1850,54 @@ def generate_html_report(data, scores):
 
     upside = ((target_mean - current_price) / current_price * 100) if target_mean and current_price and current_price > 0 else 0
 
-    # Card status helpers
-    def cs(val, good, bad, lower_better=False):
-        if val is None or val == 0:
-            return "caution"
+    # Card status with tooltip reason
+    def cs(val, good, bad, metric_name="", lower_better=False):
+        if val is None:
+            return "caution", f"{metric_name}: Data unavailable"
         if lower_better:
-            return "beat" if val <= good else ("caution" if val <= bad else "miss")
-        return "beat" if val >= good else ("caution" if val >= bad else "miss")
+            if val <= good:
+                return "beat", f"{metric_name} at {val:.1f} is below {good} — attractive"
+            elif val <= bad:
+                return "caution", f"{metric_name} at {val:.1f} is between {good} and {bad} — moderate"
+            else:
+                return "miss", f"{metric_name} at {val:.1f} exceeds {bad} — elevated"
+        else:
+            if val >= good:
+                return "beat", f"{metric_name} at {val:.1f} exceeds {good} — strong"
+            elif val >= bad:
+                return "caution", f"{metric_name} at {val:.1f} is between {bad} and {good} — moderate"
+            else:
+                return "miss", f"{metric_name} at {val:.1f} is below {bad} — weak"
+
+    # ── Industry averages from peer data ──
+    def _median(vals):
+        s = sorted(vals)
+        n = len(s)
+        if n == 0:
+            return None
+        return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2
+
+    all_peers = data.get("peers", [])
+    ind_pe = _median([p["pe"] for p in all_peers if p.get("pe") and p["pe"] > 0])
+    ind_roce = _median([p["roce"] for p in all_peers if p.get("roce") is not None])
+    ind_dy = _median([p["div_yield"] for p in all_peers if p.get("div_yield") is not None and p["div_yield"] > 0])
+
+    # Pre-compute metric card statuses
+    pe_cls, pe_tip = cs(pe_ratio, 20, 40, "P/E", True) if pe_ratio else ("caution", "P/E: Data unavailable")
+    pb_cls, pb_tip = cs(pb_ratio, 3, 10, "P/B", True) if pb_ratio else ("caution", "P/B: Data unavailable")
+    roe_cls, roe_tip = cs(roe * 100, 15, 8, "ROE %") if roe else ("caution", "ROE: Data unavailable")
+    pm_cls, pm_tip = cs(profit_margin * 100, 10, 0, "Profit Margin %") if profit_margin else ("caution", "Profit Margin: Data unavailable")
+    opm_pct = operating_margin * 100 if operating_margin else None
+    opm_cls, opm_tip = cs(opm_pct, 15, 5, "OPM %") if opm_pct is not None else ("caution", "Operating Margin: Data unavailable")
+    tgt_cls = "beat" if target_mean > current_price else "miss" if target_mean else "caution"
+    tgt_tip = f"Analyst target ₹{target_mean:,.0f} vs CMP ₹{current_price:,.0f} — {'upside' if target_mean > current_price else 'downside'}" if target_mean else "Analyst target: Data unavailable"
+    peg_cls, peg_tip = cs(peg_ratio, 1.0, 2.0, "PEG", True) if peg_ratio else ("caution", "PEG: Data unavailable")
+    eve_cls, eve_tip = cs(ev_ebitda, 12, 20, "EV/EBITDA", True) if ev_ebitda else ("caution", "EV/EBITDA: Data unavailable")
+    cr_cls, cr_tip = cs(current_ratio, 1.5, 1.0, "Current Ratio") if current_ratio else ("caution", "Current Ratio: Data unavailable")
+    dy_pct = dividend_yield
+    dy_cls, dy_tip = cs(dy_pct, 2, 0.5, "Div Yield %") if dy_pct is not None else ("caution", "Dividend Yield: Data unavailable")
+    roa_cls, roa_tip = cs(roa * 100, 10, 5, "ROA %") if roa else ("caution", "ROA: Data unavailable")
+    gm_cls, gm_tip = cs(gross_margin * 100, 40, 20, "Gross Margin %") if gross_margin else ("caution", "Gross Margin: Data unavailable")
 
     # Determine catalysts and risks dynamically
     catalysts = []
@@ -913,11 +1923,9 @@ def generate_html_report(data, scores):
     if earnings_growth and earnings_growth > 0.1:
         catalysts.append(f"<strong>Earnings Growth ({earnings_growth*100:.0f}%):</strong> Strong profit expansion.")
 
-    # Default catalysts if we have few
     if len(catalysts) < 3:
         catalysts.append(f"<strong>Sector Opportunity:</strong> {sector} / {industry} — positioned in growth sector.")
 
-    # Risks
     if pe_ratio and pe_ratio > 50:
         risks.append(f"<strong>High P/E ({pe_ratio:.1f}x):</strong> Expensive valuation leaves little room for error.")
     elif pe_ratio and pe_ratio > 30:
@@ -941,7 +1949,6 @@ def generate_html_report(data, scores):
     if profit_margin and profit_margin < 0:
         risks.append(f"<strong>Loss-Making:</strong> Negative profit margin — path to profitability unclear.")
 
-    # Default risks if few
     while len(risks) < 3:
         risks.append(f"<strong>Market Risk:</strong> Broader market correction or sentiment shift could impact stock.")
         if len(risks) < 3:
@@ -952,18 +1959,146 @@ def generate_html_report(data, scores):
     catalysts_html = "\n".join([f'<div class="col-item"><span class="col-icon">{"🏆💹🔀🇮🇳🔬📈"[i % 6]}</span><span>{c}</span></div>' for i, c in enumerate(catalysts[:6])])
     risks_html = "\n".join([f'<div class="col-item"><span class="col-icon">{"📜💰🔓⚔️📉🌐"[i % 6]}</span><span>{r}</span></div>' for i, r in enumerate(risks[:6])])
 
-    # Verdict text
+    # ── Decision matrix ──
+    screener = data.get("screener") or {}
+    bench = get_sector_bench(sector)
+    sector_pe_cheap, _, _ = bench["pe"]
+
+    # Extract shareholding trend for reasoning
+    sh_rows = screener.get("shareholding_rows", [])
+    fii_trend_str = ""
+    for sr in sh_rows:
+        if "fii" in sr["category"].lower():
+            vals = sr["values"]
+            if len(vals) >= 2:
+                try:
+                    latest = float(vals[-1].replace("%", ""))
+                    prev = float(vals[-2].replace("%", ""))
+                    diff = latest - prev
+                    fii_trend_str = f"FII stake {'rising' if diff > 0 else 'falling'} ({diff:+.2f}%)"
+                except (ValueError, TypeError):
+                    pass
+            break
+
+    # Identify best alternative peer (not self)
+    alt_peer = next((p for p in peers if not p.get("is_self")), None)
+    alt_name = alt_peer["name"] if alt_peer else ""
+    alt_pe_str = f'{alt_peer["pe"]:.1f}' if alt_peer and alt_peer.get("pe") else "—"
+    alt_roce_str = f'{alt_peer["roce"]:.1f}%' if alt_peer and alt_peer.get("roce") is not None else "—"
+
+    # Sector median P/E from peers
+    peer_pes = [p["pe"] for p in peers if p.get("pe") and p["pe"] > 0 and not p.get("is_self")]
+    sector_median_pe = sorted(peer_pes)[len(peer_pes) // 2] if peer_pes else None
+
+    opm_str = f"{opm_pct:.0f}%" if opm_pct is not None else "N/A"
+    roce_val = screener.get("roce")
+    roce_str_dm = f"{roce_val:.0f}%" if roce_val else "N/A"
+
+    # Build payoff cells
+    buy_up = f"Capture {upside:.1f}% analyst upside" if upside > 0 else "Benefit from potential re-rating"
+    if roce_val and roce_val > 20:
+        buy_up += f"; strong {roce_str_dm} ROCE compounds"
+    buy_down = f"OPM of {opm_str} provides margin buffer" if opm_pct and opm_pct > 10 else "Fundamentals provide base support"
+    if sector_median_pe and pe_ratio and pe_ratio > sector_median_pe * 1.2:
+        buy_down += f"; P/E {pe_ratio:.0f}x vs sector median {sector_median_pe:.0f}x is a risk"
+
+    hold_up = "Retain existing position; wait for better entry"
+    if fii_trend_str:
+        hold_up += f"; {fii_trend_str}"
+    hold_down = "Miss further upside if momentum continues"
+    if returns.get("1M") and returns["1M"] > 5:
+        hold_down += f"; 1M return of {returns['1M']:+.1f}% shows momentum"
+
+    sell_up = f"Lock in {returns.get('1Y', 0):+.1f}% 1Y return" if returns.get("1Y") else "Lock in existing gains"
+    if alt_peer and alt_peer.get("pe") and pe_ratio and alt_peer["pe"] < pe_ratio:
+        sell_up += f"; redeploy into {alt_name} at lower P/E"
+    sell_down = "Avoid further drawdown"
+    if pe_ratio and sector_median_pe and pe_ratio > sector_median_pe * 1.3:
+        sell_down += f"; P/E compression risk at {pe_ratio:.0f}x"
+
+    dm_table_html = f'''<table>
+    <thead><tr><th style="width:80px;">Action</th><th>If Stock Rises</th><th>If Stock Falls</th></tr></thead>
+    <tbody>
+    <tr style="border-left:3px solid var(--green);"><td style="color:var(--green);font-weight:700;">BUY</td><td>{buy_up}</td><td>{buy_down}</td></tr>
+    <tr style="border-left:3px solid var(--amber);"><td style="color:var(--amber);font-weight:700;">HOLD</td><td>{hold_up}</td><td>{hold_down}</td></tr>
+    <tr style="border-left:3px solid var(--red);"><td style="color:var(--red);font-weight:700;">SELL</td><td>{sell_up}</td><td>{sell_down}</td></tr>
+    </tbody></table>'''
+
+    # Build pros/cons lists
+    buy_reasons = []
+    sell_reasons = []
+
+    if upside > 0 and target_mean:
+        buy_reasons.append(f"Analyst upside of {upside:.1f}% with mean target of ₹{target_mean:,.0f}")
+    if roce_val and roce_val > 15:
+        buy_reasons.append(f"ROCE at {roce_str_dm} indicates strong capital efficiency")
+    if fii_trend_str and "rising" in fii_trend_str:
+        buy_reasons.append(f"{fii_trend_str} — signals institutional confidence")
+    if roe and roe > 0.15:
+        buy_reasons.append(f"ROE of {roe*100:.1f}% above sector threshold")
+    if rev_growth and rev_growth > 0.1:
+        buy_reasons.append(f"Revenue growing at {rev_growth*100:.1f}% YoY")
+    if opm_pct and opm_pct > 15:
+        buy_reasons.append(f"Operating margin of {opm_str} shows pricing power")
+
+    if pe_ratio and sector_median_pe and pe_ratio > sector_median_pe * 1.2:
+        sell_reasons.append(f"P/E of {pe_ratio:.1f}x is {pe_ratio/sector_median_pe:.1f}x the sector median of {sector_median_pe:.0f}x")
+    elif pe_ratio and pe_ratio > 40:
+        sell_reasons.append(f"P/E of {pe_ratio:.1f}x is elevated — premium priced in")
+    if fii_trend_str and "falling" in fii_trend_str:
+        sell_reasons.append(f"{fii_trend_str} — institutional exit signal")
+    if alt_peer and alt_peer.get("pe") and alt_peer.get("roce") is not None:
+        if pe_ratio and alt_peer["pe"] < pe_ratio:
+            sell_reasons.append(f"{alt_name} offers lower P/E ({alt_pe_str}) with ROCE of {alt_roce_str} in the same sector")
+    if returns.get("1Y") and returns["1Y"] > 40:
+        sell_reasons.append(f"1Y return of {returns['1Y']:+.1f}% — profit booking opportunity")
+    if upside < 0:
+        sell_reasons.append(f"Trading above analyst target — consensus sees {upside:.1f}% downside")
+    if debt_equity and debt_equity > bench["de"][1]:
+        sell_reasons.append(f"Debt/Equity at {debt_equity:.0f}% exceeds sector comfort zone")
+
+    if not buy_reasons:
+        buy_reasons.append("Limited strong buy signals at current levels")
+    if not sell_reasons:
+        sell_reasons.append("No major red flags identified")
+
+    buy_list_html = "\n".join(f'<li style="margin-bottom:6px;">{r}</li>' for r in buy_reasons[:4])
+    sell_list_html = "\n".join(f'<li style="margin-bottom:6px;">{r}</li>' for r in sell_reasons[:4])
+
+    decision_matrix_html = f'''
+    <div style="overflow-x:auto;margin-bottom:16px;">{dm_table_html}</div>
+    <div class="dual-col">
+      <div class="col-card" style="border-left:3px solid var(--green);">
+        <div class="col-title" style="color:var(--green);">REASONS TO BUY</div>
+        <ul style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.7;padding-left:16px;">{buy_list_html}</ul>
+      </div>
+      <div class="col-card" style="border-left:3px solid var(--red);">
+        <div class="col-title" style="color:var(--red);">REASONS TO SELL / AVOID</div>
+        <ul style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.7;padding-left:16px;">{sell_list_html}</ul>
+      </div>
+    </div>'''
+
+    # ── Verdict with competitor suggestion ──
     profit_status = "profitable" if profit_margin and profit_margin > 0 else "loss-making"
+
+    competitor_line = ""
+    if alt_peer and not best_peer.get("is_self", True) if best_peer else False:
+        bp = best_peer
+        bp_pe = f"P/E {bp['pe']:.1f}" if bp.get("pe") else ""
+        bp_roce = f"ROCE {bp['roce']:.1f}%" if bp.get("roce") is not None else ""
+        bp_metrics = ", ".join(filter(None, [bp_pe, bp_roce]))
+        competitor_line = f'<br><br>Within <strong>{industry_name}</strong>, <strong>{bp["name"]}</strong> ({bp_metrics}) ranks higher on techno-fundamental metrics and may be worth considering.'
+
     verdict_text = f'''<strong>{company_name}</strong> trades at ₹{current_price:,.2f} with a composite risk score of {composite}/100.
     The stock scores {scores["valuation"]}/35 on valuation, {scores["financial"]}/35 on financial health, and {scores["growth"]}/30 on growth.
     The company is currently {profit_status} with {"strong" if roe and roe > 0.15 else "moderate" if roe and roe > 0 else "negative"} return on equity.
     <br><br>
     {"Analyst consensus suggests upside of " + f"{upside:.1f}%" + f" with a mean target of ₹{target_mean:.0f}." if target_mean and upside > 0 else "The stock is trading near or above analyst consensus targets."}
     Revenue growth is at {rev_growth*100:.1f}%{" — a strong positive signal" if rev_growth and rev_growth > 0.15 else "" if rev_growth and rev_growth > 0 else " — a concern"}.
+    {competitor_line}
     <br><br>
     <strong>Bottom Line:</strong> {signal_reason}. The current recommendation is <strong style="color:{rec_color}">{recommendation}</strong>.'''
 
-    # Verdict tags
     tags = []
     if profit_margin and profit_margin > 0.1:
         tags.append(("PROFITABLE", "green"))
@@ -1023,6 +2158,13 @@ def generate_html_report(data, scores):
   .sh-change {{ font-family:var(--mono); font-size:13px; font-weight:600; margin-top:4px; }}
   .sh-volume {{ font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:8px; }}
   .sh-timestamp {{ font-family:var(--mono); font-size:9px; color:var(--text3); margin-top:4px; }}
+  .sh-ranges {{ display:flex; flex-direction:column; gap:6px; margin-top:10px; }}
+  .sh-range {{ display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9px; }}
+  .sh-range-label {{ color:var(--text3); width:32px; text-align:right; letter-spacing:0.5px; flex-shrink:0; }}
+  .sh-range-val {{ color:var(--text3); width:42px; text-align:right; flex-shrink:0; }}
+  .sh-range-track {{ flex:1; height:4px; background:var(--border); border-radius:2px; position:relative; min-width:80px; }}
+  .sh-range-fill {{ height:100%; border-radius:2px; background:linear-gradient(90deg,var(--green),var(--green)); }}
+  .sh-range-dot {{ position:absolute; top:50%; width:10px; height:10px; border-radius:50%; background:var(--green); border:2px solid var(--bg); transform:translate(-50%,-50%); box-shadow:0 0 6px rgba(0,229,160,0.5); }}
   .gauge-kpi-row {{ display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }}
   .gauge-card {{ background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; }}
   .gauge-title {{ font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }}
@@ -1044,6 +2186,9 @@ def generate_html_report(data, scores):
   .metric-card.miss::before {{ content:'✕ MISS'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--red); background:var(--red-dim); border:1px solid rgba(255,77,109,0.2); border-radius:3px; padding:1px 5px; }}
   .metric-card.caution {{ border-color:rgba(245,166,35,0.25); background:linear-gradient(145deg,var(--bg3),rgba(245,166,35,0.04)); }}
   .metric-card.caution::before {{ content:'⚠ CAUTION'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--amber); background:var(--amber-dim); border:1px solid rgba(245,166,35,0.2); border-radius:3px; padding:1px 5px; }}
+  .metric-card[data-tip] {{ cursor:pointer; }}
+  .metric-card[data-tip]::after {{ content:attr(data-tip); position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:#1e1f2e; color:var(--text); border:1px solid var(--border2); border-radius:8px; padding:8px 12px; font-family:var(--mono); font-size:10px; line-height:1.5; white-space:normal; width:max-content; max-width:260px; z-index:50; pointer-events:none; opacity:0; transition:opacity 0.15s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }}
+  .metric-card[data-tip]:hover::after {{ opacity:1; }}
   .mc-label {{ font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }}
   .mc-value {{ font-family:var(--mono); font-size:22px; font-weight:700; color:#fff; }}
   .mc-bench {{ font-size:10px; color:var(--text2); margin-top:4px; }}
@@ -1057,6 +2202,7 @@ def generate_html_report(data, scores):
   .bc-bar-fill {{ height:100%; border-radius:2px; }}
   .bc-items {{ list-style:none; }} .bc-items li {{ display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text2); padding:3px 0; font-family:var(--mono); }}
   .bc-items li::before {{ content:'›'; color:var(--text3); }}
+  .returns-strip {{ display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }}
   .page-break {{ border:none; border-top:2px dashed var(--border2); margin:36px 0; position:relative; }}
   .page-break::after {{ content:'PAGE 2'; position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:var(--bg); padding:0 12px; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:2px; }}
   table {{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }}
@@ -1071,6 +2217,11 @@ def generate_html_report(data, scores):
   .col-item {{ display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; color:var(--text2); line-height:1.5; }}
   .col-item:last-child {{ border-bottom:none; }}
   .col-icon {{ font-size:14px; min-width:20px; text-align:center; }}
+  .news-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }}
+  .news-card {{ background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px; transition:border-color 0.3s; }}
+  .news-card:hover {{ border-color:var(--border2); }}
+  .news-title {{ font-family:var(--mono); font-size:11px; color:#fff; line-height:1.5; margin-bottom:6px; }}
+  .news-meta {{ font-family:var(--mono); font-size:9px; color:var(--text3); }}
   .verdict-card {{ background:linear-gradient(135deg,#0d0e18,#10111e); border:1px solid var(--border2); border-radius:16px; padding:28px; position:relative; overflow:hidden; margin-bottom:20px; }}
   .verdict-card::before {{ content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--red),var(--amber),var(--green)); }}
   .verdict-header {{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }}
@@ -1091,7 +2242,7 @@ def generate_html_report(data, scores):
   .footer {{ text-align:center; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:1px; padding:24px 0; border-top:1px solid var(--border); margin-top:8px; }}
   @keyframes fadeIn {{ from {{ opacity:0; transform:translateY(10px); }} to {{ opacity:1; transform:translateY(0); }} }}
   .section, .stock-header, .gauge-kpi-row, .breakdown-grid, .verdict-card {{ animation: fadeIn 0.6s ease both; }}
-  @media (max-width: 768px) {{ .stock-header {{ flex-direction:column; gap:16px; }} .gauge-kpi-row {{ grid-template-columns:1fr; }} .card-grid {{ grid-template-columns:1fr 1fr; }} .breakdown-grid {{ grid-template-columns:1fr; }} .dual-col {{ grid-template-columns:1fr; }} .kpi-strip {{ grid-template-columns:repeat(2,1fr); }} }}
+  @media (max-width: 768px) {{ .stock-header {{ flex-direction:column; gap:16px; }} .gauge-kpi-row {{ grid-template-columns:1fr; }} .card-grid {{ grid-template-columns:1fr 1fr; }} .breakdown-grid {{ grid-template-columns:1fr; }} .dual-col {{ grid-template-columns:1fr; }} .kpi-strip {{ grid-template-columns:repeat(2,1fr); }} .returns-strip {{ grid-template-columns:repeat(3,1fr); }} .news-grid {{ grid-template-columns:1fr; }} }}
   @media print {{ .copy-btn {{ display:none; }} .page {{ padding:16px; }} .page-break {{ page-break-before:always; border:none; margin:0; }} }}
 </style>
 </head>
@@ -1103,7 +2254,21 @@ def generate_html_report(data, scores):
     <div>
       <div class="sh-ticker"><span>NSE:{ticker_symbol}</span><span class="badge badge-nse">NSE</span><span class="badge badge-sector">{sector}</span></div>
       <div class="sh-name">{company_name}</div>
-      <div class="sh-meta"><span>📊 {industry}</span><span>📍 52W: ₹{low_52w:,.0f} — ₹{high_52w:,.0f}</span></div>
+      <div class="sh-meta"><span>📊 {industry}</span></div>
+      <div class="sh-ranges">
+        <div class="sh-range">
+          <span class="sh-range-label">Day</span>
+          <span class="sh-range-val">₹{day_low:,.0f}</span>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:{day_pct:.1f}%"></div><div class="sh-range-dot" style="left:{day_pct:.1f}%"></div></div>
+          <span class="sh-range-val">₹{day_high:,.0f}</span>
+        </div>
+        <div class="sh-range">
+          <span class="sh-range-label">52W</span>
+          <span class="sh-range-val">₹{low_52w:,.0f}</span>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:{w52_pct:.1f}%"></div><div class="sh-range-dot" style="left:{w52_pct:.1f}%"></div></div>
+          <span class="sh-range-val">₹{high_52w:,.0f}</span>
+        </div>
+      </div>
     </div>
     <div class="sh-right">
       <div class="sh-price">₹{current_price:,.2f}</div>
@@ -1149,13 +2314,31 @@ def generate_html_report(data, scores):
   <div class="section">
     <div class="section-title">💎 Valuation & Financial Metrics</div>
     <div class="card-grid">
-      <div class="metric-card {cs(pe_ratio, 20, 40, True) if pe_ratio else 'caution'}"><div class="mc-label">P/E RATIO</div><div class="mc-value">{pe_ratio:.1f}x</div><div class="mc-bench">Trailing twelve months</div></div>
-      <div class="metric-card {cs(pb_ratio, 3, 10, True) if pb_ratio else 'caution'}"><div class="mc-label">P/B RATIO</div><div class="mc-value">{pb_ratio:.1f}x</div><div class="mc-bench">Price to Book value</div></div>
-      <div class="metric-card {cs(roe*100 if roe else 0, 15, 8)}"><div class="mc-label">ROE</div><div class="mc-value">{roe*100:.1f}%</div><div class="mc-bench">Return on Equity</div></div>
-      <div class="metric-card {cs(profit_margin*100 if profit_margin else 0, 10, 0)}"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">{profit_margin*100:.1f}%</div><div class="mc-bench">Net profit margin</div></div>
-      <div class="metric-card {"beat" if return_1y > 15 else "caution" if return_1y > 0 else "miss"}"><div class="mc-label">1Y RETURN</div><div class="mc-value" style="color:{"#00e5a0" if return_1y > 0 else "#ff4d6d"}">{return_1y:+.1f}%</div><div class="mc-bench">12-month return</div></div>
-      <div class="metric-card {"beat" if target_mean > current_price else "miss" if target_mean else "caution"}"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">₹{target_mean:,.0f}</div><div class="mc-bench">Range: ₹{fair_value_low:,.0f} - ₹{fair_value_high:,.0f}</div></div>
+      <div class="metric-card {pe_cls}" data-tip="{pe_tip}"><div class="mc-label">P/E RATIO</div><div class="mc-value">{pe_ratio:.1f}x</div><div class="mc-bench">Trailing twelve months</div></div>
+      <div class="metric-card {pb_cls}" data-tip="{pb_tip}"><div class="mc-label">P/B RATIO</div><div class="mc-value">{pb_ratio:.1f}x</div><div class="mc-bench">Price to Book value</div></div>
+      <div class="metric-card {roe_cls}" data-tip="{roe_tip}"><div class="mc-label">ROE</div><div class="mc-value">{roe*100:.1f}%</div><div class="mc-bench">Return on Equity</div></div>
+      <div class="metric-card {pm_cls}" data-tip="{pm_tip}"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">{profit_margin*100:.1f}%</div><div class="mc-bench">Net profit margin</div></div>
+      <div class="metric-card {opm_cls}" data-tip="{opm_tip}"><div class="mc-label">OPM</div><div class="mc-value">{f"{opm_pct:.1f}%" if opm_pct is not None else "N/A"}</div><div class="mc-bench">Operating profit margin</div></div>
+      <div class="metric-card {tgt_cls}" data-tip="{tgt_tip}"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">₹{target_mean:,.0f}</div><div class="mc-bench">Range: ₹{fair_value_low:,.0f} - ₹{fair_value_high:,.0f}</div></div>
+      <div class="metric-card {peg_cls}" data-tip="{peg_tip}"><div class="mc-label">PEG RATIO</div><div class="mc-value">{f"{peg_ratio:.2f}" if peg_ratio else "N/A"}</div><div class="mc-bench">Price/Earnings to Growth</div></div>
+      <div class="metric-card {eve_cls}" data-tip="{eve_tip}"><div class="mc-label">EV/EBITDA</div><div class="mc-value">{f"{ev_ebitda:.1f}x" if ev_ebitda else "N/A"}</div><div class="mc-bench">Enterprise value ratio</div></div>
+      <div class="metric-card {cr_cls}" data-tip="{cr_tip}"><div class="mc-label">CURRENT RATIO</div><div class="mc-value">{f"{current_ratio:.2f}" if current_ratio else "N/A"}</div><div class="mc-bench">Liquidity measure</div></div>
+      <div class="metric-card {dy_cls}" data-tip="{dy_tip}"><div class="mc-label">DIVIDEND YIELD</div><div class="mc-value">{f"{dy_pct:.2f}%" if dy_pct is not None else "N/A"}</div><div class="mc-bench">Annual yield</div></div>
+      <div class="metric-card {roa_cls}" data-tip="{roa_tip}"><div class="mc-label">ROA</div><div class="mc-value">{f"{roa*100:.1f}%" if roa else "N/A"}</div><div class="mc-bench">Return on Assets</div></div>
+      <div class="metric-card {gm_cls}" data-tip="{gm_tip}"><div class="mc-label">GROSS MARGIN</div><div class="mc-value">{f"{gross_margin*100:.1f}%" if gross_margin else "N/A"}</div><div class="mc-bench">Gross profit margin</div></div>
     </div>
+    {"" if not industry_name else f"""<div style="margin-top:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:8px;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px;">INDUSTRY AVERAGES — {industry_name.upper()}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;">
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/E</span> <span style="color:#fff;font-weight:600;">{f'{ind_pe:.1f}x' if ind_pe else '—'}</span>{f' <span style="color:{"#00e5a0" if pe_ratio and ind_pe and pe_ratio < ind_pe else "#ff4d6d" if pe_ratio and ind_pe and pe_ratio > ind_pe * 1.1 else "#f5a623"};font-size:9px;">({("below" if pe_ratio < ind_pe else "above")} avg)</span>' if pe_ratio and ind_pe else ''}</div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/B</span> <span style="color:#fff;font-weight:600;">{f'{bench["pb"][1]:.1f}x' if bench else '—'}</span> <span style="color:var(--text3);font-size:9px;">(sector fair)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROCE</span> <span style="color:#fff;font-weight:600;">{f'{ind_roce:.1f}%' if ind_roce else '—'}</span>{f' <span style="color:{"#00e5a0" if roce_val and ind_roce and roce_val > ind_roce else "#ff4d6d" if roce_val and ind_roce and roce_val < ind_roce * 0.8 else "#f5a623"};font-size:9px;">({("above" if roce_val > ind_roce else "below")} avg)</span>' if roce_val and ind_roce else ''}</div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROE</span> <span style="color:#fff;font-weight:600;">{f'{bench["roe"][1]*100:.0f}%' if bench else '—'}</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">OPM</span> <span style="color:#fff;font-weight:600;">{f'{bench["margin"][1]*100:.0f}%' if bench else '—'}</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">Div Yield</span> <span style="color:#fff;font-weight:600;">{f'{ind_dy:.2f}%' if ind_dy else '—'}</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">D/E</span> <span style="color:#fff;font-weight:600;">&lt;{bench["de"][0]:.0f}</span> <span style="color:var(--text3);font-size:9px;">(sector comfort)</span></div>
+      </div>
+    </div>"""}
   </div>
 
   <div class="breakdown-grid">
@@ -1191,16 +2374,36 @@ def generate_html_report(data, scores):
     </div>
   </div>
 
+  <div class="section">
+    <div class="section-title">⏱ Returns Across Time Horizons</div>
+    <div class="returns-strip">{returns_html}</div>
+  </div>
+
   <hr class="page-break">
 
   <div class="section">
     <div class="section-title">📋 Quarterly Performance Trend</div>
     <div style="overflow-x:auto;">
     <table>
-      <thead><tr><th>Quarter</th><th>Revenue</th><th>Net Profit</th><th>EBITDA Margin</th></tr></thead>
+      <thead><tr><th>Quarter</th><th>Revenue</th><th>QoQ %</th><th>Net Profit</th><th>QoQ %</th><th>Op. Cash Flow</th><th>EBITDA Margin</th></tr></thead>
       <tbody>{qt_rows_html}</tbody>
     </table>
     </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📊 Year-on-Year Trend</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>FY</th><th>Revenue</th><th>YoY %</th><th>Net Profit</th><th>YoY %</th><th>Op. Cash Flow</th><th>YoY %</th></tr></thead>
+      <tbody>{yoy_rows_html}</tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🏛 Shareholding Pattern</div>
+    {shareholding_section_html}
   </div>
 
   <div class="dual-col">
@@ -1214,6 +2417,34 @@ def generate_html_report(data, scores):
     </div>
   </div>
 
+  <div class="section">
+    <div class="section-title">🕸 Factor Analysis · Radar</div>
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+      <div style="flex:0 0 auto;max-width:420px;">
+        {spider_svg}
+      </div>
+      <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;">
+        {''.join(f'<div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid {"#00e5a0" if factor_scores[k]>=7 else "#f5a623" if factor_scores[k]>=4 else "#ff4d6d"};"><span style="color:#fff;font-weight:600;">{k}</span> <span style="color:{"#00e5a0" if factor_scores[k]>=7 else "#f5a623" if factor_scores[k]>=4 else "#ff4d6d"};font-weight:700;">{factor_scores[k]}/10</span><br><span style="color:var(--text3);">{factor_reasons.get(k,"")}</span></div>' for k in factor_scores)}
+      </div>
+    </div>
+  </div>
+
+  {"" if not peers_html else f"""<div class="section">
+    <div class="section-title">🏭 Industry Peers — {industry_name}</div>
+    {peers_html}
+    {peers_note_html}
+  </div>"""}
+
+  <div class="section">
+    <div class="section-title">🎯 Decision Matrix — Game Theory</div>
+    {decision_matrix_html}
+  </div>
+
+  <div class="section">
+    <div class="section-title">📰 Latest News</div>
+    <div class="news-grid">{news_html}</div>
+  </div>
+
   <div class="verdict-card">
     <div class="verdict-header">
       <div><div class="verdict-rec">RECOMMENDATION</div><div class="verdict-rating" style="color:{rec_color}">{recommendation}</div></div>
@@ -1225,7 +2456,7 @@ def generate_html_report(data, scores):
   </div>
 
   <div class="footer">
-    RISK SCORE REPORT · NSE:{ticker_symbol} · GENERATED {datetime.now().strftime("%b %d, %Y %H:%M IST").upper()} · DATA VIA YAHOO FINANCE<br>
+    RISK SCORE REPORT · NSE:{ticker_symbol} · GENERATED {datetime.now().strftime("%b %d, %Y %H:%M IST").upper()} · DATA VIA YAHOO FINANCE + SCREENER.IN<br>
     DISCLAIMER: THIS IS NOT FINANCIAL ADVICE. DATA MAY BE DELAYED. ALWAYS VERIFY WITH OFFICIAL SOURCES BEFORE INVESTING.
   </div>
 
@@ -1261,6 +2492,9 @@ document.querySelectorAll('.section, .breakdown-card, .metric-card').forEach(el 
 # ALERT SUMMARY GENERATOR (for GitHub Actions notifications)
 # ─────────────────────────────────────────────────────────────────────────────
 
+GITHUB_REPORT_BASE = "https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports"
+
+
 def generate_alerts_summary(results, output_dir, date_str=None):
     """Generate a markdown summary of all stock alerts."""
     today = date_str or datetime.now().strftime("%Y-%m-%d")
@@ -1279,7 +2513,8 @@ def generate_alerts_summary(results, output_dir, date_str=None):
         target = safe_get(info, "targetMeanPrice", 0)
         upside = ((target - current) / current * 100) if target and current and current > 0 else 0
 
-        row = f"| {ticker} | ₹{current:,.2f} | {scores['composite']}/100 | {signal} | {upside:+.1f}% | [Report](./{today}/{ticker}_RiskReport.html) |"
+        report_url = f"{GITHUB_REPORT_BASE}/{today}/{ticker}_RiskReport.html"
+        row = f"| {ticker} | ₹{current:,.2f} | {scores['composite']}/100 | {signal} | {upside:+.1f}% | [Report]({report_url}) |"
         all_rows.append(row)
 
         if is_value_buy:
@@ -1348,7 +2583,7 @@ def read_watchlist(filepath):
     return tickers
 
 
-def cleanup_old_reports(reports_root, keep_days=30):
+def cleanup_old_reports(reports_root, keep_days=15):
     """Delete report date-folders older than keep_days."""
     cutoff = datetime.now() - timedelta(days=keep_days)
     removed = 0
@@ -1421,10 +2656,10 @@ Examples:
     output_dir = os.path.join(reports_root, today_str)
     os.makedirs(output_dir, exist_ok=True)
 
-    # Clean up reports older than 30 days
-    removed = cleanup_old_reports(reports_root, keep_days=30)
+    # Clean up reports older than 15 days
+    removed = cleanup_old_reports(reports_root, keep_days=15)
     if removed:
-        print(f"🧹 Cleaned up {removed} report folder(s) older than 30 days")
+        print(f"🧹 Cleaned up {removed} report folder(s) older than 15 days")
 
     print("=" * 62)
     print("  NSE Stock Risk Score Report Generator")
@@ -1500,7 +2735,7 @@ Examples:
     print(f"\n{'=' * 62}")
     print(f"  DONE: {success} reports generated, {failed} failed")
     print(f"  📂 Reports in: {os.path.abspath(output_dir)}/")
-    print(f"  📅 Keeping last 30 days of reports")
+    print(f"  📅 Keeping last 15 days of reports")
     print(f"{'=' * 62}\n")
 
 
