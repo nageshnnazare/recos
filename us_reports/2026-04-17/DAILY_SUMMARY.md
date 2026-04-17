@@ -36,7 +36,7 @@
 
 **ASML** — $1,410.83
 - Score: 69/100 | Signal: 🟢 BUY
-- Upside: +14.6% to analyst target
+- Upside: +14.5% to analyst target
 - Reason: Attractive risk/reward for Technology at current levels
 
 **TSM** — $363.35
@@ -85,8 +85,8 @@
 | NVDA | $198.35 | 83/100 | 🟢 STRONG BUY | +35.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/NVDA_RiskReport.html) |
 | META | $676.87 | 81/100 | 🟢 STRONG BUY | +26.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/META_RiskReport.html) |
 | TSLA | $388.90 | 34/100 | 🔴 SELL | +6.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/TSLA_RiskReport.html) |
-| AMD | $278.26 | 68/100 | 🟡 SPECULATIVE BUY | +4.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/AMD_RiskReport.html) |
-| ASML | $1,410.83 | 69/100 | 🟢 BUY | +14.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/ASML_RiskReport.html) |
+| AMD | $278.26 | 68/100 | 🟡 SPECULATIVE BUY | +4.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/AMD_RiskReport.html) |
+| ASML | $1,410.83 | 69/100 | 🟢 BUY | +14.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/ASML_RiskReport.html) |
 | TSM | $363.35 | 82/100 | 🟢 STRONG BUY | +25.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/TSM_RiskReport.html) |
 | NUAI | $4.98 | 68/100 | 🟡 SPECULATIVE BUY | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/NUAI_RiskReport.html) |
 | STX | $531.81 | 48/100 | 🟡 HOLD | -4.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-17/STX_RiskReport.html) |
