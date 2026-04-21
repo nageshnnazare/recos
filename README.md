@@ -1,13 +1,13 @@
 # 📊 Multi-Market Stock Risk Analysis System
 
-A professional-grade stock reporting and risk scoring system for NSE (India) and US markets. It generates detailed, reasoning-enabled HTML dashboards with technical and fundamental analysis.
+A professional-grade stock reporting and risk scoring system for NSE (India) and US markets. It generates detailed, reasoning-enabled HTML dashboards with technical and fundamental analysis, plus a daily sector rotation report.
 
 ## 🚀 Quick Start
 
 ### 1. Requirements
 Ensure you have Python 3.14+ installed and install the dependencies:
 ```bash
-pip install yfinance pandas
+pip install yfinance pandas numpy requests beautifulsoup4 lxml
 ```
 
 ### 2. Generate Reports
@@ -36,6 +36,27 @@ python3 us_report_generator.py MSFT TSLA
 python3 us_report_generator.py --watchlist us_watchlist.txt --alerts
 ```
 
+#### 🔄 NSE Sector Rotation Report
+```bash
+python3 sector_report_generator.py -o ./sector_reports/
+```
+
+#### Run Everything
+```bash
+make all   # Runs NSE stocks, US stocks, and sector report
+```
+
+## 📈 Sector Rotation Report
+
+Daily sector rotation analysis covering all tradable NSE sector indices with:
+- **RRG Scatter Plot** — Relative Rotation Graph showing sector positioning (Leading / Improving / Weakening / Lagging)
+- **Rotation Trail Plot** — How sectors moved over the past weeks
+- **Market Breadth** — Cap-wise index performance (Nifty 50, 100, 200, Midcap 100/150)
+- **Sector Leaders** — Top 3 stocks per sector with 1W/1M/1Y returns
+- **Detailed Analysis** — Per-quadrant breakdown with reasons and outlook
+
+👉 [**View Latest Sector Report**](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/sector_reports/SectorRotation_Report.html)
+
 ## 📅 Latest Recommendations
 
 <!-- RECOMMENDATIONS_START -->
@@ -46,10 +67,14 @@ python3 us_report_generator.py --watchlist us_watchlist.txt --alerts
 <!-- RECOMMENDATIONS_END -->
 
 ## 🌐 View Reports Live
-GitHub doesn't render HTML files by default. To view the generated reports as interactive websites:
-1. Go to the project **Settings** > **Pages**.
-2. Set the Source to **GitHub Actions**.
-3. The system is configured to automatically deploy the `reports/` folder via the `deploy_reports.yml` workflow.
+
+| Report | Link |
+|--------|------|
+| Sector Rotation | [View](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/sector_reports/SectorRotation_Report.html) |
+| NSE Stock Reports | [Browse](https://nageshnnazare.github.io/recos/reports/) |
+| US Stock Reports | [Browse](https://nageshnnazare.github.io/recos/us_reports/) |
+
+GitHub doesn't render HTML files by default. The links above use [htmlpreview.github.io](https://htmlpreview.github.io) for the sector report and GitHub Pages for stock reports.
 
 ---
 *Disclaimer: This is an automated analysis tool. Not financial advice.*

@@ -1,0 +1,80 @@
+name: Deploy Dashboard & F&O Live (GitHub Pages)
+
+on:
+  schedule:
+    # Every 15 minutes, Mon–Fri, 3:30–10:15 UTC (9:00 AM–3:45 PM IST)
+    - cron: '*/15 3-10 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Check if market hours (IST 9:00–15:45)
+        id: market
+        run: |
+          IST_HOUR=$(TZ=Asia/Kolkata date +%-H)
+          IST_MIN=$(TZ=Asia/Kolkata date +%-M)
+          TOTAL_MIN=$((IST_HOUR * 60 + IST_MIN))
+          if [ "$TOTAL_MIN" -ge 540 ] && [ "$TOTAL_MIN" -le 945 ]; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "open=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "IST time: $(TZ=Asia/Kolkata date '+%H:%M')"
+
+      - name: Regenerate F&O report (market hours only)
+        if: steps.market.outputs.open == 'true' || github.event_name == 'workflow_dispatch'
+        run: python3 fno_report_generator.py -o ./fno_reports/
+
+      - name: Build Pages site
+        run: |
+          mkdir -p _site
+
+          # Copy all report directories (they already exist in the repo from daily-reports workflow)
+          for dir in reports us_reports sector_reports fno_reports; do
+            if [ -d "$dir" ]; then
+              cp -r "$dir" "_site/$dir"
+            fi
+          done
+
+          # Generate the dashboard index.html
+          python3 dashboard_generator.py -r _site -o _site/index.html
+
+      - name: Upload Pages artefact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+  deploy:
+    needs: build
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

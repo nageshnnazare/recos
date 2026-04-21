@@ -2,10 +2,8 @@ name: Daily Stock Reports
 
 on:
   schedule:
-    # Run at 7:00 PM IST (1:30 PM UTC) — after market close
-    - cron: '30 13 * * 1-5'
-  push:
-    branches: [ main ]
+    # Run at 9:30 AM IST (4:00 AM UTC) — market open, Mon-Fri
+    - cron: '0 4 * * 1-5'
   workflow_dispatch:  # Allow manual trigger
 
 permissions:
@@ -15,6 +13,7 @@ permissions:
 jobs:
   generate-reports:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,7 +28,7 @@ jobs:
 
       - name: Generate NSE reports
         run: |
-          python3 report_generator.py --watchlist watchlist.txt --alerts -o ./reports/
+          python3 report_generator.py --watchlist watchlist.txt --alerts --delay 8 -o ./reports/
           echo "NSE_SUMMARY<<EOF" >> $GITHUB_ENV
           cat ./reports/DAILY_SUMMARY.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -40,6 +39,15 @@ jobs:
           echo "US_SUMMARY<<EOF" >> $GITHUB_ENV
           cat ./us_reports/DAILY_SUMMARY.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+
+      - name: Generate NSE F&O index outlook (NIFTY / BANK NIFTY)
+        run: python3 fno_report_generator.py -o ./fno_reports/
+
+      - name: Generate sector rotation report
+        run: python3 sector_report_generator.py -o ./sector_reports/
+
+      - name: Generate dashboard index
+        run: python3 dashboard_generator.py -r . -o ./index.html
 
       - name: Check for value-buy alerts
         id: check_alerts
@@ -60,7 +68,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add reports/ us_reports/ README.md
+          git add -f reports/ us_reports/ sector_reports/ fno_reports/ index.html README.md
           git diff --cached --quiet || git commit -m "📊 Daily stock reports & README update — $(date +%Y-%m-%d)"
           git push
 

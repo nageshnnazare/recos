@@ -1,4 +1,13 @@
 ignore/
 venv/
+.venv*/
 .DS_STORE
 __pycache__/
+*/.DS_STORE
+
+# Generated reports — only committed by GitHub Actions bot
+reports/
+us_reports/
+sector_reports/
+fno_reports/
+index.html

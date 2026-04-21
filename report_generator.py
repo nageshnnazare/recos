@@ -30,6 +30,8 @@ import os
 import sys
 import json
 import math
+import time
+import random
 import argparse
 import shutil
 from datetime import datetime, timedelta
@@ -217,30 +219,43 @@ def fetch_stock_data(ticker_symbol):
     return result
 
 
+def _screener_get(url, headers, max_retries=4):
+    """HTTP GET with exponential backoff for Screener.in rate-limiting / SSL errors."""
+    import requests as _req
+    for attempt in range(max_retries):
+        try:
+            resp = _req.get(url, headers=headers, timeout=15)
+            if resp.status_code == 429:
+                wait = (2 ** attempt) + random.uniform(1, 3)
+                print(f"    ⏳ Screener.in 429 — backing off {wait:.1f}s (attempt {attempt+1})")
+                time.sleep(wait)
+                continue
+            return resp
+        except (_req.exceptions.SSLError, _req.exceptions.ConnectionError) as e:
+            wait = (2 ** attempt) + random.uniform(1, 3)
+            if attempt < max_retries - 1:
+                print(f"    ⏳ Screener.in {type(e).__name__} — retry in {wait:.1f}s (attempt {attempt+1})")
+                time.sleep(wait)
+            else:
+                raise
+    return None
+
+
 def fetch_screener_data(ticker_symbol):
     """Scrape Screener.in for fundamental ratios and shareholding data."""
-    import requests, time
+    import requests
     from bs4 import BeautifulSoup
 
     url = f"https://www.screener.in/company/{ticker_symbol}/consolidated/"
     headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"}
 
-    resp = None
-    for attempt in range(3):
-        try:
-            resp = requests.get(url, headers=headers, timeout=15)
-            break
-        except requests.exceptions.SSLError:
-            if attempt < 2:
-                time.sleep(2 * (attempt + 1))
-            else:
-                raise
+    resp = _screener_get(url, headers)
     if resp is None:
         return None
     if resp.status_code == 404:
         url = f"https://www.screener.in/company/{ticker_symbol}/"
-        resp = requests.get(url, headers=headers, timeout=15)
-    if resp.status_code != 200:
+        resp = _screener_get(url, headers)
+    if resp is None or resp.status_code != 200:
         return None
 
     soup = BeautifulSoup(resp.text, "html.parser")
@@ -562,7 +577,6 @@ def _try_float(s):
 
 def fetch_industry_peers(industry_url, current_ticker, limit=8):
     """Fetch peer comparison table from Screener.in industry page."""
-    import requests
     from bs4 import BeautifulSoup
 
     if not industry_url:
@@ -572,8 +586,8 @@ def fetch_industry_peers(industry_url, current_ticker, limit=8):
     headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
 
     try:
-        resp = requests.get(url, headers=headers, timeout=12)
-        if resp.status_code != 200:
+        resp = _screener_get(url, headers)
+        if resp is None or resp.status_code != 200:
             return [], ""
     except Exception:
         return [], ""
@@ -3102,6 +3116,7 @@ Examples:
     parser.add_argument("-w", "--watchlist", help="Path to watchlist file with tickers")
     parser.add_argument("-o", "--output-dir", default="./reports", help="Output directory (default: ./reports)")
     parser.add_argument("--alerts", action="store_true", help="Generate alerts summary markdown")
+    parser.add_argument("--delay", type=int, default=5, help="Seconds to wait between stocks to avoid rate-limiting (default: 5)")
 
     args = parser.parse_args()
 
@@ -3147,8 +3162,16 @@ Examples:
     print()
 
     results = []
+    delay = args.delay
 
     for i, ticker in enumerate(tickers, 1):
+        # Throttle between stocks to avoid Screener.in rate-limiting
+        if i > 1 and delay > 0:
+            jitter = random.uniform(0, delay * 0.4)
+            wait = delay + jitter
+            print(f"  ⏳ Waiting {wait:.1f}s before next stock...")
+            time.sleep(wait)
+
         print(f"[{i}/{len(tickers)}] Processing NSE:{ticker}...")
 
         try:

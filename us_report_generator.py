@@ -1102,7 +1102,7 @@ def generate_html_report(data, scores):
     # Extract data for new sections
     quarterly_rows = extract_quarterly_data(data)
     annual_rows = extract_annual_data(data)
-    holder_summary, top_holders = extract_holder_data(data)
+    _, top_holders = extract_holder_data(data)
     news_items = extract_news(data)
     returns = calculate_returns(data, current_price)
     factor_scores, factor_reasons = calculate_factor_scores(data, scores, returns)
@@ -1163,22 +1163,6 @@ def generate_html_report(data, scores):
 
     # ── Shareholding section HTML (yfinance US only) ──
     screener = {}
-    holder_summary_html = ""
-    if holder_summary:
-        for label, key in [("Insiders", "insiders"), ("Institutions", "institutions"), ("Float Held by Inst.", "float_held"), ("No. of Institutions", "num_institutions")]:
-            val = holder_summary.get(key)
-            if val is not None:
-                if key == "num_institutions":
-                    display = f"{int(val):,}"
-                elif isinstance(val, float) and val <= 1:
-                    display = f"{val*100:.1f}%"
-                elif isinstance(val, float):
-                    display = f"{val:.1f}%"
-                else:
-                    display = str(val)
-                holder_summary_html += f'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;"><span style="color:var(--text2)">{label}</span><span style="color:#fff">{display}</span></div>'
-    if not holder_summary_html:
-        holder_summary_html = '<div style="color:var(--text3);font-size:11px;text-align:center;padding:20px 0;">Holder summary not available</div>'
 
     holders_table_html = ""
     for h in top_holders:
@@ -1210,12 +1194,7 @@ def generate_html_report(data, scores):
         holders_table_html = '<tr><td colspan="4" style="text-align:center;color:var(--text3);">Holder data not available</td></tr>'
 
     shareholding_section_html = f'''
-        <div class="dual-col">
-          <div class="col-card">
-            <div class="col-title">HOLDER SUMMARY</div>
-            {holder_summary_html}
-          </div>
-          <div class="col-card">
+          <div class="col-card" style="width:100%">
             <div class="col-title">TOP HOLDERS</div>
             <div style="overflow-x:auto;">
             <table>
@@ -1223,8 +1202,7 @@ def generate_html_report(data, scores):
               <tbody>{holders_table_html}</tbody>
             </table>
             </div>
-          </div>
-        </div>'''
+          </div>'''
 
     # ── Returns strip HTML ──
     returns_html = ""
