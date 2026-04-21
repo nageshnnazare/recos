@@ -1424,6 +1424,30 @@ def _run_live(port: int = 8787):
         server.server_close()
 
 
+# ─── Cleanup ─────────────────────────────────────────────────────────────────
+
+def cleanup_old_reports(reports_root: str, keep_days: int = 15) -> int:
+    """Delete report date-folders older than keep_days."""
+    from datetime import timedelta
+    cutoff = datetime.now(IST) - timedelta(days=keep_days)
+    removed = 0
+    if not os.path.isdir(reports_root):
+        return 0
+    for entry in os.listdir(reports_root):
+        if not re.match(r"\d{4}-\d{2}-\d{2}$", entry):
+            continue
+        dirpath = os.path.join(reports_root, entry)
+        if os.path.isdir(dirpath):
+            try:
+                folder_date = datetime.strptime(entry, "%Y-%m-%d").replace(tzinfo=IST)
+                if folder_date < cutoff:
+                    shutil.rmtree(dirpath)
+                    removed += 1
+            except ValueError:
+                pass
+    return removed
+
+
 # ─── Main ───────────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -1473,6 +1497,11 @@ def main() -> int:
         f.write(html_out)
     shutil.copy2(p1, p2)
     print(f"  ✅ {p1}")
+
+    removed = cleanup_old_reports(out_root, keep_days=15)
+    if removed:
+        print(f"  🧹 Cleaned up {removed} report folder(s) older than 15 days")
+
     return 0
 
 
