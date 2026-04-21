@@ -72,5 +72,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f reports/ us_reports/ sector_reports/ fno_reports/ index.html README.md
           git diff --cached --quiet || git commit -m "📊 Daily stock reports & README update — $(date +%Y-%m-%d)"
+          git pull --rebase
           git push
 
