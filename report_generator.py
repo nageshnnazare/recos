@@ -219,16 +219,27 @@ def fetch_stock_data(ticker_symbol):
 
 def fetch_screener_data(ticker_symbol):
     """Scrape Screener.in for fundamental ratios and shareholding data."""
-    import requests
+    import requests, time
     from bs4 import BeautifulSoup
 
     url = f"https://www.screener.in/company/{ticker_symbol}/consolidated/"
-    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"}
 
-    resp = requests.get(url, headers=headers, timeout=12)
+    resp = None
+    for attempt in range(3):
+        try:
+            resp = requests.get(url, headers=headers, timeout=15)
+            break
+        except requests.exceptions.SSLError:
+            if attempt < 2:
+                time.sleep(2 * (attempt + 1))
+            else:
+                raise
+    if resp is None:
+        return None
     if resp.status_code == 404:
         url = f"https://www.screener.in/company/{ticker_symbol}/"
-        resp = requests.get(url, headers=headers, timeout=12)
+        resp = requests.get(url, headers=headers, timeout=15)
     if resp.status_code != 200:
         return None
 
@@ -343,7 +354,7 @@ def fetch_screener_data(ticker_symbol):
     if sh_section:
         table = sh_section.find_next("table")
         if table:
-            headers = [th.text.strip() for th in table.select("tr")[0].select("th, td")]
+            sh_hdrs = [th.text.strip() for th in table.select("tr")[0].select("th, td")]
             sh_data = []
             for row in table.select("tr")[1:]:
                 cells = [c.text.strip().replace("\xa0", " ") for c in row.select("th, td")]
@@ -351,10 +362,202 @@ def fetch_screener_data(ticker_symbol):
                     category = cells[0].replace("+", "").strip()
                     values = cells[1:]
                     sh_data.append({"category": category, "values": values})
-            result["shareholding_headers"] = headers[1:]
+            result["shareholding_headers"] = sh_hdrs[1:]
             result["shareholding_rows"] = sh_data
 
+    # ── About / Business Description ──
+    about_el = soup.select_one(".company-profile .about p, .about p")
+    if about_el:
+        result["about"] = about_el.get_text(strip=True)
+
+    # ── Pros & Cons ──
+    for section_cls, key in [("pros", "pros"), ("cons", "cons")]:
+        ul = soup.select_one(f".{section_cls} ul")
+        if ul:
+            result[key] = [li.get_text(strip=True) for li in ul.select("li") if li.get_text(strip=True)]
+
+    # ── Full P&L Statement table ──
+    def _scrape_financial_table(heading_text, section_key):
+        h = soup.find("h2", string=lambda x: x and heading_text in x.lower() if x else False)
+        if not h:
+            return None, None
+        table = h.find_next("table")
+        if not table:
+            return None, None
+        head_row = table.select("tr")[0]
+        headers = [c.text.strip() for c in head_row.select("th, td")]
+        rows = []
+        for tr in table.select("tr")[1:]:
+            tds = tr.select("th, td")
+            cells = [c.text.strip().replace("\xa0", " ") for c in tds]
+            if not cells or not any(c.strip() for c in cells):
+                continue
+            has_btn = bool(tds[0].select_one("button")) if tds else False
+            parent_name = cells[0].replace("+", "").strip() if has_btn else None
+            rows.append({"cells": cells, "expandable": parent_name})
+        return headers, rows
+
+    # ── Get company-id for sub-row API calls ──
+    company_info_el = soup.select_one("#company-info")
+    company_id = company_info_el.get("data-company-id") if company_info_el else None
+    is_consolidated = company_info_el.has_attr("data-consolidated") if company_info_el else False
+
+    def _fetch_sub_rows(parent_name, section_key, headers_list):
+        if not company_id:
+            return []
+        api_url = f"https://www.screener.in/api/company/{company_id}/schedules/?parent={parent_name}&section={section_key}"
+        if is_consolidated:
+            api_url += "&consolidated"
+        try:
+            import json as _json
+            r = requests.get(api_url, headers=headers, timeout=8)
+            if r.status_code != 200:
+                return []
+            data = _json.loads(r.text)
+            sub_rows = []
+            date_cols = headers_list[1:]
+            if isinstance(data, dict):
+                for label, vals in data.items():
+                    if isinstance(vals, dict) and not vals.get("isExpandable"):
+                        row_cells = [label]
+                        for dc in date_cols:
+                            row_cells.append(str(vals.get(dc, "")))
+                        sub_rows.append({"cells": row_cells, "expandable": None, "is_sub": True})
+            return sub_rows
+        except Exception:
+            return []
+
+    pl_headers, pl_rows_raw = _scrape_financial_table("profit", "profit-loss")
+    if pl_headers and pl_rows_raw:
+        pl_rows = []
+        for row in pl_rows_raw:
+            pl_rows.append(row)
+            if row["expandable"]:
+                subs = _fetch_sub_rows(row["expandable"], "profit-loss", pl_headers)
+                for s in subs:
+                    pl_rows.append(s)
+        result["pl_headers"] = pl_headers
+        result["pl_rows"] = pl_rows
+
+    bs_headers, bs_rows_raw = _scrape_financial_table("balance sheet", "balance-sheet")
+    if bs_headers and bs_rows_raw:
+        bs_rows = []
+        for row in bs_rows_raw:
+            bs_rows.append(row)
+            if row["expandable"]:
+                subs = _fetch_sub_rows(row["expandable"], "balance-sheet", bs_headers)
+                for s in subs:
+                    bs_rows.append(s)
+        result["bs_headers"] = bs_headers
+        result["bs_rows"] = bs_rows
+
+    # ── Cash Flow Statement table ──
+    cf_headers, cf_rows_raw = _scrape_financial_table("cash flow", "cash-flow")
+    if cf_headers and cf_rows_raw:
+        cf_rows = []
+        for row in cf_rows_raw:
+            cf_rows.append(row)
+            if row["expandable"]:
+                subs = _fetch_sub_rows(row["expandable"], "cash-flow", cf_headers)
+                for s in subs:
+                    cf_rows.append(s)
+        result["cf_headers"] = cf_headers
+        result["cf_rows"] = cf_rows
+
+    # ── Quarterly Results table ──
+    qr_headers, qr_rows_raw = _scrape_financial_table("quarterly", "quarters")
+    if qr_headers and qr_rows_raw:
+        qr_rows = []
+        for row in qr_rows_raw:
+            qr_rows.append(row)
+            if row["expandable"]:
+                subs = _fetch_sub_rows(row["expandable"], "quarters", qr_headers)
+                for s in subs:
+                    qr_rows.append(s)
+        result["qr_headers"] = qr_headers
+        result["qr_rows"] = qr_rows
+
+    # ── Ratios table (ROCE, ROE, Debt/Equity, etc.) ──
+    rt_headers, rt_rows_raw = _scrape_financial_table("ratio", "ratios")
+    if rt_headers and rt_rows_raw:
+        result["rt_headers"] = rt_headers
+        result["rt_rows"] = rt_rows_raw
+
+    # ── Compounded Growth Rates ──
+    growth_data = {}
+    for section in soup.select(".ranges-table"):
+        items = section.select("li")
+        if not items:
+            continue
+        parent_heading = section.find_previous(["h2", "h3", "h4"])
+        parent_text = parent_heading.get_text(strip=True) if parent_heading else ""
+        table_items = []
+        for li in items:
+            t = li.get_text(strip=True)
+            parts = t.split(":")
+            if len(parts) == 2:
+                table_items.append((parts[0].strip(), parts[1].strip()))
+        if table_items:
+            growth_data[parent_text] = table_items
+    if growth_data:
+        result["growth_rates"] = growth_data
+
+    # ── Extract EPS and Book Value series for PE/PB charts ──
+    pl_rows_data = result.get("pl_rows", [])
+    if pl_rows_data:
+        for row in pl_rows_data:
+            c = row["cells"]
+            if c and c[0].lower().replace("+", "").strip().startswith("eps"):
+                try:
+                    result["eps_series"] = {
+                        "headers": pl_headers[1:],
+                        "values": [_try_float(v) for v in c[1:]]
+                    }
+                except:
+                    pass
+                break
+
+    bs_rows_data = result.get("bs_rows", [])
+    if bs_rows_data:
+        for row in bs_rows_data:
+            c = row["cells"]
+            label = c[0].lower().replace("+", "").strip() if c else ""
+            if "equity capital" in label:
+                result["_equity_capital_row"] = c[1:]
+            if "reserves" in label:
+                result["_reserves_row"] = c[1:]
+
+        eq_row = result.get("_equity_capital_row", [])
+        res_row = result.get("_reserves_row", [])
+        if eq_row and res_row and len(eq_row) == len(res_row):
+            bv_list = []
+            for i in range(len(eq_row)):
+                ec = _try_float(eq_row[i])
+                rs = _try_float(res_row[i])
+                if ec is not None and rs is not None and ec > 0:
+                    face_value = 10
+                    shares_cr = ec / face_value
+                    bv = (ec + rs) / shares_cr if shares_cr > 0 else None
+                    bv_list.append(bv)
+                else:
+                    bv_list.append(None)
+            result["bv_series"] = {
+                "headers": bs_headers[1:],
+                "values": bv_list
+            }
+
     return result
+
+
+def _try_float(s):
+    """Attempt to parse a string as float, return None on failure."""
+    if s is None:
+        return None
+    s = str(s).replace(",", "").replace("%", "").strip()
+    try:
+        return float(s)
+    except (ValueError, TypeError):
+        return None
 
 
 def fetch_industry_peers(industry_url, current_ticker, limit=8):
@@ -1447,6 +1650,61 @@ def calculate_factor_scores(data, scores, returns):
     return factor_scores, reasons
 
 
+def generate_pe_pb_chart_svg(series, label="P/E", color="#3d9cf5", width=520, height=200):
+    """Generate a trend line chart SVG for PE or PB ratio over years."""
+    headers = series.get("headers", [])
+    values = series.get("values", [])
+    if not headers or not values:
+        return f'<svg viewBox="0 0 {width} {height}"><text x="{width//2}" y="{height//2}" text-anchor="middle" fill="#5c5d6e" font-family="Fira Code,monospace" font-size="12">{label} data unavailable</text></svg>'
+
+    pts = [(h, v) for h, v in zip(headers, values) if v is not None and v > 0]
+    if len(pts) < 2:
+        return f'<svg viewBox="0 0 {width} {height}"><text x="{width//2}" y="{height//2}" text-anchor="middle" fill="#5c5d6e" font-family="Fira Code,monospace" font-size="12">Insufficient {label} data</text></svg>'
+
+    labels_list = [p[0] for p in pts]
+    vals = [p[1] for p in pts]
+    pad_l, pad_r, pad_t, pad_b = 50, 20, 20, 32
+    cw = width - pad_l - pad_r
+    ch = height - pad_t - pad_b
+    min_v = min(vals) * 0.85
+    max_v = max(vals) * 1.15
+    vr = max_v - min_v if max_v != min_v else 1
+
+    def xp(i): return pad_l + (i / (len(vals) - 1)) * cw
+    def yp(v): return pad_t + (1 - (v - min_v) / vr) * ch
+
+    svg = f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" style="width:100%;">\n'
+    svg += f'  <defs><linearGradient id="ag_{label.replace("/","")}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="{color}" stop-opacity="0.20"/><stop offset="100%" stop-color="{color}" stop-opacity="0.01"/></linearGradient></defs>\n'
+
+    for i in range(5):
+        y = pad_t + (i / 4) * ch
+        v = max_v - (i / 4) * vr
+        svg += f'  <line x1="{pad_l}" y1="{y:.1f}" x2="{width - pad_r}" y2="{y:.1f}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>\n'
+        svg += f'  <text x="{pad_l - 6}" y="{y + 3:.1f}" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">{v:.1f}</text>\n'
+
+    for i, lb in enumerate(labels_list):
+        short = lb.replace("Mar ", "'").replace("Sep ", "S'") if "Mar" in lb or "Sep" in lb else lb[-4:]
+        svg += f'  <text x="{xp(i):.1f}" y="{height - 6}" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">{short}</text>\n'
+
+    area = f"M {xp(0):.1f} {yp(vals[0]):.1f} "
+    for i in range(1, len(vals)):
+        area += f"L {xp(i):.1f} {yp(vals[i]):.1f} "
+    area += f"L {xp(len(vals)-1):.1f} {pad_t + ch:.1f} L {xp(0):.1f} {pad_t + ch:.1f} Z"
+    svg += f'  <path d="{area}" fill="url(#ag_{label.replace("/","")})"/>\n'
+
+    line_pts = " ".join([f"{xp(i):.1f},{yp(vals[i]):.1f}" for i in range(len(vals))])
+    svg += f'  <polyline points="{line_pts}" fill="none" stroke="{color}" stroke-width="2" stroke-linejoin="round"/>\n'
+
+    for i, v in enumerate(vals):
+        svg += f'  <circle cx="{xp(i):.1f}" cy="{yp(v):.1f}" r="3" fill="{color}" stroke="#08090d" stroke-width="1.5"><title>{labels_list[i]}: {v:.1f}</title></circle>\n'
+
+    last_v = vals[-1]
+    svg += f'  <text x="{xp(len(vals)-1) + 4:.1f}" y="{yp(last_v) + 3:.1f}" font-family="Fira Code,monospace" font-size="9" font-weight="600" fill="{color}">{last_v:.1f}</text>\n'
+
+    svg += '</svg>'
+    return svg
+
+
 def generate_spider_chart_svg(factors, reasons=None, width=480, height=440):
     """Generate a radar/spider chart SVG for 5 factor scores with hover tooltips."""
     short_labels = {"Low Volatility": "Low Vol"}
@@ -1572,6 +1830,19 @@ def generate_html_report(data, scores):
     w52_range = high_52w - low_52w if high_52w and low_52w and high_52w > low_52w else 0
     w52_pct = max(0, min(100, ((current_price - low_52w) / w52_range * 100))) if w52_range > 0 else 50
 
+    def _range_dot_color(pct):
+        if pct <= 30:
+            return "#00e5a0"
+        elif pct <= 70:
+            return "#f5a623"
+        else:
+            return "#ff4d6d"
+
+    day_dot_color = _range_dot_color(day_pct)
+    w52_dot_color = _range_dot_color(w52_pct)
+    day_zone = "Oversold" if day_pct <= 30 else ("Overbought" if day_pct >= 70 else "Neutral")
+    w52_zone = "Oversold" if w52_pct <= 30 else ("Overbought" if w52_pct >= 70 else "Neutral")
+
     def score_color(score, max_score):
         pct = score / max_score * 100 if max_score > 0 else 0
         if pct >= 70:
@@ -1605,6 +1876,184 @@ def generate_html_report(data, scores):
     factor_scores, factor_reasons = calculate_factor_scores(data, scores, returns)
     spider_svg = generate_spider_chart_svg(factor_scores, factor_reasons)
     roe = calculate_roe_manual(data)
+
+    # ── Screener-sourced sections ──
+    screener = data.get("screener") or {}
+
+    about_text = screener.get("about", "")
+    pros_list = screener.get("pros", [])
+    cons_list = screener.get("cons", [])
+
+    company_overview_html = ""
+    if about_text or pros_list or cons_list:
+        pros_html_items = "".join(f'<li style="margin-bottom:4px;color:var(--green);">{p}</li>' for p in pros_list[:6])
+        cons_html_items = "".join(f'<li style="margin-bottom:4px;color:var(--red);">{c}</li>' for c in cons_list[:6])
+        company_overview_html = f'''
+  <div class="section">
+    <div class="section-title">🏢 Company Overview</div>
+    {"<p style='font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px;'>" + about_text + "</p>" if about_text else ""}
+    <div class="dual-col">
+      <div class="col-card" style="border-left:3px solid var(--green);">
+        <div class="col-title" style="color:var(--green);">PROS</div>
+        <ul style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;padding-left:16px;">{pros_html_items if pros_html_items else "<li style='color:var(--text3);'>No specific pros identified</li>"}</ul>
+      </div>
+      <div class="col-card" style="border-left:3px solid var(--red);">
+        <div class="col-title" style="color:var(--red);">CONS</div>
+        <ul style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;padding-left:16px;">{cons_html_items if cons_html_items else "<li style='color:var(--text3);'>No specific cons identified</li>"}</ul>
+      </div>
+    </div>
+  </div>'''
+
+    # ── Build financial table HTML helper ──
+    _expand_counter = [0]
+
+    def _build_screener_table_html(headers, rows, max_cols=10):
+        if not headers or not rows:
+            return ""
+        display_headers = headers[:1] + headers[-max_cols+1:] if len(headers) > max_cols else headers
+        start_idx = len(headers) - len(display_headers)
+        th_html = "".join(f'<th>{h}</th>' for h in display_headers)
+        body = ""
+        current_group_id = None
+        for row in rows:
+            if not row:
+                continue
+            cells_data = row.get("cells", row) if isinstance(row, dict) else row
+            expandable = row.get("expandable") if isinstance(row, dict) else None
+            is_sub = row.get("is_sub", False) if isinstance(row, dict) else False
+            label = cells_data[0].replace("+", "").strip()
+            vals = cells_data[1:]
+            display_vals = vals[start_idx:] if start_idx > 0 else vals
+            while len(display_vals) < len(display_headers) - 1:
+                display_vals.append("")
+            is_key = not is_sub and any(kw in label.lower() for kw in ["total", "net profit", "operating profit", "sales", "eps"])
+            is_pct = "%" in label.lower() or "opm" in label.lower()
+            dv = display_vals[:max_cols-1]
+            nums = [_try_float(v) for v in dv]
+
+            if expandable:
+                _expand_counter[0] += 1
+                current_group_id = f"grp{_expand_counter[0]}"
+                toggle_icon = f'<span class="exp-icon" id="icon-{current_group_id}">+</span>'
+                bold_s = "font-weight:600;color:#fff;" if is_key else ""
+                label_html = f'<td class="exp-parent" onclick="toggleGroup(\'{current_group_id}\')" style="cursor:pointer;{bold_s}">{label} {toggle_icon}</td>'
+            elif is_sub:
+                label_html = f'<td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">{label}</td>'
+            else:
+                current_group_id = None
+                bold_attr = ' style="font-weight:600;color:#fff;"' if is_key else ""
+                label_html = f'<td{bold_attr}>{label}</td>'
+
+            val_cells = ""
+            for j, v in enumerate(dv):
+                n = nums[j]
+                prev = nums[j - 1] if j > 0 else None
+                cls = ""
+                if n is not None and prev is not None and prev != 0:
+                    cls = " class=\"tg\"" if n > prev else (" class=\"tr\"" if n < prev else "")
+                if is_sub:
+                    val_cells += f'<td{cls} style="font-size:0.85em;">{v}</td>'
+                elif is_key:
+                    val_cells += f'<td{cls} style="font-weight:600;color:#fff;">{v}</td>'
+                else:
+                    val_cells += f'<td{cls}>{v}</td>'
+
+            tr_attrs = ""
+            if is_sub and current_group_id:
+                tr_attrs = f' class="sub-row sub-{current_group_id}" style="display:none;"'
+            body += f'<tr{tr_attrs}>{label_html}{val_cells}</tr>\n'
+        return f'''<div style="overflow-x:auto;"><table><thead><tr>{th_html}</tr></thead><tbody>{body}</tbody></table></div>'''
+
+    pl_table_html = _build_screener_table_html(screener.get("pl_headers"), screener.get("pl_rows"))
+    bs_table_html = _build_screener_table_html(screener.get("bs_headers"), screener.get("bs_rows"))
+    cf_table_html = _build_screener_table_html(screener.get("cf_headers"), screener.get("cf_rows"))
+    qr_table_html = _build_screener_table_html(screener.get("qr_headers"), screener.get("qr_rows"), max_cols=12)
+
+    screener_url = f"https://www.screener.in/company/{ticker_symbol}/consolidated/"
+
+    qr_section_html = f'''
+  <div class="section">
+    <div class="section-title">📅 Quarterly Results <a href="{screener_url}" target="_blank" class="src-link-header">Source: Screener ↗</a></div>
+    {qr_table_html}
+  </div>''' if qr_table_html else ""
+
+    pl_section_html = f'''
+  <div class="section">
+    <div class="section-title">📊 Profit & Loss Statement <a href="{screener_url}" target="_blank" class="src-link-header">Source: Screener ↗</a></div>
+    {pl_table_html}
+  </div>''' if pl_table_html else ""
+
+    bs_section_html = f'''
+  <div class="section">
+    <div class="section-title">🏦 Balance Sheet <a href="{screener_url}" target="_blank" class="src-link-header">Source: Screener ↗</a></div>
+    {bs_table_html}
+  </div>''' if bs_table_html else ""
+
+    cf_section_html = f'''
+  <div class="section">
+    <div class="section-title">💰 Cash Flow Statement <a href="{screener_url}" target="_blank" class="src-link-header">Source: Screener ↗</a></div>
+    {cf_table_html}
+  </div>''' if cf_table_html else ""
+
+    # ── Ratios table ──
+    rt_table_html = _build_screener_table_html(screener.get("rt_headers"), screener.get("rt_rows"))
+    rt_section_html = f'''
+  <div class="section">
+    <div class="section-title">📈 Key Financial Ratios</div>
+    {rt_table_html}
+  </div>''' if rt_table_html else ""
+
+    # ── Compounded Growth Rates ──
+    growth_rates = screener.get("growth_rates", {})
+    growth_html = ""
+    if growth_rates:
+        cards = ""
+        for title, items in growth_rates.items():
+            rows_h = "".join(f'<tr><td style="color:var(--text2);">{k}</td><td style="text-align:right;font-weight:600;">{v}</td></tr>' for k, v in items)
+            cards += f'''<div class="col-card"><div class="col-title">{title}</div><table><tbody>{rows_h}</tbody></table></div>'''
+        growth_html = f'''
+  <div class="section">
+    <div class="section-title">🚀 Compounded Growth Rates</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">{cards}</div>
+  </div>'''
+
+    # ── PE & PB trend charts ──
+    eps_series = screener.get("eps_series")
+    bv_series = screener.get("bv_series")
+
+    pe_chart_data = None
+    if eps_series and eps_series.get("values"):
+        pe_values = []
+        for v in eps_series["values"]:
+            if v is not None and v > 0:
+                pe_values.append(current_price / v if current_price else None)
+            else:
+                pe_values.append(None)
+        pe_chart_data = {"headers": eps_series["headers"], "values": pe_values}
+
+    pb_chart_data = None
+    if bv_series and bv_series.get("values"):
+        pb_values = []
+        for v in bv_series["values"]:
+            if v is not None and v > 0:
+                pb_values.append(current_price / v if current_price else None)
+            else:
+                pb_values.append(None)
+        pb_chart_data = {"headers": bv_series["headers"], "values": pb_values}
+
+    pe_svg = generate_pe_pb_chart_svg(pe_chart_data, label="P/E", color="#3d9cf5") if pe_chart_data else ""
+    pb_svg = generate_pe_pb_chart_svg(pb_chart_data, label="P/B", color="#9b7fff") if pb_chart_data else ""
+
+    pe_pb_section_html = ""
+    if pe_svg or pb_svg:
+        pe_pb_section_html = f'''
+  <div class="section">
+    <div class="section-title">📉 P/E & P/B Trend (at current CMP)</div>
+    <div class="dual-col">
+      <div class="col-card"><div class="col-title">P/E RATIO TREND</div>{pe_svg if pe_svg else '<div style="color:var(--text3);font-size:11px;text-align:center;padding:20px;">P/E data unavailable</div>'}</div>
+      <div class="col-card"><div class="col-title">P/B RATIO TREND</div>{pb_svg if pb_svg else '<div style="color:var(--text3);font-size:11px;text-align:center;padding:20px;">P/B data unavailable</div>'}</div>
+    </div>
+  </div>'''
 
     # ── Quarterly table HTML (with QoQ %) ──
     qt_rows_html = ""
@@ -1817,34 +2266,27 @@ def generate_html_report(data, scores):
 
     today_str = datetime.now().strftime("%B %d, %Y · %H:%M IST")
 
-    # Recommendation
+    # Recommendation — single source of truth via get_signal()
     composite = scores["composite"]
     signal, is_value_buy, signal_reason = get_signal(scores, info)
 
-    if composite >= 80:
-        recommendation = "STRONG BUY"
-        rec_color = "#00e5a0"
-        needle_pct = 90
-    elif composite >= 65:
-        recommendation = "BUY"
-        rec_color = "#00e5a0"
-        needle_pct = 75
-    elif composite >= 50:
-        recommendation = "SPECULATIVE BUY"
-        rec_color = "#f5a623"
-        needle_pct = 60
-    elif composite >= 35:
-        recommendation = "HOLD"
-        rec_color = "#f5a623"
-        needle_pct = 45
-    elif composite >= 20:
-        recommendation = "SELL"
-        rec_color = "#ff4d6d"
-        needle_pct = 25
+    signal_text = signal.split(" ", 1)[-1] if " " in signal else signal
+    recommendation = signal_text
+
+    if "STRONG BUY" in recommendation:
+        rec_color = "#00e5a0"; needle_pct = 90
+    elif "BUY" in recommendation and "SPEC" not in recommendation:
+        rec_color = "#00e5a0"; needle_pct = 75
+    elif "SPECULATIVE" in recommendation:
+        rec_color = "#f5a623"; needle_pct = 60
+    elif "HOLD" in recommendation:
+        rec_color = "#f5a623"; needle_pct = 45
+    elif "STRONG SELL" in recommendation:
+        rec_color = "#ff4d6d"; needle_pct = 10
+    elif "SELL" in recommendation:
+        rec_color = "#ff4d6d"; needle_pct = 25
     else:
-        recommendation = "STRONG SELL"
-        rec_color = "#ff4d6d"
-        needle_pct = 10
+        rec_color = "#f5a623"; needle_pct = 50
 
     ev_revenue = mcap_cr / (total_revenue / 1e7) if total_revenue else 0
 
@@ -1891,6 +2333,7 @@ def generate_html_report(data, scores):
     opm_cls, opm_tip = cs(opm_pct, 15, 5, "OPM %") if opm_pct is not None else ("caution", "Operating Margin: Data unavailable")
     tgt_cls = "beat" if target_mean > current_price else "miss" if target_mean else "caution"
     tgt_tip = f"Analyst target ₹{target_mean:,.0f} vs CMP ₹{current_price:,.0f} — {'upside' if target_mean > current_price else 'downside'}" if target_mean else "Analyst target: Data unavailable"
+    yahoo_analysis_url = f"https://finance.yahoo.com/quote/{ticker_symbol}.NS/analysis/"
     peg_cls, peg_tip = cs(peg_ratio, 1.0, 2.0, "PEG", True) if peg_ratio else ("caution", "PEG: Data unavailable")
     eve_cls, eve_tip = cs(ev_ebitda, 12, 20, "EV/EBITDA", True) if ev_ebitda else ("caution", "EV/EBITDA: Data unavailable")
     cr_cls, cr_tip = cs(current_ratio, 1.5, 1.0, "Current Ratio") if current_ratio else ("caution", "Current Ratio: Data unavailable")
@@ -2162,9 +2605,10 @@ def generate_html_report(data, scores):
   .sh-range {{ display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9px; }}
   .sh-range-label {{ color:var(--text3); width:32px; text-align:right; letter-spacing:0.5px; flex-shrink:0; }}
   .sh-range-val {{ color:var(--text3); width:42px; text-align:right; flex-shrink:0; }}
-  .sh-range-track {{ flex:1; height:4px; background:var(--border); border-radius:2px; position:relative; min-width:80px; }}
-  .sh-range-fill {{ height:100%; border-radius:2px; background:linear-gradient(90deg,var(--green),var(--green)); }}
-  .sh-range-dot {{ position:absolute; top:50%; width:10px; height:10px; border-radius:50%; background:var(--green); border:2px solid var(--bg); transform:translate(-50%,-50%); box-shadow:0 0 6px rgba(0,229,160,0.5); }}
+  .sh-range-track {{ flex:1; height:5px; background:linear-gradient(90deg,rgba(0,229,160,0.15),rgba(245,166,35,0.15),rgba(255,77,109,0.15)); border-radius:3px; position:relative; min-width:80px; }}
+  .sh-range-fill {{ height:100%; border-radius:3px; background:linear-gradient(90deg,#00e5a0,#f5a623,#ff4d6d); }}
+  .sh-range-dot {{ position:absolute; top:50%; width:10px; height:10px; border-radius:50%; border:2px solid var(--bg); transform:translate(-50%,-50%); }}
+  .sh-range-zone {{ font-family:var(--mono); font-size:8px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; width:62px; text-align:left; flex-shrink:0; }}
   .gauge-kpi-row {{ display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }}
   .gauge-card {{ background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; }}
   .gauge-title {{ font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }}
@@ -2192,6 +2636,10 @@ def generate_html_report(data, scores):
   .mc-label {{ font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }}
   .mc-value {{ font-family:var(--mono); font-size:22px; font-weight:700; color:#fff; }}
   .mc-bench {{ font-size:10px; color:var(--text2); margin-top:4px; }}
+  .src-link {{ display:inline-block; margin-top:6px; font-size:9px; color:var(--blue); text-decoration:none; font-family:var(--mono); opacity:0.7; transition:opacity 0.2s; }}
+  .src-link:hover {{ opacity:1; text-decoration:underline; }}
+  .src-link-header {{ float:right; font-size:10px; color:var(--blue); text-decoration:none; font-family:var(--mono); font-weight:400; letter-spacing:0; text-transform:none; opacity:0.6; transition:opacity 0.2s; }}
+  .src-link-header:hover {{ opacity:1; text-decoration:underline; }}
   .breakdown-grid {{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }}
   .breakdown-card {{ background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }}
   .bc-header {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }}
@@ -2211,6 +2659,9 @@ def generate_html_report(data, scores):
   tbody tr {{ border-bottom:1px solid var(--border); transition:background 0.2s; }} tbody tr:hover {{ background:rgba(255,255,255,0.02); }}
   tbody td {{ padding:10px 12px; text-align:right; }} tbody td:first-child {{ text-align:left; color:var(--text2); }}
   .tg {{ color:var(--green)!important; }} .tr {{ color:var(--red)!important; }} .ta {{ color:var(--amber)!important; }}
+  .exp-parent {{ user-select:none; }} .exp-parent:hover {{ color:#3d9cf5!important; }}
+  .exp-icon {{ display:inline-block;width:16px;height:16px;line-height:16px;text-align:center;font-size:12px;font-weight:700;color:#3d9cf5;background:rgba(61,156,245,0.12);border-radius:4px;margin-left:4px;vertical-align:middle;transition:transform 0.2s; }}
+  .sub-row td {{ border-bottom-color:rgba(255,255,255,0.02)!important; }}
   .dual-col {{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }}
   .col-card {{ background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }}
   .col-title {{ font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:12px; }}
@@ -2259,14 +2710,16 @@ def generate_html_report(data, scores):
         <div class="sh-range">
           <span class="sh-range-label">Day</span>
           <span class="sh-range-val">₹{day_low:,.0f}</span>
-          <div class="sh-range-track"><div class="sh-range-fill" style="width:{day_pct:.1f}%"></div><div class="sh-range-dot" style="left:{day_pct:.1f}%"></div></div>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:{day_pct:.1f}%"></div><div class="sh-range-dot" style="left:{day_pct:.1f}%;background:{day_dot_color};box-shadow:0 0 6px {day_dot_color}80;"></div></div>
           <span class="sh-range-val">₹{day_high:,.0f}</span>
+          <span class="sh-range-zone" style="color:{day_dot_color}">{day_zone}</span>
         </div>
         <div class="sh-range">
           <span class="sh-range-label">52W</span>
           <span class="sh-range-val">₹{low_52w:,.0f}</span>
-          <div class="sh-range-track"><div class="sh-range-fill" style="width:{w52_pct:.1f}%"></div><div class="sh-range-dot" style="left:{w52_pct:.1f}%"></div></div>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:{w52_pct:.1f}%"></div><div class="sh-range-dot" style="left:{w52_pct:.1f}%;background:{w52_dot_color};box-shadow:0 0 6px {w52_dot_color}80;"></div></div>
           <span class="sh-range-val">₹{high_52w:,.0f}</span>
+          <span class="sh-range-zone" style="color:{w52_dot_color}">{w52_zone}</span>
         </div>
       </div>
     </div>
@@ -2296,6 +2749,8 @@ def generate_html_report(data, scores):
     </div>
   </div>
 
+  {company_overview_html}
+
   <div class="section">
     <div class="section-title">📈 12-Month Price Movement · Annotated</div>
     {price_chart_svg}
@@ -2307,9 +2762,11 @@ def generate_html_report(data, scores):
   </div>
 
   <div class="section">
-    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets</div>
+    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets <a href="{yahoo_analysis_url}" target="_blank" class="src-link-header">Source: Yahoo Finance ↗</a></div>
     {fair_value_svg}
   </div>
+
+  {pe_pb_section_html}
 
   <div class="section">
     <div class="section-title">💎 Valuation & Financial Metrics</div>
@@ -2319,7 +2776,7 @@ def generate_html_report(data, scores):
       <div class="metric-card {roe_cls}" data-tip="{roe_tip}"><div class="mc-label">ROE</div><div class="mc-value">{roe*100:.1f}%</div><div class="mc-bench">Return on Equity</div></div>
       <div class="metric-card {pm_cls}" data-tip="{pm_tip}"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">{profit_margin*100:.1f}%</div><div class="mc-bench">Net profit margin</div></div>
       <div class="metric-card {opm_cls}" data-tip="{opm_tip}"><div class="mc-label">OPM</div><div class="mc-value">{f"{opm_pct:.1f}%" if opm_pct is not None else "N/A"}</div><div class="mc-bench">Operating profit margin</div></div>
-      <div class="metric-card {tgt_cls}" data-tip="{tgt_tip}"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">₹{target_mean:,.0f}</div><div class="mc-bench">Range: ₹{fair_value_low:,.0f} - ₹{fair_value_high:,.0f}</div></div>
+      <div class="metric-card {tgt_cls}" data-tip="{tgt_tip}"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">₹{target_mean:,.0f}</div><div class="mc-bench">Range: ₹{fair_value_low:,.0f} - ₹{fair_value_high:,.0f}</div><a href="{yahoo_analysis_url}" target="_blank" class="src-link">Yahoo Finance ↗</a></div>
       <div class="metric-card {peg_cls}" data-tip="{peg_tip}"><div class="mc-label">PEG RATIO</div><div class="mc-value">{f"{peg_ratio:.2f}" if peg_ratio else "N/A"}</div><div class="mc-bench">Price/Earnings to Growth</div></div>
       <div class="metric-card {eve_cls}" data-tip="{eve_tip}"><div class="mc-label">EV/EBITDA</div><div class="mc-value">{f"{ev_ebitda:.1f}x" if ev_ebitda else "N/A"}</div><div class="mc-bench">Enterprise value ratio</div></div>
       <div class="metric-card {cr_cls}" data-tip="{cr_tip}"><div class="mc-label">CURRENT RATIO</div><div class="mc-value">{f"{current_ratio:.2f}" if current_ratio else "N/A"}</div><div class="mc-bench">Liquidity measure</div></div>
@@ -2401,6 +2858,18 @@ def generate_html_report(data, scores):
     </div>
   </div>
 
+  {qr_section_html}
+
+  {pl_section_html}
+
+  {bs_section_html}
+
+  {cf_section_html}
+
+  {rt_section_html}
+
+  {growth_html}
+
   <div class="section">
     <div class="section-title">🏛 Shareholding Pattern</div>
     {shareholding_section_html}
@@ -2436,7 +2905,7 @@ def generate_html_report(data, scores):
   </div>"""}
 
   <div class="section">
-    <div class="section-title">🎯 Decision Matrix — Game Theory</div>
+    <div class="section-title">🎯 Decision Matrix</div>
     {decision_matrix_html}
   </div>
 
@@ -2465,6 +2934,13 @@ def generate_html_report(data, scores):
 
 <button class="copy-btn" onclick="copyReport()" id="copyBtn">📋 COPY REPORT</button>
 <script>
+function toggleGroup(gid) {{
+  const rows = document.querySelectorAll('.sub-' + gid);
+  const icon = document.getElementById('icon-' + gid);
+  const visible = rows.length > 0 && rows[0].style.display !== 'none';
+  rows.forEach(r => {{ r.style.display = visible ? 'none' : 'table-row'; }});
+  if (icon) icon.textContent = visible ? '+' : '−';
+}}
 function copyReport() {{
   const content = document.getElementById('report-content').innerText;
   navigator.clipboard.writeText(content).then(() => {{

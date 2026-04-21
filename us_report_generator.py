@@ -1258,34 +1258,27 @@ def generate_html_report(data, scores):
 
     today_str = datetime.now().strftime("%B %d, %Y · %H:%M ET")
 
-    # Recommendation
+    # Recommendation — single source of truth via get_signal()
     composite = scores["composite"]
     signal, is_value_buy, signal_reason = get_signal(scores, info)
 
-    if composite >= 80:
-        recommendation = "STRONG BUY"
-        rec_color = "#00e5a0"
-        needle_pct = 90
-    elif composite >= 65:
-        recommendation = "BUY"
-        rec_color = "#00e5a0"
-        needle_pct = 75
-    elif composite >= 50:
-        recommendation = "SPECULATIVE BUY"
-        rec_color = "#f5a623"
-        needle_pct = 60
-    elif composite >= 35:
-        recommendation = "HOLD"
-        rec_color = "#f5a623"
-        needle_pct = 45
-    elif composite >= 20:
-        recommendation = "SELL"
-        rec_color = "#ff4d6d"
-        needle_pct = 25
+    signal_text = signal.split(" ", 1)[-1] if " " in signal else signal
+    recommendation = signal_text
+
+    if "STRONG BUY" in recommendation:
+        rec_color = "#00e5a0"; needle_pct = 90
+    elif "BUY" in recommendation and "SPEC" not in recommendation:
+        rec_color = "#00e5a0"; needle_pct = 75
+    elif "SPECULATIVE" in recommendation:
+        rec_color = "#f5a623"; needle_pct = 60
+    elif "HOLD" in recommendation:
+        rec_color = "#f5a623"; needle_pct = 45
+    elif "STRONG SELL" in recommendation:
+        rec_color = "#ff4d6d"; needle_pct = 10
+    elif "SELL" in recommendation:
+        rec_color = "#ff4d6d"; needle_pct = 25
     else:
-        recommendation = "STRONG SELL"
-        rec_color = "#ff4d6d"
-        needle_pct = 10
+        rec_color = "#f5a623"; needle_pct = 50
 
     upside = ((target_mean - current_price) / current_price * 100) if target_mean and current_price and current_price > 0 else 0
 

@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE:BORORENEW · Risk Score Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090d; --bg2: #0d0e14; --bg3: #12131a; --bg4: #181922;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+    --green: #00e5a0; --green-dim: rgba(0,229,160,0.12);
+    --red: #ff4d6d; --red-dim: rgba(255,77,109,0.12);
+    --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
+    --blue: #3d9cf5; --blue-dim: rgba(61,156,245,0.12);
+    --purple: #9b7fff;
+    --text: #e8e9f0; --text2: #9899a8; --text3: #5c5d6e;
+    --mono: 'Fira Code', monospace; --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .page { max-width: 1120px; margin: 0 auto; padding: 32px 24px; }
+  .stock-header { display:flex; align-items:flex-start; justify-content:space-between; padding:28px 32px; background:linear-gradient(135deg,#0f1018,#131420 60%,#0d1020); border:1px solid var(--border2); border-radius:16px; position:relative; overflow:hidden; margin-bottom:20px; }
+  .stock-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--green),transparent); opacity:0.4; }
+  .sh-ticker { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--green); letter-spacing:2px; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+  .badge { border-radius:4px; padding:1px 6px; font-size:9px; font-weight:600; }
+  .badge-nse { background:var(--green-dim); color:var(--green); border:1px solid rgba(0,229,160,0.2); }
+  .badge-sector { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(61,156,245,0.2); }
+  .sh-name { font-family:var(--mono); font-size:26px; font-weight:700; color:#fff; letter-spacing:-0.5px; margin-bottom:8px; }
+  .sh-meta { display:flex; gap:16px; flex-wrap:wrap; font-family:var(--mono); font-size:10px; color:var(--text2); }
+  .sh-right { text-align:right; }
+  .sh-price { font-family:var(--mono); font-size:36px; font-weight:700; color:#fff; letter-spacing:-1px; }
+  .sh-change { font-family:var(--mono); font-size:13px; font-weight:600; margin-top:4px; }
+  .sh-volume { font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:8px; }
+  .sh-timestamp { font-family:var(--mono); font-size:9px; color:var(--text3); margin-top:4px; }
+  .sh-ranges { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+  .sh-range { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9px; }
+  .sh-range-label { color:var(--text3); width:32px; text-align:right; letter-spacing:0.5px; flex-shrink:0; }
+  .sh-range-val { color:var(--text3); width:42px; text-align:right; flex-shrink:0; }
+  .sh-range-track { flex:1; height:4px; background:var(--border); border-radius:2px; position:relative; min-width:80px; }
+  .sh-range-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--green),var(--green)); }
+  .sh-range-dot { position:absolute; top:50%; width:10px; height:10px; border-radius:50%; background:var(--green); border:2px solid var(--bg); transform:translate(-50%,-50%); box-shadow:0 0 6px rgba(0,229,160,0.5); }
+  .gauge-kpi-row { display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }
+  .gauge-card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; }
+  .gauge-title { font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+  .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .kpi-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; transition:border-color 0.3s; }
+  .kpi-card:hover { border-color:var(--border2); }
+  .kpi-label { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:4px; }
+  .kpi-value { font-family:var(--mono); font-size:18px; font-weight:700; color:#fff; }
+  .kpi-sub { font-size:10px; color:var(--text2); margin-top:2px; }
+  .section { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:20px; }
+  .section-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  .card-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+  .metric-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:16px; position:relative; transition:transform 0.2s,box-shadow 0.2s; }
+  .metric-card:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+  .metric-card.beat { border-color:rgba(0,229,160,0.25); background:linear-gradient(145deg,var(--bg3),rgba(0,229,160,0.04)); }
+  .metric-card.beat::before { content:'✓ BEAT'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--green); background:var(--green-dim); border:1px solid rgba(0,229,160,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card.miss { border-color:rgba(255,77,109,0.25); background:linear-gradient(145deg,var(--bg3),rgba(255,77,109,0.04)); }
+  .metric-card.miss::before { content:'✕ MISS'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--red); background:var(--red-dim); border:1px solid rgba(255,77,109,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card.caution { border-color:rgba(245,166,35,0.25); background:linear-gradient(145deg,var(--bg3),rgba(245,166,35,0.04)); }
+  .metric-card.caution::before { content:'⚠ CAUTION'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--amber); background:var(--amber-dim); border:1px solid rgba(245,166,35,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card[data-tip] { cursor:pointer; }
+  .metric-card[data-tip]::after { content:attr(data-tip); position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:#1e1f2e; color:var(--text); border:1px solid var(--border2); border-radius:8px; padding:8px 12px; font-family:var(--mono); font-size:10px; line-height:1.5; white-space:normal; width:max-content; max-width:260px; z-index:50; pointer-events:none; opacity:0; transition:opacity 0.15s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+  .metric-card[data-tip]:hover::after { opacity:1; }
+  .mc-label { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+  .mc-value { font-family:var(--mono); font-size:22px; font-weight:700; color:#fff; }
+  .mc-bench { font-size:10px; color:var(--text2); margin-top:4px; }
+  .breakdown-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+  .breakdown-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .bc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .bc-title { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); }
+  .bc-score { font-family:var(--mono); font-size:28px; font-weight:700; }
+  .bc-max { font-family:var(--mono); font-size:12px; color:var(--text3); }
+  .bc-bar-track { height:4px; background:var(--bg4); border-radius:2px; overflow:hidden; margin-bottom:12px; }
+  .bc-bar-fill { height:100%; border-radius:2px; }
+  .bc-items { list-style:none; } .bc-items li { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text2); padding:3px 0; font-family:var(--mono); }
+  .bc-items li::before { content:'›'; color:var(--text3); }
+  .returns-strip { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
+  .page-break { border:none; border-top:2px dashed var(--border2); margin:36px 0; position:relative; }
+  .page-break::after { content:'PAGE 2'; position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:var(--bg); padding:0 12px; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:2px; }
+  table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
+  thead th { padding:10px 12px; text-align:right; color:var(--text3); font-weight:500; font-size:9px; letter-spacing:1px; text-transform:uppercase; border-bottom:2px solid var(--border2); }
+  thead th:first-child { text-align:left; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background 0.2s; } tbody tr:hover { background:rgba(255,255,255,0.02); }
+  tbody td { padding:10px 12px; text-align:right; } tbody td:first-child { text-align:left; color:var(--text2); }
+  .tg { color:var(--green)!important; } .tr { color:var(--red)!important; } .ta { color:var(--amber)!important; }
+  .dual-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .col-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .col-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:12px; }
+  .col-item { display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; color:var(--text2); line-height:1.5; }
+  .col-item:last-child { border-bottom:none; }
+  .col-icon { font-size:14px; min-width:20px; text-align:center; }
+  .news-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .news-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px; transition:border-color 0.3s; }
+  .news-card:hover { border-color:var(--border2); }
+  .news-title { font-family:var(--mono); font-size:11px; color:#fff; line-height:1.5; margin-bottom:6px; }
+  .news-meta { font-family:var(--mono); font-size:9px; color:var(--text3); }
+  .verdict-card { background:linear-gradient(135deg,#0d0e18,#10111e); border:1px solid var(--border2); border-radius:16px; padding:28px; position:relative; overflow:hidden; margin-bottom:20px; }
+  .verdict-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--red),var(--amber),var(--green)); }
+  .verdict-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+  .verdict-rec { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--text3); }
+  .verdict-rating { font-family:var(--mono); font-size:32px; font-weight:700; }
+  .verdict-score { font-family:var(--mono); font-size:14px; }
+  .rating-bar-track { width:100%; height:6px; background:linear-gradient(90deg,var(--red) 0%,var(--amber) 50%,var(--green) 100%); border-radius:3px; position:relative; margin-bottom:24px; }
+  .rating-needle { position:absolute; top:-4px; width:14px; height:14px; background:#fff; border-radius:50%; transform:translateX(-50%); box-shadow:0 0 8px rgba(255,255,255,0.4); }
+  .verdict-text { font-size:13px; color:var(--text2); line-height:1.7; border-left:3px solid var(--amber); padding-left:16px; }
+  .verdict-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .vtag { font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 10px; border-radius:4px; border:1px solid; }
+  .vtag.green { color:var(--green); border-color:rgba(0,229,160,0.3); background:var(--green-dim); }
+  .vtag.red { color:var(--red); border-color:rgba(255,77,109,0.3); background:var(--red-dim); }
+  .vtag.amber { color:var(--amber); border-color:rgba(245,166,35,0.3); background:var(--amber-dim); }
+  .vtag.blue { color:var(--blue); border-color:rgba(61,156,245,0.3); background:var(--blue-dim); }
+  .copy-btn { position:fixed; bottom:24px; right:24px; background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:10px 16px; font-family:var(--mono); font-size:10px; color:var(--text2); cursor:pointer; display:flex; align-items:center; gap:6px; z-index:100; letter-spacing:1px; transition:all 0.3s; }
+  .copy-btn:hover { background:var(--bg4); color:#fff; border-color:var(--green); box-shadow:0 0 20px rgba(0,229,160,0.15); }
+  .footer { text-align:center; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:1px; padding:24px 0; border-top:1px solid var(--border); margin-top:8px; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .section, .stock-header, .gauge-kpi-row, .breakdown-grid, .verdict-card { animation: fadeIn 0.6s ease both; }
+  @media (max-width: 768px) { .stock-header { flex-direction:column; gap:16px; } .gauge-kpi-row { grid-template-columns:1fr; } .card-grid { grid-template-columns:1fr 1fr; } .breakdown-grid { grid-template-columns:1fr; } .dual-col { grid-template-columns:1fr; } .kpi-strip { grid-template-columns:repeat(2,1fr); } .returns-strip { grid-template-columns:repeat(3,1fr); } .news-grid { grid-template-columns:1fr; } }
+  @media print { .copy-btn { display:none; } .page { padding:16px; } .page-break { page-break-before:always; border:none; margin:0; } }
+</style>
+</head>
+<body>
+<div id="report-content">
+<div class="page">
+
+  <div class="stock-header">
+    <div>
+      <div class="sh-ticker"><span>NSE:BORORENEW</span><span class="badge badge-nse">NSE</span><span class="badge badge-sector">Technology</span></div>
+      <div class="sh-name">Borosil Renewables Limited</div>
+      <div class="sh-meta"><span>📊 Solar</span></div>
+      <div class="sh-ranges">
+        <div class="sh-range">
+          <span class="sh-range-label">Day</span>
+          <span class="sh-range-val">₹493</span>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:77.8%"></div><div class="sh-range-dot" style="left:77.8%"></div></div>
+          <span class="sh-range-val">₹524</span>
+        </div>
+        <div class="sh-range">
+          <span class="sh-range-label">52W</span>
+          <span class="sh-range-val">₹374</span>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:41.1%"></div><div class="sh-range-dot" style="left:41.1%"></div></div>
+          <span class="sh-range-val">₹721</span>
+        </div>
+      </div>
+    </div>
+    <div class="sh-right">
+      <div class="sh-price">₹516.85</div>
+      <div class="sh-change" style="color:#00e5a0">▲ ₹24.45 (+4.97%)</div>
+      <div class="sh-volume">Vol: 615,944 · Avg: 526,336</div>
+      <div class="sh-timestamp">As of April 21, 2026 · 10:33 IST</div>
+    </div>
+  </div>
+
+  <div class="gauge-kpi-row">
+    <div class="gauge-card">
+      <div class="gauge-title">COMPOSITE RISK SCORE</div>
+      <svg viewBox="0 0 260 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:260px;">
+  <defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff4d6d"/>
+      <stop offset="50%" stop-color="#f5a623"/>
+      <stop offset="100%" stop-color="#00e5a0"/>
+    </linearGradient>
+  </defs>
+  <path d="M 59.3 200.7 A 100 100 0 0 1 58.2 60.4" fill="none" stroke="#ff4d6d22" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 58.2 60.4 A 100 100 0 0 1 198.5 57.1" fill="none" stroke="#f5a62322" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 198.5 57.1 A 100 100 0 0 1 200.7 200.7" fill="none" stroke="#00e5a022" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 59.3 200.7 A 100 100 0 0 1 115.9 31.0" fill="none" stroke="url(#arcGrad)" stroke-width="8" stroke-linecap="round" filter="url(#glow)"/>
+  <line x1="55.0" y1="205.0" x2="50.8" y2="209.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="29.2" y1="162.8" x2="23.5" y2="164.6" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="25.3" y1="113.4" x2="19.4" y2="112.5" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="44.2" y1="67.7" x2="39.4" y2="64.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="81.9" y1="35.6" x2="79.2" y2="30.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="130.0" y1="24.0" x2="130.0" y2="18.0" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="178.1" y1="35.6" x2="180.8" y2="30.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="215.8" y1="67.7" x2="220.6" y2="64.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="234.7" y1="113.4" x2="240.6" y2="112.5" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="230.8" y1="162.8" x2="236.5" y2="164.6" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="205.0" y1="205.0" x2="209.2" y2="209.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="130" y1="130" x2="119.4" y2="55.7" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)"/>
+  <circle cx="130" cy="130" r="6" fill="#f5a623" filter="url(#glow)"/>
+  <circle cx="130" cy="130" r="3" fill="#08090d"/>
+  <text x="130" y="165" text-anchor="middle" font-family="'Fira Code',monospace" font-size="32" font-weight="700" fill="#fff">47</text>
+  <text x="130" y="182" text-anchor="middle" font-family="'Fira Code',monospace" font-size="9" fill="#f5a623" letter-spacing="2">MODERATE</text>
+</svg>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:8px;letter-spacing:1px;">
+        VAL:20/35 · FIN:9/35 · GRO:18/30
+      </div>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card"><div class="kpi-label">📈 P/E RATIO</div><div class="kpi-value">0.0x</div><div class="kpi-sub">Trailing</div></div>
+      <div class="kpi-card"><div class="kpi-label">📖 P/B RATIO</div><div class="kpi-value">6.2x</div><div class="kpi-sub">Price to Book</div></div>
+      <div class="kpi-card"><div class="kpi-label">💰 EPS</div><div class="kpi-value">₹-4.48</div><div class="kpi-sub">TTM</div></div>
+      <div class="kpi-card"><div class="kpi-label">🏛 MARKET CAP</div><div class="kpi-value">₹7,246Cr</div><div class="kpi-sub">Mid Cap</div></div>
+      <div class="kpi-card"><div class="kpi-label">📊 ROE</div><div class="kpi-value">-7.0%</div><div class="kpi-sub">Return on Equity</div></div>
+      <div class="kpi-card"><div class="kpi-label">📈 REV GROWTH</div><div class="kpi-value">8.0%</div><div class="kpi-sub">YoY</div></div>
+    </div>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">🏢 Company Overview</div>
+    <p style='font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px;'>Borosil Renewables is engaged in manufacturing extra clear patterned glass and Low Iron Solar Glass for application in Photovoltaic panels, Flat plate collectors and Greenhouses. (Source: 202003-01 Annual Report Page No:188)</p>
+    <div class="dual-col">
+      <div class="col-card" style="border-left:3px solid var(--green);">
+        <div class="col-title" style="color:var(--green);">PROS</div>
+        <ul style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:4px;color:var(--green);">Company has reduced debt.</li></ul>
+      </div>
+      <div class="col-card" style="border-left:3px solid var(--red);">
+        <div class="col-title" style="color:var(--red);">CONS</div>
+        <ul style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:4px;color:var(--red);">Stock is trading at 7.73 times its book value</li><li style="margin-bottom:4px;color:var(--red);">Company has a low return on equity of -3.35% over last 3 years.</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📈 12-Month Price Movement · Annotated</div>
+    <svg viewBox="0 0 1040 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <defs>
+    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00e5a0" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#00e5a0" stop-opacity="0.01"/>
+    </linearGradient>
+    <filter id="lineGlow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <line x1="60" y1="30.0" x2="1020" y2="30.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="34.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">₹743</text>
+  <line x1="60" y1="72.0" x2="1020" y2="72.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="76.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">₹667</text>
+  <line x1="60" y1="114.0" x2="1020" y2="114.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="118.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">₹591</text>
+  <line x1="60" y1="156.0" x2="1020" y2="156.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="160.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">₹515</text>
+  <line x1="60" y1="198.0" x2="1020" y2="198.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="202.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">₹439</text>
+  <line x1="60" y1="240.0" x2="1020" y2="240.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="244.0" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">₹363</text>
+  <text x="91.0" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">May'25</text>
+  <text x="172.3" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Jun'25</text>
+  <text x="253.5" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Jul'25</text>
+  <text x="342.6" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Aug'25</text>
+  <text x="416.1" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Sep'25</text>
+  <text x="501.3" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Oct'25</text>
+  <text x="582.6" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Nov'25</text>
+  <text x="656.1" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Dec'25</text>
+  <text x="741.3" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Jan'26</text>
+  <text x="822.6" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Feb'26</text>
+  <text x="900.0" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Mar'26</text>
+  <text x="973.5" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Apr'26</text>
+  <path d="M 60.0 156.2 L 63.9 149.3 L 67.7 152.9 L 71.6 155.6 L 75.5 158.1 L 79.4 162.2 L 83.2 164.6 L 87.1 168.6 L 91.0 171.5 L 94.8 170.0 L 98.7 177.0 L 102.6 173.1 L 106.5 173.0 L 110.3 146.3 L 114.2 140.7 L 118.1 152.5 L 121.9 137.2 L 125.8 136.3 L 129.7 124.1 L 133.5 130.4 L 137.4 137.2 L 141.3 138.3 L 145.2 141.9 L 149.0 137.7 L 152.9 142.9 L 156.8 139.7 L 160.6 140.7 L 164.5 139.8 L 168.4 141.1 L 172.3 132.5 L 176.1 140.9 L 180.0 139.2 L 183.9 130.1 L 187.7 125.8 L 191.6 128.1 L 195.5 115.4 L 199.4 122.2 L 203.2 129.3 L 207.1 132.6 L 211.0 137.0 L 214.8 142.2 L 218.7 144.4 L 222.6 150.1 L 226.5 145.2 L 230.3 147.3 L 234.2 145.7 L 238.1 142.6 L 241.9 144.2 L 245.8 148.3 L 249.7 148.2 L 253.5 167.3 L 257.4 164.6 L 261.3 164.1 L 265.2 165.9 L 269.0 155.7 L 272.9 156.8 L 276.8 155.2 L 280.6 139.5 L 284.5 132.2 L 288.4 138.6 L 292.3 133.0 L 296.1 126.4 L 300.0 119.6 L 303.9 116.7 L 307.7 91.9 L 311.6 97.1 L 315.5 95.1 L 319.4 81.6 L 323.2 95.1 L 327.1 102.5 L 331.0 104.6 L 334.8 104.3 L 338.7 101.5 L 342.6 99.9 L 346.5 101.5 L 350.3 103.8 L 354.2 106.6 L 358.1 109.3 L 361.9 115.8 L 365.8 112.2 L 369.7 116.0 L 373.5 115.0 L 377.4 128.0 L 381.3 123.5 L 385.2 122.2 L 389.0 127.8 L 392.9 130.5 L 396.8 127.3 L 400.6 129.9 L 404.5 136.6 L 408.4 138.2 L 412.3 135.7 L 416.1 122.9 L 420.0 118.4 L 423.9 122.9 L 427.7 131.0 L 431.6 121.4 L 435.5 124.6 L 439.4 120.9 L 443.2 118.8 L 447.1 117.0 L 451.0 126.0 L 454.8 125.5 L 458.7 122.8 L 462.6 130.4 L 466.5 133.1 L 470.3 125.5 L 474.2 97.9 L 478.1 107.4 L 481.9 115.4 L 485.8 122.4 L 489.7 119.5 L 493.5 128.1 L 497.4 123.8 L 501.3 119.3 L 505.2 95.0 L 509.0 98.3 L 512.9 106.7 L 516.8 106.4 L 520.6 106.0 L 524.5 85.2 L 528.4 85.5 L 532.3 98.1 L 536.1 90.7 L 540.0 78.6 L 543.9 87.4 L 547.7 72.7 L 551.6 66.5 L 555.5 76.3 L 559.4 80.2 L 563.2 70.1 L 567.1 68.6 L 571.0 76.6 L 574.8 79.5 L 578.7 84.8 L 582.6 72.9 L 586.5 74.1 L 590.3 73.0 L 594.2 77.3 L 598.1 67.3 L 601.9 54.0 L 605.8 64.4 L 609.7 82.6 L 613.5 75.9 L 617.4 82.6 L 621.3 90.9 L 625.2 99.9 L 629.0 101.8 L 632.9 114.2 L 636.8 116.0 L 640.6 118.3 L 644.5 108.4 L 648.4 113.9 L 652.3 119.1 L 656.1 127.9 L 660.0 128.4 L 663.9 121.0 L 667.7 127.1 L 671.6 135.5 L 675.5 144.2 L 679.4 138.4 L 683.2 142.0 L 687.1 138.3 L 691.0 139.3 L 694.8 140.1 L 698.7 146.1 L 702.6 146.9 L 706.5 152.3 L 710.3 133.3 L 714.2 138.7 L 718.1 137.2 L 721.9 139.7 L 725.8 138.1 L 729.7 146.7 L 733.5 145.0 L 737.4 140.4 L 741.3 142.7 L 745.2 137.7 L 749.0 142.1 L 752.9 144.8 L 756.8 148.1 L 760.6 161.9 L 764.5 164.7 L 768.4 165.4 L 772.3 168.0 L 776.1 158.9 L 780.0 158.9 L 783.9 141.8 L 787.7 155.3 L 791.6 166.3 L 795.5 160.5 L 799.4 151.2 L 803.2 161.9 L 807.1 158.7 L 811.0 149.4 L 814.8 159.0 L 818.7 167.6 L 822.6 175.5 L 826.5 167.8 L 830.3 156.9 L 834.2 159.3 L 838.1 166.1 L 841.9 159.4 L 845.8 164.3 L 849.7 163.6 L 853.5 161.1 L 857.4 167.1 L 861.3 169.7 L 865.2 170.8 L 869.0 168.9 L 872.9 176.3 L 876.8 175.7 L 880.6 179.8 L 884.5 183.9 L 888.4 178.9 L 892.3 183.5 L 896.1 188.7 L 900.0 196.9 L 903.9 200.4 L 907.7 197.0 L 911.6 200.0 L 915.5 213.6 L 919.4 205.2 L 923.2 210.9 L 927.1 207.4 L 931.0 215.7 L 934.8 215.2 L 938.7 213.4 L 942.6 199.0 L 946.5 212.0 L 950.3 208.1 L 954.2 220.3 L 958.1 215.3 L 961.9 216.2 L 965.8 227.1 L 969.7 232.3 L 973.5 213.3 L 977.4 211.5 L 981.3 210.7 L 985.2 207.6 L 989.0 192.9 L 992.9 191.8 L 996.8 182.2 L 1000.6 182.2 L 1004.5 174.2 L 1008.4 172.5 L 1012.3 165.5 L 1016.1 168.5 L 1020.0 155.0 L 1020.0 240.0 L 60.0 240.0 Z" fill="url(#areaGrad)"/>
+  <polyline points="60.0,156.2 63.9,149.3 67.7,152.9 71.6,155.6 75.5,158.1 79.4,162.2 83.2,164.6 87.1,168.6 91.0,171.5 94.8,170.0 98.7,177.0 102.6,173.1 106.5,173.0 110.3,146.3 114.2,140.7 118.1,152.5 121.9,137.2 125.8,136.3 129.7,124.1 133.5,130.4 137.4,137.2 141.3,138.3 145.2,141.9 149.0,137.7 152.9,142.9 156.8,139.7 160.6,140.7 164.5,139.8 168.4,141.1 172.3,132.5 176.1,140.9 180.0,139.2 183.9,130.1 187.7,125.8 191.6,128.1 195.5,115.4 199.4,122.2 203.2,129.3 207.1,132.6 211.0,137.0 214.8,142.2 218.7,144.4 222.6,150.1 226.5,145.2 230.3,147.3 234.2,145.7 238.1,142.6 241.9,144.2 245.8,148.3 249.7,148.2 253.5,167.3 257.4,164.6 261.3,164.1 265.2,165.9 269.0,155.7 272.9,156.8 276.8,155.2 280.6,139.5 284.5,132.2 288.4,138.6 292.3,133.0 296.1,126.4 300.0,119.6 303.9,116.7 307.7,91.9 311.6,97.1 315.5,95.1 319.4,81.6 323.2,95.1 327.1,102.5 331.0,104.6 334.8,104.3 338.7,101.5 342.6,99.9 346.5,101.5 350.3,103.8 354.2,106.6 358.1,109.3 361.9,115.8 365.8,112.2 369.7,116.0 373.5,115.0 377.4,128.0 381.3,123.5 385.2,122.2 389.0,127.8 392.9,130.5 396.8,127.3 400.6,129.9 404.5,136.6 408.4,138.2 412.3,135.7 416.1,122.9 420.0,118.4 423.9,122.9 427.7,131.0 431.6,121.4 435.5,124.6 439.4,120.9 443.2,118.8 447.1,117.0 451.0,126.0 454.8,125.5 458.7,122.8 462.6,130.4 466.5,133.1 470.3,125.5 474.2,97.9 478.1,107.4 481.9,115.4 485.8,122.4 489.7,119.5 493.5,128.1 497.4,123.8 501.3,119.3 505.2,95.0 509.0,98.3 512.9,106.7 516.8,106.4 520.6,106.0 524.5,85.2 528.4,85.5 532.3,98.1 536.1,90.7 540.0,78.6 543.9,87.4 547.7,72.7 551.6,66.5 555.5,76.3 559.4,80.2 563.2,70.1 567.1,68.6 571.0,76.6 574.8,79.5 578.7,84.8 582.6,72.9 586.5,74.1 590.3,73.0 594.2,77.3 598.1,67.3 601.9,54.0 605.8,64.4 609.7,82.6 613.5,75.9 617.4,82.6 621.3,90.9 625.2,99.9 629.0,101.8 632.9,114.2 636.8,116.0 640.6,118.3 644.5,108.4 648.4,113.9 652.3,119.1 656.1,127.9 660.0,128.4 663.9,121.0 667.7,127.1 671.6,135.5 675.5,144.2 679.4,138.4 683.2,142.0 687.1,138.3 691.0,139.3 694.8,140.1 698.7,146.1 702.6,146.9 706.5,152.3 710.3,133.3 714.2,138.7 718.1,137.2 721.9,139.7 725.8,138.1 729.7,146.7 733.5,145.0 737.4,140.4 741.3,142.7 745.2,137.7 749.0,142.1 752.9,144.8 756.8,148.1 760.6,161.9 764.5,164.7 768.4,165.4 772.3,168.0 776.1,158.9 780.0,158.9 783.9,141.8 787.7,155.3 791.6,166.3 795.5,160.5 799.4,151.2 803.2,161.9 807.1,158.7 811.0,149.4 814.8,159.0 818.7,167.6 822.6,175.5 826.5,167.8 830.3,156.9 834.2,159.3 838.1,166.1 841.9,159.4 845.8,164.3 849.7,163.6 853.5,161.1 857.4,167.1 861.3,169.7 865.2,170.8 869.0,168.9 872.9,176.3 876.8,175.7 880.6,179.8 884.5,183.9 888.4,178.9 892.3,183.5 896.1,188.7 900.0,196.9 903.9,200.4 907.7,197.0 911.6,200.0 915.5,213.6 919.4,205.2 923.2,210.9 927.1,207.4 931.0,215.7 934.8,215.2 938.7,213.4 942.6,199.0 946.5,212.0 950.3,208.1 954.2,220.3 958.1,215.3 961.9,216.2 965.8,227.1 969.7,232.3 973.5,213.3 977.4,211.5 981.3,210.7 985.2,207.6 989.0,192.9 992.9,191.8 996.8,182.2 1000.6,182.2 1004.5,174.2 1008.4,172.5 1012.3,165.5 1016.1,168.5 1020.0,155.0" fill="none" stroke="#00e5a0" stroke-width="2" stroke-linejoin="round" filter="url(#lineGlow)"/>
+  <line x1="605.8" y1="64.4" x2="605.8" y2="240.0" stroke="#00e5a0" stroke-width="0.5" stroke-dasharray="3,3" opacity="0.5"/>
+  <circle cx="605.8" cy="64.4" r="4" fill="#00e5a0" stroke="#08090d" stroke-width="2"/>
+  <text x="605.8" y="52.4" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#00e5a0">52W High: ₹721</text>
+  <line x1="969.7" y1="232.3" x2="969.7" y2="240.0" stroke="#ff4d6d" stroke-width="0.5" stroke-dasharray="3,3" opacity="0.5"/>
+  <circle cx="969.7" cy="232.3" r="4" fill="#ff4d6d" stroke="#08090d" stroke-width="2"/>
+  <text x="969.7" y="220.3" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#ff4d6d">52W Low: ₹374</text>
+  <line x1="1020.0" y1="155.0" x2="1020.0" y2="240.0" stroke="#3d9cf5" stroke-width="0.5" stroke-dasharray="3,3" opacity="0.5"/>
+  <circle cx="1020.0" cy="155.0" r="4" fill="#3d9cf5" stroke="#08090d" stroke-width="2"/>
+  <text x="1020.0" y="143.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#3d9cf5">CMP: ₹517</text>
+</svg>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🕯 Daily Candlestick Chart · 50 EMA & 200 DMA</div>
+    <svg viewBox="0 0 1040 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <line x1="60" y1="20.0" x2="970" y2="20.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="24.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹626</text>
+  <line x1="60" y1="64.0" x2="970" y2="64.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="68.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹574</text>
+  <line x1="60" y1="108.0" x2="970" y2="108.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="112.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹521</text>
+  <line x1="60" y1="152.0" x2="970" y2="152.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="156.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹468</text>
+  <line x1="60" y1="196.0" x2="970" y2="196.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="200.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹416</text>
+  <line x1="60" y1="240.0" x2="970" y2="240.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="52" y="244.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹363</text>
+  <text x="236.9" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Jan'26</text>
+  <text x="449.3" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Feb'26</text>
+  <text x="651.5" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Mar'26</text>
+  <text x="843.6" y="272" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">Apr'26</text>
+  <polyline points="469.5,69.7 479.6,69.7 489.7,69.9 499.8,69.9 509.9,70.0 520.1,70.0 530.2,70.0 540.3,70.0 550.4,70.0 560.5,70.0 570.6,70.0 580.7,70.0 590.8,70.0 600.9,70.1 611.1,70.4 621.2,70.7 631.3,70.9 641.4,71.3 651.5,71.8 661.6,72.3 671.7,72.8 681.8,73.3 691.9,73.9 702.1,74.4 712.2,74.9 722.3,75.4 732.4,76.0 742.5,76.5 752.6,77.1 762.7,77.5 772.8,78.1 782.9,78.6 793.1,79.2 803.2,79.9 813.3,80.6 823.4,81.3 833.5,82.2 843.6,82.9 853.7,83.5 863.8,84.1 873.9,84.6 884.1,85.0 894.2,85.4 904.3,85.6 914.4,85.9 924.5,86.1 934.6,86.3 944.7,86.5 954.8,86.7 964.9,86.7" fill="none" stroke="#f5a623" stroke-width="1.5" opacity="0.5" stroke-dasharray="6,3"/>
+  <text x="968.9" y="89.7" font-family="Fira Code,monospace" font-size="8" font-weight="600" fill="#f5a623">₹546</text>
+  <polyline points="65.1,35.3 75.2,37.3 85.3,39.4 95.4,41.2 105.5,43.1 115.6,44.9 125.7,47.0 135.8,49.0 145.9,51.3 156.1,52.4 166.2,53.7 176.3,54.9 186.4,56.3 196.5,57.4 206.6,59.0 216.7,60.5 226.8,61.7 236.9,62.9 247.1,63.8 257.2,64.9 267.3,66.1 277.4,67.5 287.5,69.6 297.6,71.8 307.7,74.0 317.8,76.2 327.9,77.9 338.1,79.4 348.2,79.9 358.3,81.1 368.4,83.0 378.5,84.5 388.6,85.3 398.7,86.7 408.8,87.9 418.9,88.5 429.1,89.6 439.2,91.3 449.3,93.3 459.4,94.7 469.5,95.5 479.6,96.4 489.7,97.7 499.8,98.5 509.9,99.5 520.1,100.5 530.2,101.3 540.3,102.4 550.4,103.6 560.5,104.9 570.6,106.0 580.7,107.5 590.8,108.8 600.9,110.4 611.1,112.2 621.2,113.6 631.3,115.2 641.4,117.0 651.5,119.3 661.6,121.7 671.7,123.8 681.8,126.0 691.9,128.9 702.1,131.2 712.2,133.7 722.3,135.9 732.4,138.6 742.5,141.1 752.6,143.4 762.7,144.8 772.8,146.8 782.9,148.6 793.1,151.0 803.2,153.0 813.3,155.0 823.4,157.6 833.5,160.4 843.6,161.9 853.7,163.3 863.8,164.6 873.9,165.6 884.1,165.7 894.2,165.8 904.3,165.3 914.4,164.8 924.5,163.8 934.6,162.8 944.7,161.4 954.8,160.3 964.9,158.4" fill="none" stroke="#9b7fff" stroke-width="1.5" opacity="0.7"/>
+  <text x="968.9" y="161.4" font-family="Fira Code,monospace" font-size="8" font-weight="600" fill="#9b7fff">₹461</text>
+  <line x1="65.1" y1="88.6" x2="65.1" y2="102.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="61.8" y="88.8" width="6.6" height="6.5" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="75.2" y1="80.4" x2="75.2" y2="104.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="71.9" y="86.5" width="6.6" height="10.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="85.3" y1="79.1" x2="85.3" y2="93.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="82.0" y="84.0" width="6.6" height="7.8" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="95.4" y1="84.2" x2="95.4" y2="96.0" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="92.1" y="86.2" width="6.6" height="3.4" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="105.5" y1="82.0" x2="105.5" y2="90.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="102.2" y="85.4" width="6.6" height="2.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="115.6" y1="85.8" x2="115.6" y2="95.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="112.3" y="87.7" width="6.6" height="1.3" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="125.7" y1="86.6" x2="125.7" y2="100.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="122.4" y="87.0" width="6.6" height="11.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="135.8" y1="93.2" x2="135.8" y2="101.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="132.5" y="95.9" width="6.6" height="3.3" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="145.9" y1="101.5" x2="145.9" y2="108.8" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="142.7" y="102.1" width="6.6" height="5.3" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="156.1" y1="71.4" x2="156.1" y2="106.7" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="152.8" y="78.7" width="6.6" height="24.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="166.2" y1="75.8" x2="166.2" y2="88.8" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="162.9" y="78.3" width="6.6" height="8.7" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="176.3" y1="82.1" x2="176.3" y2="91.1" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="173.0" y="84.3" width="6.6" height="1.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="186.4" y1="80.4" x2="186.4" y2="89.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="183.1" y="83.7" width="6.6" height="4.7" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="196.5" y1="81.2" x2="196.5" y2="93.1" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="193.2" y="86.0" width="6.6" height="2.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="206.6" y1="86.0" x2="206.6" y2="100.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="203.3" y="86.0" width="6.6" height="13.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="216.7" y1="93.9" x2="216.7" y2="102.9" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="213.4" y="96.5" width="6.6" height="2.5" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="226.8" y1="80.4" x2="226.8" y2="96.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="223.5" y="89.5" width="6.6" height="1.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="236.9" y1="87.1" x2="236.9" y2="94.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="233.7" y="89.0" width="6.6" height="4.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="247.1" y1="82.8" x2="247.1" y2="92.9" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="243.8" y="85.5" width="6.6" height="6.5" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="257.2" y1="84.7" x2="257.2" y2="94.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="253.9" y="86.1" width="6.6" height="5.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="267.3" y1="90.5" x2="267.3" y2="101.3" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="264.0" y="93.4" width="6.6" height="2.7" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="277.4" y1="93.8" x2="277.4" y2="103.4" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="274.1" y="95.5" width="6.6" height="5.6" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="287.5" y1="98.5" x2="287.5" y2="126.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="284.2" y="103.8" width="6.6" height="18.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="297.6" y1="109.8" x2="297.6" y2="128.3" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="294.3" y="118.9" width="6.6" height="7.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="307.7" y1="121.5" x2="307.7" y2="135.4" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="304.4" y="125.2" width="6.6" height="2.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="317.8" y1="120.7" x2="317.8" y2="134.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="314.5" y="126.8" width="6.6" height="4.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="327.9" y1="114.1" x2="327.9" y2="135.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="324.7" y="117.4" width="6.6" height="13.3" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="338.1" y1="117.4" x2="338.1" y2="117.4" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="334.8" y="117.4" width="6.6" height="1.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="348.2" y1="82.9" x2="348.2" y2="123.8" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="344.9" y="91.6" width="6.6" height="25.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="358.3" y1="90.8" x2="358.3" y2="118.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="355.0" y="92.1" width="6.6" height="19.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="368.4" y1="109.2" x2="368.4" y2="131.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="365.1" y="112.1" width="6.6" height="16.5" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="378.5" y1="116.4" x2="378.5" y2="133.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="375.2" y="119.9" width="6.6" height="8.8" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="388.6" y1="97.9" x2="388.6" y2="116.4" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="385.3" y="105.8" width="6.6" height="4.3" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="398.7" y1="104.6" x2="398.7" y2="124.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="395.4" y="104.6" width="6.6" height="17.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="408.8" y1="107.4" x2="408.8" y2="129.7" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="405.5" y="117.1" width="6.6" height="4.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="418.9" y1="100.6" x2="418.9" y2="115.1" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="415.7" y="103.0" width="6.6" height="8.4" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="429.1" y1="92.2" x2="429.1" y2="119.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="425.8" y="98.2" width="6.6" height="19.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="439.2" y1="118.2" x2="439.2" y2="132.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="435.9" y="118.2" width="6.6" height="12.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="449.3" y1="133.1" x2="449.3" y2="152.1" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="446.0" y="135.5" width="6.6" height="7.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="459.4" y1="104.6" x2="459.4" y2="135.4" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="456.1" y="104.6" width="6.6" height="26.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="469.5" y1="105.1" x2="469.5" y2="135.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="466.2" y="114.5" width="6.6" height="16.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="479.6" y1="113.0" x2="479.6" y2="123.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="476.3" y="117.0" width="6.6" height="1.1" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="489.7" y1="121.4" x2="489.7" y2="129.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="486.4" y="123.8" width="6.6" height="4.6" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="499.8" y1="116.9" x2="499.8" y2="128.1" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="496.5" y="118.2" width="6.6" height="7.3" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="509.9" y1="112.1" x2="509.9" y2="127.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="506.7" y="117.2" width="6.6" height="8.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="520.1" y1="114.4" x2="520.1" y2="125.4" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="516.8" y="124.6" width="6.6" height="1.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="530.2" y1="118.1" x2="530.2" y2="129.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="526.9" y="120.7" width="6.6" height="4.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="540.3" y1="122.2" x2="540.3" y2="130.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="537.0" y="123.8" width="6.6" height="6.1" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="550.4" y1="129.7" x2="550.4" y2="134.8" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="547.1" y="129.7" width="6.6" height="4.1" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="560.5" y1="130.7" x2="560.5" y2="136.4" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="557.2" y="133.9" width="6.6" height="1.5" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="570.6" y1="131.1" x2="570.6" y2="137.4" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="567.3" y="132.5" width="6.6" height="1.8" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="580.7" y1="128.7" x2="580.7" y2="146.3" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="577.4" y="135.2" width="6.6" height="8.5" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="590.8" y1="140.2" x2="590.8" y2="153.1" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="587.5" y="142.8" width="6.6" height="6.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="600.9" y1="135.6" x2="600.9" y2="151.5" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="597.7" y="142.8" width="6.6" height="6.1" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="611.1" y1="147.1" x2="611.1" y2="162.9" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="607.8" y="147.1" width="6.6" height="8.1" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="621.2" y1="143.2" x2="621.2" y2="161.8" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="617.9" y="147.6" width="6.6" height="6.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="631.3" y1="139.8" x2="631.3" y2="155.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="628.0" y="146.5" width="6.6" height="8.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="641.4" y1="154.0" x2="641.4" y2="164.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="638.1" y="161.4" width="6.6" height="1.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="651.5" y1="169.6" x2="651.5" y2="191.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="648.2" y="174.9" width="6.6" height="1.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="661.6" y1="178.2" x2="661.6" y2="188.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="658.3" y="180.1" width="6.6" height="1.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="671.7" y1="173.3" x2="671.7" y2="184.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="668.4" y="174.9" width="6.6" height="4.2" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="681.8" y1="163.2" x2="681.8" y2="182.4" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="678.5" y="172.8" width="6.6" height="6.8" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="691.9" y1="185.1" x2="691.9" y2="208.4" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="688.7" y="188.3" width="6.6" height="11.8" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="702.1" y1="182.7" x2="702.1" y2="197.2" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="698.8" y="187.4" width="6.6" height="5.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="712.2" y1="181.9" x2="712.2" y2="198.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="708.9" y="185.8" width="6.6" height="10.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="722.3" y1="182.8" x2="722.3" y2="206.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="719.0" y="190.7" width="6.6" height="8.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="732.4" y1="189.5" x2="732.4" y2="208.1" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="729.1" y="190.4" width="6.6" height="12.8" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="742.5" y1="188.3" x2="742.5" y2="206.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="739.2" y="199.4" width="6.6" height="3.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="752.6" y1="193.2" x2="752.6" y2="202.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="749.3" y="199.9" width="6.6" height="1.6" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="762.7" y1="174.4" x2="762.7" y2="199.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="759.4" y="178.0" width="6.6" height="19.8" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="772.8" y1="181.8" x2="772.8" y2="200.4" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="769.5" y="184.1" width="6.6" height="13.6" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="782.9" y1="183.1" x2="782.9" y2="194.4" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="779.7" y="191.7" width="6.6" height="1.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="793.1" y1="192.5" x2="793.1" y2="211.8" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="789.8" y="196.6" width="6.6" height="13.5" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="803.2" y1="195.8" x2="803.2" y2="207.9" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="799.9" y="195.8" width="6.6" height="6.8" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="813.3" y1="191.5" x2="813.3" y2="205.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="810.0" y="199.2" width="6.6" height="4.9" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="823.4" y1="203.3" x2="823.4" y2="222.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="820.1" y="204.1" width="6.6" height="16.4" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="833.5" y1="220.4" x2="833.5" y2="230.6" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="830.2" y="226.3" width="6.6" height="2.2" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="843.6" y1="196.9" x2="843.6" y2="218.7" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="840.3" y="199.6" width="6.6" height="17.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="853.7" y1="192.4" x2="853.7" y2="212.6" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="850.4" y="196.9" width="6.6" height="6.4" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="863.8" y1="191.6" x2="863.8" y2="205.5" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="860.5" y="195.8" width="6.6" height="1.0" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="873.9" y1="184.2" x2="873.9" y2="203.3" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="870.7" y="191.0" width="6.6" height="12.3" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="884.1" y1="167.8" x2="884.1" y2="183.2" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="880.8" y="168.7" width="6.6" height="1.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="894.2" y1="157.3" x2="894.2" y2="174.2" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="890.9" y="167.2" width="6.6" height="1.7" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="904.3" y1="145.8" x2="904.3" y2="164.0" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="901.0" y="152.7" width="6.6" height="11.3" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="914.4" y1="145.0" x2="914.4" y2="168.8" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="911.1" y="152.7" width="6.6" height="12.1" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="924.5" y1="138.6" x2="924.5" y2="148.9" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="921.2" y="140.6" width="6.6" height="5.9" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="934.6" y1="132.3" x2="934.6" y2="144.0" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="931.3" y="136.1" width="6.6" height="2.0" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="944.7" y1="119.8" x2="944.7" y2="138.8" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="941.4" y="127.5" width="6.6" height="9.8" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+  <line x1="954.8" y1="122.9" x2="954.8" y2="134.7" stroke="#ff4d6d" stroke-width="1" opacity="0.7"/>
+  <rect x="951.5" y="127.2" width="6.6" height="4.7" fill="#ff4d6d" stroke="#ff4d6d" stroke-width="1" rx="1"/>
+  <line x1="964.9" y1="105.8" x2="964.9" y2="131.4" stroke="#00e5a0" stroke-width="1" opacity="0.7"/>
+  <rect x="961.7" y="111.5" width="6.6" height="19.4" fill="none" stroke="#00e5a0" stroke-width="1" rx="1"/>
+
+  <text x="64" y="32" font-family="Fira Code,monospace" font-size="8" fill="#9b7fff">── 50 EMA (₹461)</text>
+  <text x="64" y="44" font-family="Fira Code,monospace" font-size="8" fill="#f5a623">╌╌ 200 DMA (₹546)</text>
+</svg>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets</div>
+    <svg viewBox="0 0 480 90" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <rect x="123.3" y="25" width="211.1" height="30" rx="4" fill="rgba(0,229,160,0.08)" stroke="rgba(0,229,160,0.2)" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="228.9" y="20" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#00e5a0">FAIR VALUE ZONE</text>
+  <line x1="228.9" y1="22" x2="228.9" y2="58" stroke="#00e5a0" stroke-width="2"/>
+  <text x="228.9" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#00e5a0">₹517</text>
+  <text x="228.9" y="82" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">FAIR VALUE</text>
+  <text x="123.3" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹388</text>
+  <text x="334.4" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹646</text>
+  <line x1="228.9" y1="22" x2="228.9" y2="58" stroke="#00e5a0" stroke-width="3"/>
+  <polygon points="228.9,20 223.9,12 233.9,12" fill="#00e5a0"/>
+  <text x="228.9" y="8" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="#00e5a0">₹517 CMP</text>
+</svg>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">📉 P/E & P/B Trend (at current CMP)</div>
+    <div class="dual-col">
+      <div class="col-card"><div class="col-title">P/E RATIO TREND</div><svg viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <defs><linearGradient id="ag_PE" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3d9cf5" stop-opacity="0.20"/><stop offset="100%" stop-color="#3d9cf5" stop-opacity="0.01"/></linearGradient></defs>
+  <line x1="50" y1="20.0" x2="500" y2="20.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="23.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">221.8</text>
+  <line x1="50" y1="57.0" x2="500" y2="57.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="60.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">174.2</text>
+  <line x1="50" y1="94.0" x2="500" y2="94.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="97.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">126.7</text>
+  <line x1="50" y1="131.0" x2="500" y2="131.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="134.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">79.1</text>
+  <line x1="50" y1="168.0" x2="500" y2="168.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="171.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">31.5</text>
+  <text x="50.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2014</text>
+  <text x="125.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2015</text>
+  <text x="200.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2016</text>
+  <text x="275.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2017</text>
+  <text x="350.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2018</text>
+  <text x="425.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2019</text>
+  <text x="500.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2023</text>
+  <path d="M 50.0 69.6 L 125.0 94.9 L 200.0 42.5 L 275.0 163.7 L 350.0 110.3 L 425.0 124.4 L 500.0 117.2 L 500.0 168.0 L 50.0 168.0 Z" fill="url(#ag_PE)"/>
+  <polyline points="50.0,69.6 125.0,94.9 200.0,42.5 275.0,163.7 350.0,110.3 425.0,124.4 500.0,117.2" fill="none" stroke="#3d9cf5" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="50.0" cy="69.6" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2014: 158.1</title></circle>
+  <circle cx="125.0" cy="94.9" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2015: 125.4</title></circle>
+  <circle cx="200.0" cy="42.5" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2016: 192.9</title></circle>
+  <circle cx="275.0" cy="163.7" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2017: 37.1</title></circle>
+  <circle cx="350.0" cy="110.3" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2018: 105.7</title></circle>
+  <circle cx="425.0" cy="124.4" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2019: 87.6</title></circle>
+  <circle cx="500.0" cy="117.2" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2023: 96.8</title></circle>
+  <text x="504.0" y="120.2" font-family="Fira Code,monospace" font-size="9" font-weight="600" fill="#3d9cf5">96.8</text>
+</svg></div>
+      <div class="col-card"><div class="col-title">P/B RATIO TREND</div><svg viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <defs><linearGradient id="ag_PB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9b7fff" stop-opacity="0.20"/><stop offset="100%" stop-color="#9b7fff" stop-opacity="0.01"/></linearGradient></defs>
+  <line x1="50" y1="20.0" x2="500" y2="20.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="23.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">0.9</text>
+  <line x1="50" y1="57.0" x2="500" y2="57.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="60.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">0.7</text>
+  <line x1="50" y1="94.0" x2="500" y2="94.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="97.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">0.5</text>
+  <line x1="50" y1="131.0" x2="500" y2="131.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="134.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">0.3</text>
+  <line x1="50" y1="168.0" x2="500" y2="168.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="171.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">0.1</text>
+  <text x="50.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2014</text>
+  <text x="100.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2015</text>
+  <text x="150.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2016</text>
+  <text x="200.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2017</text>
+  <text x="250.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2018</text>
+  <text x="300.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2019</text>
+  <text x="350.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2023</text>
+  <text x="400.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2024</text>
+  <text x="450.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2025</text>
+  <text x="500.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">S'2025</text>
+  <path d="M 50.0 143.7 L 100.0 146.2 L 150.0 156.6 L 200.0 162.8 L 250.0 164.4 L 300.0 84.1 L 350.0 49.3 L 400.0 42.0 L 450.0 60.2 L 500.0 45.3 L 500.0 168.0 L 50.0 168.0 Z" fill="url(#ag_PB)"/>
+  <polyline points="50.0,143.7 100.0,146.2 150.0,156.6 200.0,162.8 250.0,164.4 300.0,84.1 350.0,49.3 400.0,42.0 450.0,60.2 500.0,45.3" fill="none" stroke="#9b7fff" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="50.0" cy="143.7" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2014: 0.2</title></circle>
+  <circle cx="100.0" cy="146.2" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2015: 0.2</title></circle>
+  <circle cx="150.0" cy="156.6" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2016: 0.2</title></circle>
+  <circle cx="200.0" cy="162.8" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2017: 0.1</title></circle>
+  <circle cx="250.0" cy="164.4" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2018: 0.1</title></circle>
+  <circle cx="300.0" cy="84.1" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2019: 0.5</title></circle>
+  <circle cx="350.0" cy="49.3" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2023: 0.7</title></circle>
+  <circle cx="400.0" cy="42.0" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2024: 0.8</title></circle>
+  <circle cx="450.0" cy="60.2" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2025: 0.7</title></circle>
+  <circle cx="500.0" cy="45.3" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Sep 2025: 0.8</title></circle>
+  <text x="504.0" y="48.3" font-family="Fira Code,monospace" font-size="9" font-weight="600" fill="#9b7fff">0.8</text>
+</svg></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💎 Valuation & Financial Metrics</div>
+    <div class="card-grid">
+      <div class="metric-card caution" data-tip="P/E: Data unavailable"><div class="mc-label">P/E RATIO</div><div class="mc-value">0.0x</div><div class="mc-bench">Trailing twelve months</div></div>
+      <div class="metric-card caution" data-tip="P/B at 6.2 is between 3 and 10 — moderate"><div class="mc-label">P/B RATIO</div><div class="mc-value">6.2x</div><div class="mc-bench">Price to Book value</div></div>
+      <div class="metric-card miss" data-tip="ROE % at -7.0 is below 8 — weak"><div class="mc-label">ROE</div><div class="mc-value">-7.0%</div><div class="mc-bench">Return on Equity</div></div>
+      <div class="metric-card miss" data-tip="Profit Margin % at -4.0 is below 0 — weak"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">-4.0%</div><div class="mc-bench">Net profit margin</div></div>
+      <div class="metric-card beat" data-tip="OPM % at 25.8 exceeds 15 — strong"><div class="mc-label">OPM</div><div class="mc-value">25.8%</div><div class="mc-bench">Operating profit margin</div></div>
+      <div class="metric-card caution" data-tip="Analyst target: Data unavailable"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">₹0</div><div class="mc-bench">Range: ₹388 - ₹646</div></div>
+      <div class="metric-card caution" data-tip="PEG: Data unavailable"><div class="mc-label">PEG RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Price/Earnings to Growth</div></div>
+      <div class="metric-card caution" data-tip="EV/EBITDA at 19.8 is between 12 and 20 — moderate"><div class="mc-label">EV/EBITDA</div><div class="mc-value">19.8x</div><div class="mc-bench">Enterprise value ratio</div></div>
+      <div class="metric-card caution" data-tip="Current Ratio: Data unavailable"><div class="mc-label">CURRENT RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Liquidity measure</div></div>
+      <div class="metric-card caution" data-tip="Dividend Yield: Data unavailable"><div class="mc-label">DIVIDEND YIELD</div><div class="mc-value">N/A</div><div class="mc-bench">Annual yield</div></div>
+      <div class="metric-card miss" data-tip="ROA % at -5.6 is below 5 — weak"><div class="mc-label">ROA</div><div class="mc-value">-5.6%</div><div class="mc-bench">Return on Assets</div></div>
+      <div class="metric-card beat" data-tip="Gross Margin % at 48.9 exceeds 40 — strong"><div class="mc-label">GROSS MARGIN</div><div class="mc-value">48.9%</div><div class="mc-bench">Gross profit margin</div></div>
+    </div>
+    <div style="margin-top:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:8px;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px;">INDUSTRY AVERAGES — GLASS - INDUSTRIAL</div>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;">
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/E</span> <span style="color:#fff;font-weight:600;">39.7x</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/B</span> <span style="color:#fff;font-weight:600;">8.0x</span> <span style="color:var(--text3);font-size:9px;">(sector fair)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROCE</span> <span style="color:#fff;font-weight:600;">15.6%</span> <span style="color:#ff4d6d;font-size:9px;">(below avg)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROE</span> <span style="color:#fff;font-weight:600;">25%</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">OPM</span> <span style="color:#fff;font-weight:600;">25%</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">Div Yield</span> <span style="color:#fff;font-weight:600;">—</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">D/E</span> <span style="color:#fff;font-weight:600;">&lt;20</span> <span style="color:var(--text3);font-size:9px;">(sector comfort)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="breakdown-grid">
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">VALUATION</div><div class="bc-score" style="color:#f5a623">20<span class="bc-max">/35</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">35% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:57%;background:#f5a623;box-shadow:0 0 8px #f5a62344;"></div></div>
+      <ul class="bc-items">
+        <li>P/E at 0x</li>
+        <li>P/B at 6.2x</li>
+        <li>Analyst target: ₹0 (+0.0%)</li>
+        <li>1Y return: +0.4%</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">FINANCIAL HEALTH</div><div class="bc-score" style="color:#ff4d6d">9<span class="bc-max">/35</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">35% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:26%;background:#ff4d6d;box-shadow:0 0 8px #ff4d6d44;"></div></div>
+      <ul class="bc-items">
+        <li>ROE: -7.0%</li>
+        <li>Profit margin: -4.0%</li>
+        <li>Revenue growth: 8.0%</li>
+        <li>Debt/Equity: 23%</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">GROWTH</div><div class="bc-score" style="color:#f5a623">18<span class="bc-max">/30</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">30% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:60%;background:#f5a623;box-shadow:0 0 8px #f5a62344;"></div></div>
+      <ul class="bc-items">
+        <li>Revenue growth: 8.0%</li>
+        <li>Earnings growth: 0.0%</li>
+        <li>Beta: -0.24</li>
+        <li>Sector: Technology</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">⏱ Returns Across Time Horizons</div>
+    <div class="returns-strip"><div class="kpi-card" style="text-align:center;"><div class="kpi-label">1D</div><div class="kpi-value" style="color:#00e5a0;font-size:16px;">▲ +5.0%</div></div><div class="kpi-card" style="text-align:center;"><div class="kpi-label">1W</div><div class="kpi-value" style="color:#00e5a0;font-size:16px;">▲ +7.2%</div></div><div class="kpi-card" style="text-align:center;"><div class="kpi-label">1M</div><div class="kpi-value" style="color:#00e5a0;font-size:16px;">▲ +29.6%</div></div><div class="kpi-card" style="text-align:center;"><div class="kpi-label">6M</div><div class="kpi-value" style="color:#ff4d6d;font-size:16px;">▼ -23.6%</div></div><div class="kpi-card" style="text-align:center;"><div class="kpi-label">1Y</div><div class="kpi-value" style="color:#00e5a0;font-size:16px;">▲ +0.4%</div></div><div class="kpi-card" style="text-align:center;"><div class="kpi-label">3Y</div><div class="kpi-value" style="color:#00e5a0;font-size:16px;">▲ +3.5%</div></div><div class="kpi-card" style="text-align:center;"><div class="kpi-label">5Y</div><div class="kpi-value" style="color:#00e5a0;font-size:16px;">▲ +120.3%</div></div></div>
+  </div>
+
+  <hr class="page-break">
+
+  <div class="section">
+    <div class="section-title">📋 Quarterly Performance Trend</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Quarter</th><th>Revenue</th><th>QoQ %</th><th>Net Profit</th><th>QoQ %</th><th>Op. Cash Flow</th><th>EBITDA Margin</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Q2 FY25</td>
+          <td>N/A</td><td style="color:var(--text3)">—</td>
+          <td class="">N/A</td><td style="color:var(--text3)">—</td>
+          <td>N/A</td>
+          <td>N/A</td>
+        </tr>
+        <tr>
+          <td>Q3 FY25</td>
+          <td>₹361 Cr</td><td style="color:var(--text3)">—</td>
+          <td class="tr">₹-27 Cr</td><td style="color:var(--text3)">—</td>
+          <td>N/A</td>
+          <td>1.4%</td>
+        </tr>
+        <tr>
+          <td>Q4 FY25</td>
+          <td>₹367 Cr</td><td class="tg">+1.5%</td>
+          <td class="tr">₹-20 Cr</td><td class="tg">+24.9%</td>
+          <td>N/A</td>
+          <td>7.2%</td>
+        </tr>
+        <tr>
+          <td>Q1 FY26</td>
+          <td>₹347 Cr</td><td class="tr">-5.6%</td>
+          <td class="tr">₹-167 Cr</td><td class="tr">-728.7%</td>
+          <td>N/A</td>
+          <td>-44.1%</td>
+        </tr>
+        <tr>
+          <td>Q2 FY26</td>
+          <td>₹379 Cr</td><td class="tg">+9.3%</td>
+          <td class="tg">₹26 Cr</td><td class="tg">+115.9%</td>
+          <td>N/A</td>
+          <td>29.7%</td>
+        </tr>
+        <tr>
+          <td>Q3 FY26</td>
+          <td>₹390 Cr</td><td class="tg">+3.1%</td>
+          <td class="tg">₹100 Cr</td><td class="tg">+279.0%</td>
+          <td>N/A</td>
+          <td>37.8%</td>
+        </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📊 Year-on-Year Trend</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>FY</th><th>Revenue</th><th>YoY %</th><th>Net Profit</th><th>YoY %</th><th>Op. Cash Flow</th><th>YoY %</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>FY22</td>
+          <td>₹642 Cr</td><td style="color:var(--text3)">—</td>
+          <td>₹166 Cr</td><td style="color:var(--text3)">—</td>
+          <td>₹173 Cr</td><td style="color:var(--text3)">—</td>
+        </tr>
+        <tr>
+          <td>FY23</td>
+          <td>₹891 Cr</td><td class="tg">+38.7%</td>
+          <td>₹70 Cr</td><td class="tr">-58.0%</td>
+          <td>₹-6 Cr</td><td class="tr">-103.7%</td>
+        </tr>
+        <tr>
+          <td>FY24</td>
+          <td>₹1,363 Cr</td><td class="tg">+53.0%</td>
+          <td>₹-47 Cr</td><td class="tr">-167.3%</td>
+          <td>₹69 Cr</td><td class="tg">+1179.1%</td>
+        </tr>
+        <tr>
+          <td>FY25</td>
+          <td>₹1,473 Cr</td><td class="tg">+8.1%</td>
+          <td>₹-70 Cr</td><td class="tr">-48.3%</td>
+          <td>₹100 Cr</td><td class="tg">+45.2%</td>
+        </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">📊 Profit & Loss Statement (Screener.in)</div>
+    <div style="overflow-x:auto;"><table><thead><tr><th></th><th>Mar 2015</th><th>Mar 2016</th><th>Mar 2017</th><th>Mar 2018</th><th>Mar 2019</th><th>Mar 2023</th><th>Mar 2024</th><th>Mar 2025</th><th>TTM</th></tr></thead><tbody><tr><td style="font-weight:600;color:#fff;">Sales</td><td style="font-weight:600;color:#fff;">325</td><td class="tg" style="font-weight:600;color:#fff;">415</td><td class="tg" style="font-weight:600;color:#fff;">557</td><td class="tg" style="font-weight:600;color:#fff;">633</td><td class="tg" style="font-weight:600;color:#fff;">762</td><td class="tg" style="font-weight:600;color:#fff;">891</td><td class="tg" style="font-weight:600;color:#fff;">1,371</td><td class="tg" style="font-weight:600;color:#fff;">1,476</td><td class="tg" style="font-weight:600;color:#fff;">1,489</td></tr>
+<tr><td>Expenses</td><td>296</td><td class="tg">368</td><td class="tg">495</td><td class="tg">541</td><td class="tg">653</td><td class="tg">748</td><td class="tg">1,313</td><td class="tg">1,418</td><td class="tr">1,170</td></tr>
+<tr><td style="font-weight:600;color:#fff;">Operating Profit</td><td style="font-weight:600;color:#fff;">30</td><td class="tg" style="font-weight:600;color:#fff;">46</td><td class="tg" style="font-weight:600;color:#fff;">62</td><td class="tg" style="font-weight:600;color:#fff;">92</td><td class="tg" style="font-weight:600;color:#fff;">109</td><td class="tg" style="font-weight:600;color:#fff;">143</td><td class="tr" style="font-weight:600;color:#fff;">58</td><td style="font-weight:600;color:#fff;">58</td><td class="tg" style="font-weight:600;color:#fff;">320</td></tr>
+<tr><td>OPM %</td><td>9%</td><td class="tg">11%</td><td>11%</td><td class="tg">14%</td><td>14%</td><td class="tg">16%</td><td class="tr">4%</td><td>4%</td><td class="tg">21%</td></tr>
+<tr><td>Other Income</td><td>56</td><td class="tr">14</td><td class="tg">135</td><td class="tr">28</td><td class="tg">34</td><td class="tr">19</td><td class="tg">50</td><td class="tr">34</td><td class="tr">-185</td></tr>
+<tr><td>Interest</td><td>2</td><td class="tg">4</td><td class="tg">8</td><td class="tr">7</td><td class="tr">6</td><td class="tg">8</td><td class="tg">29</td><td class="tg">32</td><td class="tr">20</td></tr>
+<tr><td>Depreciation</td><td>18</td><td class="tg">21</td><td class="tg">32</td><td class="tg">37</td><td class="tg">45</td><td class="tg">54</td><td class="tg">132</td><td class="tg">135</td><td class="tr">110</td></tr>
+<tr><td>Profit before tax</td><td>65</td><td class="tr">36</td><td class="tg">156</td><td class="tr">76</td><td class="tg">92</td><td class="tg">101</td><td class="tr">-53</td><td class="tr">-74</td><td class="tg">4</td></tr>
+<tr><td>Tax %</td><td>23%</td><td class="tr">18%</td><td class="tr">12%</td><td class="tg">35%</td><td>35%</td><td class="tr">30%</td><td class="tr">-5%</td><td class="tg">17%</td><td></td></tr>
+<tr><td style="font-weight:600;color:#fff;">Net Profit</td><td style="font-weight:600;color:#fff;">51</td><td class="tr" style="font-weight:600;color:#fff;">29</td><td class="tg" style="font-weight:600;color:#fff;">137</td><td class="tr" style="font-weight:600;color:#fff;">49</td><td class="tg" style="font-weight:600;color:#fff;">60</td><td class="tg" style="font-weight:600;color:#fff;">71</td><td class="tr" style="font-weight:600;color:#fff;">-50</td><td class="tr" style="font-weight:600;color:#fff;">-87</td><td class="tg" style="font-weight:600;color:#fff;">-71</td></tr>
+<tr><td style="font-weight:600;color:#fff;">EPS in Rs</td><td style="font-weight:600;color:#fff;">4.12</td><td class="tr" style="font-weight:600;color:#fff;">2.68</td><td class="tg" style="font-weight:600;color:#fff;">13.93</td><td class="tr" style="font-weight:600;color:#fff;">4.89</td><td class="tg" style="font-weight:600;color:#fff;">5.90</td><td class="tr" style="font-weight:600;color:#fff;">5.34</td><td class="tr" style="font-weight:600;color:#fff;">-3.59</td><td class="tr" style="font-weight:600;color:#fff;">-5.25</td><td class="tg" style="font-weight:600;color:#fff;">-4.92</td></tr>
+<tr><td>Dividend Payout %</td><td>15%</td><td class="tg">23%</td><td class="tr">5%</td><td class="tg">13%</td><td class="tr">11%</td><td class="tr">0%</td><td>0%</td><td>0%</td><td></td></tr>
+</tbody></table></div>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">🏦 Balance Sheet (Screener.in)</div>
+    <div style="overflow-x:auto;"><table><thead><tr><th></th><th>Mar 2015</th><th>Mar 2016</th><th>Mar 2017</th><th>Mar 2018</th><th>Mar 2019</th><th>Mar 2023</th><th>Mar 2024</th><th>Mar 2025</th><th>Sep 2025</th></tr></thead><tbody><tr><td>Equity Capital</td><td>3</td><td class="tr">2</td><td>2</td><td>2</td><td class="tg">9</td><td class="tg">13</td><td>13</td><td>13</td><td>13</td></tr>
+<tr><td>Reserves</td><td>695</td><td class="tr">615</td><td class="tg">763</td><td class="tg">814</td><td class="tg">839</td><td class="tg">906</td><td class="tr">860</td><td class="tg">984</td><td class="tr">880</td></tr>
+<tr><td>Borrowings</td><td>34</td><td class="tg">100</td><td class="tr">67</td><td class="tr">50</td><td class="tg">114</td><td class="tg">421</td><td class="tg">576</td><td class="tr">252</td><td class="tr">203</td></tr>
+<tr><td>Other Liabilities</td><td>85</td><td class="tg">114</td><td class="tg">156</td><td class="tg">199</td><td class="tg">227</td><td class="tg">292</td><td class="tr">235</td><td class="tr">205</td><td class="tr">165</td></tr>
+<tr><td style="font-weight:600;color:#fff;">Total Liabilities</td><td style="font-weight:600;color:#fff;">817</td><td class="tg" style="font-weight:600;color:#fff;">832</td><td class="tg" style="font-weight:600;color:#fff;">989</td><td class="tg" style="font-weight:600;color:#fff;">1,065</td><td class="tg" style="font-weight:600;color:#fff;">1,189</td><td class="tg" style="font-weight:600;color:#fff;">1,632</td><td class="tg" style="font-weight:600;color:#fff;">1,684</td><td class="tr" style="font-weight:600;color:#fff;">1,454</td><td class="tr" style="font-weight:600;color:#fff;">1,262</td></tr>
+<tr><td>Fixed Assets</td><td>264</td><td class="tg">334</td><td class="tr">308</td><td class="tg">383</td><td class="tr">377</td><td class="tg">977</td><td class="tr">928</td><td class="tr">777</td><td class="tr">664</td></tr>
+<tr><td>CWIP</td><td>8</td><td>8</td><td class="tg">43</td><td class="tr">16</td><td class="tg">137</td><td class="tr">70</td><td class="tg">126</td><td class="tg">135</td><td class="tr">48</td></tr>
+<tr><td>Investments</td><td>341</td><td class="tr">226</td><td class="tg">264</td><td class="tg">350</td><td class="tr">230</td><td class="tr">11</td><td class="tg">12</td><td class="tg">50</td><td class="tg">136</td></tr>
+<tr><td>Other Assets</td><td>203</td><td class="tg">264</td><td class="tg">374</td><td class="tr">317</td><td class="tg">444</td><td class="tg">574</td><td class="tg">618</td><td class="tr">493</td><td class="tr">414</td></tr>
+<tr><td style="font-weight:600;color:#fff;">Total Assets</td><td style="font-weight:600;color:#fff;">817</td><td class="tg" style="font-weight:600;color:#fff;">832</td><td class="tg" style="font-weight:600;color:#fff;">989</td><td class="tg" style="font-weight:600;color:#fff;">1,065</td><td class="tg" style="font-weight:600;color:#fff;">1,189</td><td class="tg" style="font-weight:600;color:#fff;">1,632</td><td class="tg" style="font-weight:600;color:#fff;">1,684</td><td class="tr" style="font-weight:600;color:#fff;">1,454</td><td class="tr" style="font-weight:600;color:#fff;">1,262</td></tr>
+</tbody></table></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🏛 Shareholding Pattern</div>
+    
+        <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th></th><th>Dec 2024</th><th>Mar 2025</th><th>Jun 2025</th><th>Sep 2025</th><th>Dec 2025</th><th>Mar 2026</th></tr></thead>
+          <tbody><tr><td><strong>Promoters</strong></td><td class="">61.58%</td><td class="tg">62.20%</td><td class="tr">61.93%</td><td class="tr">61.85%</td><td class="tr">58.77%</td><td class="">58.77%</td></tr><tr><td><strong>FIIs</strong></td><td class="">5.35%</td><td class="tr">4.54%</td><td class="tg">4.62%</td><td class="tg">4.81%</td><td class="tr">4.01%</td><td class="tg">4.27%</td></tr><tr><td><strong>DIIs</strong></td><td class="">1.02%</td><td class="tg">1.20%</td><td class="tr">0.72%</td><td class="tg">0.78%</td><td class="tg">2.57%</td><td class="tr">2.33%</td></tr><tr><td><strong>Public</strong></td><td class="">32.05%</td><td class="tg">32.07%</td><td class="tg">32.74%</td><td class="tr">32.57%</td><td class="tg">34.67%</td><td class="tr">34.63%</td></tr><tr><td><strong>No. of Shareholders</strong></td><td>2,83,955</td><td>2,77,795</td><td>2,66,435</td><td>2,51,006</td><td>2,41,575</td><td>2,37,050</td></tr></tbody>
+        </table>
+        </div>
+  </div>
+
+  <div class="dual-col">
+    <div class="col-card">
+      <div class="col-title" style="color:var(--green);">🟢 CATALYSTS</div>
+      <div class="col-item"><span class="col-icon">🏆</span><span><strong>Positive Revenue Growth:</strong> Revenue growing at 8.0% YoY.</span></div>
+<div class="col-item"><span class="col-icon">💹</span><span><strong>Low Beta (-0.24):</strong> Less volatile than market — defensive play.</span></div>
+<div class="col-item"><span class="col-icon">🔀</span><span><strong>Sector Opportunity:</strong> Technology / Solar — positioned in growth sector.</span></div>
+    </div>
+    <div class="col-card">
+      <div class="col-title" style="color:var(--red);">🔴 RISKS</div>
+      <div class="col-item"><span class="col-icon">📜</span><span><strong>Loss-Making:</strong> Negative profit margin — path to profitability unclear.</span></div>
+<div class="col-item"><span class="col-icon">💰</span><span><strong>Market Risk:</strong> Broader market correction or sentiment shift could impact stock.</span></div>
+<div class="col-item"><span class="col-icon">🔓</span><span><strong>Sector Risk:</strong> Regulatory or competitive changes in Technology space.</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🕸 Factor Analysis · Radar</div>
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+      <div style="flex:0 0 auto;max-width:420px;">
+        <svg viewBox="0 0 480 440" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:480px;">
+  <defs><filter id="spiderGlow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <polygon points="240.0,194.0 264.7,212.0 255.3,241.0 224.7,241.0 215.3,212.0" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,168.0 289.5,203.9 270.6,262.1 209.4,262.1 190.5,203.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,142.0 314.2,195.9 285.8,283.1 194.2,283.1 165.8,195.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,116.0 338.9,187.9 301.1,304.1 178.9,304.1 141.1,187.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,90.0 363.6,179.8 316.4,325.2 163.6,325.2 116.4,179.8" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="240.0" y2="90.0" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="363.6" y2="179.8" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="316.4" y2="325.2" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="163.6" y2="325.2" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="116.4" y2="179.8" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <polygon points="240.0,155.0 301.8,199.9 278.2,272.6 209.4,262.1 141.1,187.9" fill="rgba(0,229,160,0.12)" stroke="#00e5a0" stroke-width="2" filter="url(#spiderGlow)"/>
+  <circle cx="240.0" cy="155.0" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Momentum 5/10: 1M return +29.6%, 6M return -23.6%</title></circle>
+  <circle cx="301.8" cy="199.9" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Sentiment 5/10: Rec: none</title></circle>
+  <circle cx="278.2" cy="272.6" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Value 5/10: P/B 6.2, EV/EBITDA 19.8</title></circle>
+  <circle cx="209.4" cy="262.1" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Quality 4/10: Margin -4.0%, D/E 23</title></circle>
+  <circle cx="141.1" cy="187.9" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Low Volatility 8/10: Beta -0.24, Ann. vol 42%</title></circle>
+  <text x="240.0" y="62.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Momentum</text>
+  <text x="240.0" y="48.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">5</text>
+  <text x="390.5" y="168.4" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Sentiment</text>
+  <text x="403.8" y="164.1" text-anchor="start" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">5</text>
+  <text x="334.5" y="352.6" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Value</text>
+  <text x="342.7" y="363.9" text-anchor="start" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">5</text>
+  <text x="145.5" y="352.6" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Quality</text>
+  <text x="137.3" y="363.9" text-anchor="end" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">4</text>
+  <text x="89.5" y="168.4" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Low Vol</text>
+  <text x="76.2" y="164.1" text-anchor="end" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">8</text>
+</svg>
+      </div>
+      <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #f5a623;"><span style="color:#fff;font-weight:600;">Momentum</span> <span style="color:#f5a623;font-weight:700;">5/10</span><br><span style="color:var(--text3);">1M return +29.6%, 6M return -23.6%</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #f5a623;"><span style="color:#fff;font-weight:600;">Sentiment</span> <span style="color:#f5a623;font-weight:700;">5/10</span><br><span style="color:var(--text3);">Rec: none</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #f5a623;"><span style="color:#fff;font-weight:600;">Value</span> <span style="color:#f5a623;font-weight:700;">5/10</span><br><span style="color:var(--text3);">P/B 6.2, EV/EBITDA 19.8</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #f5a623;"><span style="color:#fff;font-weight:600;">Quality</span> <span style="color:#f5a623;font-weight:700;">4/10</span><br><span style="color:var(--text3);">Margin -4.0%, D/E 23</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #00e5a0;"><span style="color:#fff;font-weight:600;">Low Volatility</span> <span style="color:#00e5a0;font-weight:700;">8/10</span><br><span style="color:var(--text3);">Beta -0.24, Ann. vol 42%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🏭 Industry Peers — Glass - Industrial</div>
+    <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>#</th><th>Company</th><th>CMP</th><th>P/E</th><th>Mkt Cap</th><th>ROCE</th><th>Qtr Profit</th><th>Score</th></tr></thead>
+          <tbody><tr style="border-left:3px solid var(--green);background:rgba(0,229,160,0.04);"><td>1</td><td><a href="https://www.screener.in/company/AGARWALTUF/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Agarwal Toughene <span style="color:var(--green);font-size:9px;">★</span></a></td><td>₹111</td><td>9.1</td><td>₹196</td><td>24.4%</td><td><span class="tg">+170.0%</span></td><td>69</td></tr><tr><td>2</td><td><a href="https://www.screener.in/company/AGARWALFT/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Agarwal Float</a></td><td>₹38</td><td>11.0</td><td>₹27</td><td>17.6%</td><td><span class="tr">-28.6%</span></td><td>53</td></tr><tr><td>3</td><td><a href="https://www.screener.in/company/530765/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Agarwal Fortune</a></td><td>₹19</td><td>44.4</td><td>₹7</td><td>25.3%</td><td><span class="tr">-75.0%</span></td><td>44</td></tr><tr><td>4</td><td><a href="https://www.screener.in/company/SEJALLTD/consolidated/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Sejal Glass</a></td><td>₹658</td><td>35.4</td><td>₹750</td><td>13.5%</td><td><span class="tg">+48.7%</span></td><td>43</td></tr><tr><td>5</td><td><a href="https://www.screener.in/company/BOROSCI/consolidated/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Borosil Scienti.</a></td><td>₹118</td><td>43.9</td><td>₹1,046</td><td>10.3%</td><td><span class="tg">+132.5%</span></td><td>40</td></tr><tr style="border-left:3px solid var(--amber);background:rgba(245,166,35,0.04);"><td>6</td><td><a href="https://www.screener.in/company/BORORENEW/consolidated/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Borosil Renew.</a></td><td>₹518</td><td>76.3</td><td>₹7,265</td><td>-4.4%</td><td><span class="tg">+425.3%</span></td><td>40</td></tr></tbody>
+        </table></div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--amber);margin-top:10px;text-align:center;">★ Agarwal Toughene ranks higher on combined P/E, ROCE, and growth metrics in Glass - Industrial</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎯 Decision Matrix — Game Theory</div>
+    
+    <div style="overflow-x:auto;margin-bottom:16px;"><table>
+    <thead><tr><th style="width:80px;">Action</th><th>If Stock Rises</th><th>If Stock Falls</th></tr></thead>
+    <tbody>
+    <tr style="border-left:3px solid var(--green);"><td style="color:var(--green);font-weight:700;">BUY</td><td>Benefit from potential re-rating</td><td>OPM of 26% provides margin buffer</td></tr>
+    <tr style="border-left:3px solid var(--amber);"><td style="color:var(--amber);font-weight:700;">HOLD</td><td>Retain existing position; wait for better entry; FII stake rising (+0.26%)</td><td>Miss further upside if momentum continues; 1M return of +29.6% shows momentum</td></tr>
+    <tr style="border-left:3px solid var(--red);"><td style="color:var(--red);font-weight:700;">SELL</td><td>Lock in +0.4% 1Y return</td><td>Avoid further drawdown</td></tr>
+    </tbody></table></div>
+    <div class="dual-col">
+      <div class="col-card" style="border-left:3px solid var(--green);">
+        <div class="col-title" style="color:var(--green);">REASONS TO BUY</div>
+        <ul style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:6px;">FII stake rising (+0.26%) — signals institutional confidence</li>
+<li style="margin-bottom:6px;">Operating margin of 26% shows pricing power</li></ul>
+      </div>
+      <div class="col-card" style="border-left:3px solid var(--red);">
+        <div class="col-title" style="color:var(--red);">REASONS TO SELL / AVOID</div>
+        <ul style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:6px;">No major red flags identified</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📰 Latest News</div>
+    <div class="news-grid"><div class="news-card"><a href="https://finance.yahoo.com/news/borosil-renewables-ltd-bom-502219-010129908.html" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;"><div class="news-title">Borosil Renewables Ltd (BOM:502219) Q3 2026 Earnings Call Highlights: Record Revenue and ...</div></a><div class="news-meta">GuruFocus.com · 2026-01-31T01:01</div></div><div class="news-card"><a href="https://finance.yahoo.com/news/borosil-renewables-ltd-bom-502219-170203620.html" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;"><div class="news-title">Borosil Renewables Ltd (BOM:502219) Q2 2026 Earnings Call Highlights: Strong Sales Growth ...</div></a><div class="news-meta">GuruFocus.com · 2025-11-12T17:02</div></div></div>
+  </div>
+
+  <div class="verdict-card">
+    <div class="verdict-header">
+      <div><div class="verdict-rec">RECOMMENDATION</div><div class="verdict-rating" style="color:#f5a623">HOLD</div></div>
+      <div style="text-align:right;"><div class="verdict-rec">COMPOSITE SCORE</div><div class="verdict-score" style="color:#f5a623"><span style="font-size:28px;font-weight:700;">47</span>/100</div></div>
+    </div>
+    <div class="rating-bar-track"><div class="rating-needle" style="left:45%;"></div></div>
+    <div class="verdict-text"><strong>Borosil Renewables Limited</strong> trades at ₹516.85 with a composite risk score of 47/100.
+    The stock scores 20/35 on valuation, 9/35 on financial health, and 18/30 on growth.
+    The company is currently loss-making with negative return on equity.
+    <br><br>
+    The stock is trading near or above analyst consensus targets.
+    Revenue growth is at 8.0%.
+    <br><br>Within <strong>Glass - Industrial</strong>, <strong>Agarwal Toughene</strong> (P/E 9.1, ROCE 24.4%) ranks higher on techno-fundamental metrics and may be worth considering.
+    <br><br>
+    <strong>Bottom Line:</strong> Neutral for Technology — wait for better entry or catalyst. The current recommendation is <strong style="color:#f5a623">HOLD</strong>.</div>
+    <div class="verdict-tags"><span class="vtag red">LOSS-MAKING</span></div>
+  </div>
+
+  <div class="footer">
+    RISK SCORE REPORT · NSE:BORORENEW · GENERATED APR 21, 2026 10:33 IST · DATA VIA YAHOO FINANCE + SCREENER.IN<br>
+    DISCLAIMER: THIS IS NOT FINANCIAL ADVICE. DATA MAY BE DELAYED. ALWAYS VERIFY WITH OFFICIAL SOURCES BEFORE INVESTING.
+  </div>
+
+</div>
+</div>
+
+<button class="copy-btn" onclick="copyReport()" id="copyBtn">📋 COPY REPORT</button>
+<script>
+function copyReport() {
+  const content = document.getElementById('report-content').innerText;
+  navigator.clipboard.writeText(content).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.innerHTML = '✓ COPIED!';
+    btn.style.borderColor = '#00e5a0';
+    setTimeout(() => { btn.innerHTML = '📋 COPY REPORT'; btn.style.borderColor = ''; }, 2000);
+  });
+}
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => { if (entry.isIntersecting) { entry.target.style.opacity = '1'; entry.target.style.transform = 'translateY(0)'; } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section, .breakdown-card, .metric-card').forEach(el => {
+  el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
