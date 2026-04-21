@@ -147,12 +147,18 @@ def fetch_stock_data(ticker_symbol):
         print(f"    ⚠ Could not fetch annual cash flow: {e}")
         result["annual_cash_flow"] = None
 
-    # Additional history periods for multi-period returns
+    # Additional history periods for multi-period returns and charts
     for period_key, period_val in [("hist_5d", "5d"), ("hist_1mo", "1mo"), ("hist_3y", "3y"), ("hist_5y", "5y")]:
         try:
             result[period_key] = ticker.history(period=period_val)
         except Exception:
             result[period_key] = None
+
+    # Intraday 1D at 15-min intervals for the interactive chart
+    try:
+        result["hist_1d_intra"] = ticker.history(period="1d", interval="15m")
+    except Exception:
+        result["hist_1d_intra"] = None
 
     # Holder data
     try:
@@ -173,6 +179,12 @@ def fetch_stock_data(ticker_symbol):
         result["news"] = ticker.get_news(count=8)
     except Exception:
         result["news"] = None
+
+    # Corporate actions calendar (earnings, dividends)
+    try:
+        result["calendar"] = ticker.calendar
+    except Exception:
+        result["calendar"] = None
 
     result["ticker_obj"] = ticker
 
@@ -730,12 +742,130 @@ def fmt_cr(val):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# TECHNICAL ANALYSIS HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _compute_rsi(closes, period=14):
+    """Wilder's RSI from a pandas Series of closing prices."""
+    delta = closes.diff()
+    gain = delta.clip(lower=0)
+    loss = (-delta.clip(upper=0))
+    avg_gain = gain.ewm(alpha=1/period, min_periods=period).mean()
+    avg_loss = loss.ewm(alpha=1/period, min_periods=period).mean()
+    rs = avg_gain / avg_loss.replace(0, float("nan"))
+    return 100 - (100 / (1 + rs))
+
+
+def _compute_macd(closes, fast=12, slow=26, signal=9):
+    """Return (macd_line, signal_line) as pandas Series."""
+    ema_fast = closes.ewm(span=fast, min_periods=fast).mean()
+    ema_slow = closes.ewm(span=slow, min_periods=slow).mean()
+    macd_line = ema_fast - ema_slow
+    signal_line = macd_line.ewm(span=signal, min_periods=signal).mean()
+    return macd_line, signal_line
+
+
+def _technical_score(data):
+    """
+    Score 0-25 from price-based technical indicators.
+    Uses hist_1y (RSI, 200 DMA) and hist_6m (MACD, 50 EMA, volume).
+    """
+    score = 9  # base ~35% of 25
+
+    hist_1y = data.get("hist_1y")
+    hist_6m = data.get("hist_6m")
+
+    if hist_1y is None or hist_1y.empty or len(hist_1y) < 30:
+        return max(0, min(25, score))
+
+    closes_1y = hist_1y["Close"].dropna()
+    if closes_1y.empty:
+        return max(0, min(25, score))
+
+    # RSI(14)
+    rsi_series = _compute_rsi(closes_1y)
+    rsi = rsi_series.iloc[-1] if not rsi_series.empty else 50
+    if rsi < 30:
+        score += 6       # oversold — potential bounce
+    elif rsi < 45:
+        score += 3       # mildly oversold
+    elif rsi <= 65:
+        score += 1       # neutral
+    elif rsi <= 75:
+        score -= 1       # getting warm
+    else:
+        score -= 3       # overbought risk
+
+    # Price vs 200 DMA
+    if len(closes_1y) >= 200:
+        dma200 = closes_1y.rolling(200).mean().iloc[-1]
+        last = closes_1y.iloc[-1]
+        if dma200 and dma200 > 0:
+            dist = (last - dma200) / dma200
+            if dist > 0.05:
+                score += 3    # comfortably above — uptrend
+            elif dist > -0.02:
+                score += 1    # near 200 DMA
+            elif dist > -0.10:
+                score -= 1    # below but not far
+            else:
+                score -= 3    # deep below — downtrend
+
+    closes_6m = hist_6m["Close"].dropna() if hist_6m is not None and not hist_6m.empty else closes_1y.tail(130)
+
+    # MACD
+    if len(closes_6m) >= 35:
+        macd_line, sig_line = _compute_macd(closes_6m)
+        if not macd_line.empty and not sig_line.empty:
+            macd_val = macd_line.iloc[-1]
+            sig_val = sig_line.iloc[-1]
+            if macd_val > sig_val and macd_val > 0:
+                score += 4     # bullish crossover in positive territory
+            elif macd_val > sig_val:
+                score += 2     # bullish but below zero
+            elif macd_val < sig_val and macd_val < 0:
+                score -= 4     # bearish in negative territory
+            else:
+                score -= 1     # bearish but above zero
+
+    # Price vs 50 EMA
+    if len(closes_6m) >= 50:
+        ema50 = closes_6m.ewm(span=50, min_periods=50).mean().iloc[-1]
+        last = closes_6m.iloc[-1]
+        if ema50 and ema50 > 0:
+            if last > ema50 * 1.02:
+                score += 3
+            elif last > ema50 * 0.98:
+                score += 1
+            else:
+                score -= 2
+
+    # Volume trend — 20-day avg vs 50-day avg on up-days
+    if hist_6m is not None and not hist_6m.empty and len(hist_6m) >= 50:
+        vol = hist_6m["Volume"].dropna()
+        close = hist_6m["Close"].dropna()
+        if len(vol) >= 50 and len(close) >= 50:
+            vol_20 = vol.tail(20).mean()
+            vol_50 = vol.tail(50).mean()
+            price_chg = close.diff().tail(20)
+            up_vol = vol.tail(20)[price_chg > 0].mean() if (price_chg > 0).any() else 0
+            dn_vol = vol.tail(20)[price_chg < 0].mean() if (price_chg < 0).any() else 0
+            if vol_20 > vol_50 * 1.1 and up_vol > dn_vol:
+                score += 2    # rising volume on up-days
+            elif vol_20 < vol_50 * 0.8:
+                score -= 1    # declining participation
+
+    return max(0, min(25, score))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # RISK SCORE CALCULATION (Generic — works for any stock)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def calculate_risk_scores(data):
     """
-    Calculate risk scores based on 35/35/30 weighting with sector-specific thresholds.
+    Calculate risk scores based on 25/25/25/25 weighting with sector-specific thresholds.
+    Pillars: Valuation / Financial Health / Growth / Technical.
     Higher score = Lower risk = Better.
     """
     info = data["info"]
@@ -747,68 +877,68 @@ def calculate_risk_scores(data):
     margin_mod, margin_good = bench["margin"]
     de_ok, de_high = bench["de"]
 
-    # ── VALUATION SCORE /35 ──
-    val_score = 17
+    # ── VALUATION SCORE /25 ──
+    val_score = 9
 
     pe = safe_get(info, "trailingPE", safe_get(info, "forwardPE"))
     pb = safe_get(info, "priceToBook")
 
     if pe:
         if pe < pe_cheap:
-            val_score += 10
+            val_score += 8
         elif pe < pe_fair:
-            val_score += 7
+            val_score += 5
         elif pe < pe_exp:
-            val_score += 4
+            val_score += 2
         elif pe < pe_exp * 1.5:
-            val_score += 0
+            val_score -= 1
         elif pe < pe_exp * 2.5:
-            val_score -= 3
+            val_score -= 4
         else:
             val_score -= 7
 
     if pb:
         if pb < pb_cheap:
-            val_score += 5
+            val_score += 4
         elif pb < pb_fair:
-            val_score += 3
+            val_score += 2
         elif pb < pb_exp:
-            val_score += 1
+            val_score += 0
         elif pb < pb_exp * 2:
             val_score -= 2
         else:
-            val_score -= 5
+            val_score -= 4
 
     target = safe_get(info, "targetMeanPrice")
     current = safe_get(info, "currentPrice", safe_get(info, "regularMarketPrice"))
     if target and current and current > 0:
         upside = (target - current) / current * 100
         if upside > 30:
-            val_score += 5
-        elif upside > 15:
             val_score += 4
+        elif upside > 15:
+            val_score += 3
         elif upside > 5:
-            val_score += 2
-        elif upside > 0:
             val_score += 1
+        elif upside > 0:
+            val_score += 0
         elif upside > -10:
-            val_score -= 1
+            val_score -= 2
         else:
             val_score -= 4
 
-    val_score = max(0, min(35, val_score))
+    val_score = max(0, min(25, val_score))
 
-    # ── FINANCIAL HEALTH SCORE /35 ──
-    fin_score = 17
+    # ── FINANCIAL HEALTH SCORE /25 ──
+    fin_score = 9
 
     roe = calculate_roe_manual(data)
     if roe:
         if roe > roe_good * 1.4:
-            fin_score += 7
+            fin_score += 6
         elif roe > roe_good:
-            fin_score += 5
+            fin_score += 4
         elif roe > roe_mod:
-            fin_score += 2
+            fin_score += 1
         elif roe > 0:
             fin_score += 0
         else:
@@ -817,65 +947,66 @@ def calculate_risk_scores(data):
     profit_margin = safe_get(info, "profitMargins")
     if profit_margin:
         if profit_margin > margin_good * 1.3:
-            fin_score += 6
+            fin_score += 5
         elif profit_margin > margin_mod:
-            fin_score += 3
+            fin_score += 2
         elif profit_margin > 0:
-            fin_score += 1
+            fin_score += 0
         else:
-            fin_score -= 5
+            fin_score -= 4
 
     rev_growth = safe_get(info, "revenueGrowth")
     if rev_growth:
         if rev_growth > 0.3:
-            fin_score += 5
+            fin_score += 4
         elif rev_growth > 0.15:
-            fin_score += 3
+            fin_score += 2
         elif rev_growth > 0.05:
             fin_score += 1
         elif rev_growth > 0:
             fin_score += 0
         else:
-            fin_score -= 4
+            fin_score -= 3
 
     debt_equity = safe_get(info, "debtToEquity")
     if debt_equity is not None:
         if debt_equity < de_ok:
-            fin_score += 3
+            fin_score += 2
         elif debt_equity < de_high:
-            fin_score += 1
+            fin_score += 0
         elif debt_equity < de_high * 1.5:
-            fin_score -= 1
+            fin_score -= 2
         else:
-            fin_score -= 3
+            fin_score -= 4
 
-    fin_score = max(0, min(35, fin_score))
+    fin_score = max(0, min(25, fin_score))
 
-    # ── GROWTH SCORE /30 ──
-    growth_score = 15
+    # ── GROWTH SCORE /25 ──
+    growth_score = 9
 
     if rev_growth:
         if rev_growth > 0.4:
-            growth_score += 8
+            growth_score += 7
         elif rev_growth > 0.25:
-            growth_score += 5
+            growth_score += 4
         elif rev_growth > 0.1:
-            growth_score += 3
+            growth_score += 2
         elif rev_growth > 0:
-            growth_score += 1
+            growth_score += 0
         else:
             growth_score -= 4
 
     earnings_growth = safe_get(info, "earningsGrowth")
     if earnings_growth:
         if earnings_growth > 0.3:
-            growth_score += 5
+            earnings_bump = 5
         elif earnings_growth > 0.1:
-            growth_score += 3
+            earnings_bump = 3
         elif earnings_growth > 0:
-            growth_score += 1
+            earnings_bump = 1
         else:
-            growth_score -= 3
+            earnings_bump = -3
+        growth_score += earnings_bump
 
     beta = safe_get(info, "beta")
     if beta:
@@ -886,14 +1017,18 @@ def calculate_risk_scores(data):
         else:
             growth_score -= 1
 
-    growth_score = max(0, min(30, growth_score))
+    growth_score = max(0, min(25, growth_score))
 
-    composite = val_score + fin_score + growth_score
+    # ── TECHNICAL SCORE /25 ──
+    tech_score = _technical_score(data)
+
+    composite = val_score + fin_score + growth_score + tech_score
 
     return {
         "valuation": val_score,
         "financial": fin_score,
         "growth": growth_score,
+        "technical": tech_score,
         "composite": composite,
     }
 
@@ -910,11 +1045,11 @@ def get_signal(scores, info):
     if target and current and current > 0:
         upside = (target - current) / current * 100
 
-    if composite >= 75 and upside > 15:
+    if composite >= 78 and upside > 20:
         return "🟢 STRONG BUY", True, f"Strong score with significant upside{sector_tag}"
-    elif composite >= 65 and upside > 5:
+    elif composite >= 68 and upside > 8:
         return "🟢 BUY", True, f"Attractive risk/reward{sector_tag} at current levels"
-    elif composite >= 55:
+    elif composite >= 58 and upside > 0:
         return "🟡 SPECULATIVE BUY", False, f"Positive{sector_tag} but monitor closely"
     elif composite >= 40:
         return "🟡 HOLD", False, f"Neutral{sector_tag} — wait for better entry or catalyst"
@@ -1492,31 +1627,53 @@ def calculate_factor_scores(data, scores, returns):
     info = data.get("info", {})
     reasons = {}
 
-    # Momentum: based on short/medium-term returns
+    # Momentum: RSI + MACD + trend + returns
     momentum = 5
     mom_parts = []
     r1m = returns.get("1M")
     r6m = returns.get("6M")
     if r1m is not None:
-        mom_parts.append(f"1M return {r1m:+.1f}%")
+        mom_parts.append(f"1M {r1m:+.1f}%")
         if r1m > 10:
-            momentum += 2
-        elif r1m > 3:
             momentum += 1
         elif r1m < -10:
-            momentum -= 2
-        elif r1m < -3:
             momentum -= 1
     if r6m is not None:
-        mom_parts.append(f"6M return {r6m:+.1f}%")
+        mom_parts.append(f"6M {r6m:+.1f}%")
         if r6m > 20:
-            momentum += 2
-        elif r6m > 5:
             momentum += 1
         elif r6m < -20:
-            momentum -= 2
-        elif r6m < -5:
             momentum -= 1
+
+    hist_1y = data.get("hist_1y")
+    if hist_1y is not None and not hist_1y.empty and len(hist_1y) >= 30:
+        closes = hist_1y["Close"].dropna()
+        if len(closes) >= 14:
+            rsi_val = _compute_rsi(closes).iloc[-1]
+            mom_parts.append(f"RSI {rsi_val:.0f}")
+            if rsi_val < 35:
+                momentum += 1
+            elif rsi_val > 70:
+                momentum -= 1
+        if len(closes) >= 35:
+            macd_l, sig_l = _compute_macd(closes)
+            if not macd_l.empty and not sig_l.empty:
+                if macd_l.iloc[-1] > sig_l.iloc[-1]:
+                    momentum += 1
+                    mom_parts.append("MACD bullish")
+                else:
+                    momentum -= 1
+                    mom_parts.append("MACD bearish")
+        if len(closes) >= 200:
+            dma200 = closes.rolling(200).mean().iloc[-1]
+            if dma200 and dma200 > 0:
+                if closes.iloc[-1] > dma200:
+                    momentum += 1
+                    mom_parts.append("Above 200DMA")
+                else:
+                    momentum -= 1
+                    mom_parts.append("Below 200DMA")
+
     reasons["Momentum"] = ", ".join(mom_parts) if mom_parts else "No return data"
 
     # Sentiment: analyst upside and recommendation key
@@ -1789,6 +1946,107 @@ def generate_spider_chart_svg(factors, reasons=None, width=480, height=440):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# CORPORATE ACTIONS BANNER
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _build_corporate_actions_html(data):
+    """Build an HTML banner showing upcoming earnings and ex-dividend dates."""
+    cal = data.get("calendar")
+    if not cal:
+        return ""
+
+    badges = []
+    now = datetime.now()
+
+    # Earnings dates
+    earnings_dates = cal.get("Earnings Date") if isinstance(cal, dict) else None
+    if earnings_dates:
+        if not isinstance(earnings_dates, (list, tuple)):
+            earnings_dates = [earnings_dates]
+        for ed in earnings_dates:
+            try:
+                if hasattr(ed, "date"):
+                    edt = datetime(ed.year, ed.month, ed.day)
+                elif isinstance(ed, str):
+                    edt = datetime.strptime(ed[:10], "%Y-%m-%d")
+                else:
+                    continue
+                days_away = (edt - now).days
+                date_str = edt.strftime("%b %d")
+                if -7 <= days_away <= 0:
+                    badges.append(f'<span class="badge badge-earnings badge-imminent">RESULTS JUST REPORTED: {date_str}</span>')
+                elif 0 < days_away <= 7:
+                    badges.append(f'<span class="badge badge-earnings badge-imminent">RESULTS IMMINENT: {date_str}</span>')
+                elif 0 < days_away <= 30:
+                    badges.append(f'<span class="badge badge-earnings">RESULTS: {date_str}</span>')
+            except Exception:
+                continue
+
+    # Ex-dividend date
+    exdiv = cal.get("Ex-Dividend Date") if isinstance(cal, dict) else None
+    if exdiv:
+        try:
+            if hasattr(exdiv, "date"):
+                exdt = datetime(exdiv.year, exdiv.month, exdiv.day)
+            elif isinstance(exdiv, str):
+                exdt = datetime.strptime(str(exdiv)[:10], "%Y-%m-%d")
+            else:
+                exdt = None
+            if exdt:
+                days_away = (exdt - now).days
+                if -7 <= days_away <= 60:
+                    date_str = exdt.strftime("%b %d")
+                    badges.append(f'<span class="badge badge-exdiv">EX-DIVIDEND: {date_str}</span>')
+        except Exception:
+            pass
+
+    # Dividend date
+    divdate = cal.get("Dividend Date") if isinstance(cal, dict) else None
+    if divdate and not exdiv:
+        try:
+            if hasattr(divdate, "date"):
+                ddt = datetime(divdate.year, divdate.month, divdate.day)
+            elif isinstance(divdate, str):
+                ddt = datetime.strptime(str(divdate)[:10], "%Y-%m-%d")
+            else:
+                ddt = None
+            if ddt:
+                days_away = (ddt - now).days
+                if 0 < days_away <= 60:
+                    date_str = ddt.strftime("%b %d")
+                    badges.append(f'<span class="badge badge-exdiv">DIVIDEND: {date_str}</span>')
+        except Exception:
+            pass
+
+    if not badges:
+        return ""
+    return '<div class="sh-actions">' + " ".join(badges) + "</div>"
+
+
+def _serialize_chart_data(data):
+    """Serialize all historical price data into a JSON string for interactive charts."""
+    import json as _json
+    periods = [
+        ("1D", "hist_1d_intra"), ("1W", "hist_5d"), ("1M", "hist_1mo"),
+        ("6M", "hist_6m"), ("1Y", "hist_1y"), ("3Y", "hist_3y"), ("5Y", "hist_5y"),
+    ]
+    result = {}
+    for label, key in periods:
+        hist = data.get(key)
+        if hist is None or hist.empty or len(hist) < 2:
+            continue
+        is_intraday = (label == "1D")
+        dates = [d.strftime("%H:%M") if is_intraday else d.strftime("%Y-%m-%d") for d in hist.index]
+        opens = [round(float(v), 2) for v in hist["Open"]]
+        highs = [round(float(v), 2) for v in hist["High"]]
+        lows = [round(float(v), 2) for v in hist["Low"]]
+        closes = [round(float(v), 2) for v in hist["Close"]]
+        volumes = [int(v) for v in hist["Volume"]]
+        result[label] = {"d": dates, "o": opens, "h": highs, "l": lows, "c": closes, "v": volumes}
+    return _json.dumps(result, separators=(",", ":"))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # HTML REPORT GENERATOR (Generic for any NSE stock)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1838,6 +2096,7 @@ def generate_html_report(data, scores):
     mcap_cr = market_cap / 1e7 if market_cap else 0
     change_color = "#00e5a0" if change >= 0 else "#ff4d6d"
     change_icon = "▲" if change >= 0 else "▼"
+    corp_actions_html = _build_corporate_actions_html(data)
 
     day_range = day_high - day_low if day_high and day_low and day_high > day_low else 0
     day_pct = max(0, min(100, ((current_price - day_low) / day_range * 100))) if day_range > 0 else 50
@@ -1867,8 +2126,7 @@ def generate_html_report(data, scores):
             return "#ff4d6d"
 
     gauge_svg = generate_risk_gauge_svg(scores["composite"])
-    price_chart_svg = generate_price_chart_svg(hist_1y)
-    candle_chart_svg = generate_candle_chart_svg(hist_1y)
+    chart_json = _serialize_chart_data(data)
 
     fair_value_low = target_low if target_low else current_price * 0.75
     fair_value_mid = target_mean if target_mean else current_price
@@ -2274,9 +2532,10 @@ def generate_html_report(data, scores):
             else:
                 peers_note_html = f'<div style="font-family:var(--mono);font-size:10px;color:var(--amber);margin-top:10px;text-align:center;">★ {best_peer["name"]} ranks higher on combined P/E, ROCE, and growth metrics in {industry_name}</div>'
 
-    val_color = score_color(scores["valuation"], 35)
-    fin_color = score_color(scores["financial"], 35)
-    growth_color = score_color(scores["growth"], 30)
+    val_color = score_color(scores["valuation"], 25)
+    fin_color = score_color(scores["financial"], 25)
+    growth_color = score_color(scores["growth"], 25)
+    tech_color = score_color(scores["technical"], 25)
 
     today_str = datetime.now().strftime("%B %d, %Y · %H:%M IST")
 
@@ -2547,7 +2806,7 @@ def generate_html_report(data, scores):
         competitor_line = f'<br><br>Within <strong>{industry_name}</strong>, <strong>{bp["name"]}</strong> ({bp_metrics}) ranks higher on techno-fundamental metrics and may be worth considering.'
 
     verdict_text = f'''<strong>{company_name}</strong> trades at ₹{current_price:,.2f} with a composite risk score of {composite}/100.
-    The stock scores {scores["valuation"]}/35 on valuation, {scores["financial"]}/35 on financial health, and {scores["growth"]}/30 on growth.
+    The stock scores {scores["valuation"]}/25 on valuation, {scores["financial"]}/25 on financial health, {scores["growth"]}/25 on growth, and {scores["technical"]}/25 on technicals.
     The company is currently {profit_status} with {"strong" if roe and roe > 0.15 else "moderate" if roe and roe > 0 else "negative"} return on equity.
     <br><br>
     {"Analyst consensus suggests upside of " + f"{upside:.1f}%" + f" with a mean target of ₹{target_mean:.0f}." if target_mean and upside > 0 else "The stock is trading near or above analyst consensus targets."}
@@ -2608,6 +2867,12 @@ def generate_html_report(data, scores):
   .badge {{ border-radius:4px; padding:1px 6px; font-size:9px; font-weight:600; }}
   .badge-nse {{ background:var(--green-dim); color:var(--green); border:1px solid rgba(0,229,160,0.2); }}
   .badge-sector {{ background:var(--blue-dim); color:var(--blue); border:1px solid rgba(61,156,245,0.2); }}
+  .badge-earnings {{ background:rgba(245,166,35,0.1); color:#f5a623; border:1px solid rgba(245,166,35,0.25); }}
+  .badge-imminent {{ background:rgba(245,166,35,0.25); color:#ffcc00; border:1px solid rgba(255,204,0,0.4); animation: pulse-amber 1.5s ease-in-out infinite; }}
+  .badge-exdiv {{ background:rgba(61,156,245,0.1); color:#3d9cf5; border:1px solid rgba(61,156,245,0.25); }}
+  @keyframes pulse-amber {{ 0%,100% {{ box-shadow:0 0 4px rgba(255,204,0,0.2); }} 50% {{ box-shadow:0 0 12px rgba(255,204,0,0.5); }} }}
+  .sh-actions {{ display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 2px 0; }}
+  .sh-actions .badge {{ font-size:10px; padding:2px 8px; border-radius:4px; font-weight:600; letter-spacing:0.3px; }}
   .sh-name {{ font-family:var(--mono); font-size:26px; font-weight:700; color:#fff; letter-spacing:-0.5px; margin-bottom:8px; }}
   .sh-meta {{ display:flex; gap:16px; flex-wrap:wrap; font-family:var(--mono); font-size:10px; color:var(--text2); }}
   .sh-right {{ text-align:right; }}
@@ -2654,7 +2919,7 @@ def generate_html_report(data, scores):
   .src-link:hover {{ opacity:1; text-decoration:underline; }}
   .src-link-header {{ float:right; font-size:10px; color:var(--blue); text-decoration:none; font-family:var(--mono); font-weight:400; letter-spacing:0; text-transform:none; opacity:0.6; transition:opacity 0.2s; }}
   .src-link-header:hover {{ opacity:1; text-decoration:underline; }}
-  .breakdown-grid {{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }}
+  .breakdown-grid {{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }}
   .breakdown-card {{ background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }}
   .bc-header {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }}
   .bc-title {{ font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); }}
@@ -2708,6 +2973,13 @@ def generate_html_report(data, scores):
   @keyframes fadeIn {{ from {{ opacity:0; transform:translateY(10px); }} to {{ opacity:1; transform:translateY(0); }} }}
   .section, .stock-header, .gauge-kpi-row, .breakdown-grid, .verdict-card {{ animation: fadeIn 0.6s ease both; }}
   @media (max-width: 768px) {{ .stock-header {{ flex-direction:column; gap:16px; }} .gauge-kpi-row {{ grid-template-columns:1fr; }} .card-grid {{ grid-template-columns:1fr 1fr; }} .breakdown-grid {{ grid-template-columns:1fr; }} .dual-col {{ grid-template-columns:1fr; }} .kpi-strip {{ grid-template-columns:repeat(2,1fr); }} .returns-strip {{ grid-template-columns:repeat(3,1fr); }} .news-grid {{ grid-template-columns:1fr; }} }}
+  .tf-btns {{ display:flex; gap:2px; }}
+  .tf-btn {{ background:var(--bg4); border:1px solid var(--border); color:var(--text3); font-family:var(--mono); font-size:9px; padding:3px 9px; border-radius:4px; cursor:pointer; transition:all .15s; }}
+  .tf-btn:hover {{ color:var(--text); border-color:var(--border2); }}
+  .tf-btn.active {{ color:#fff; background:var(--bg3); border-color:var(--border2); }}
+  .tf-ret {{ font-family:var(--mono); font-size:12px; font-weight:600; }}
+  .tf-ret.up {{ color:var(--green); }}
+  .tf-ret.dn {{ color:var(--red); }}
   @media print {{ .copy-btn {{ display:none; }} .page {{ padding:16px; }} .page-break {{ page-break-before:always; border:none; margin:0; }} }}
 </style>
 </head>
@@ -2720,6 +2992,7 @@ def generate_html_report(data, scores):
       <div class="sh-ticker"><span>NSE:{ticker_symbol}</span><span class="badge badge-nse">NSE</span><span class="badge badge-sector">{sector}</span></div>
       <div class="sh-name">{company_name}</div>
       <div class="sh-meta"><span>📊 {industry}</span></div>
+      {corp_actions_html}
       <div class="sh-ranges">
         <div class="sh-range">
           <span class="sh-range-label">Day</span>
@@ -2750,7 +3023,7 @@ def generate_html_report(data, scores):
       <div class="gauge-title">COMPOSITE RISK SCORE</div>
       {gauge_svg}
       <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:8px;letter-spacing:1px;">
-        VAL:{scores["valuation"]}/35 · FIN:{scores["financial"]}/35 · GRO:{scores["growth"]}/30
+        VAL:{scores["valuation"]}/25 · FIN:{scores["financial"]}/25 · GRO:{scores["growth"]}/25 · TECH:{scores["technical"]}/25
       </div>
     </div>
     <div class="kpi-strip">
@@ -2766,13 +3039,27 @@ def generate_html_report(data, scores):
   {company_overview_html}
 
   <div class="section">
-    <div class="section-title">📈 12-Month Price Movement · Annotated</div>
-    {price_chart_svg}
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>📈 Price Movement</span>
+      <div class="tf-btns" id="tf-line">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn" data-tf="6M">6M</button><button class="tf-btn active" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-line-ret"></span>
+    </div>
+    <canvas id="cv-line" style="width:100%;height:280px;display:block;"></canvas>
   </div>
 
   <div class="section">
-    <div class="section-title">🕯 Daily Candlestick Chart · 50 EMA & 200 DMA</div>
-    {candle_chart_svg}
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>🕯 Candlestick Chart</span>
+      <div class="tf-btns" id="tf-candle">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn active" data-tf="6M">6M</button><button class="tf-btn" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-candle-ret"></span>
+    </div>
+    <canvas id="cv-candle" style="width:100%;height:280px;display:block;"></canvas>
   </div>
 
   <div class="section">
@@ -2814,8 +3101,8 @@ def generate_html_report(data, scores):
 
   <div class="breakdown-grid">
     <div class="breakdown-card">
-      <div class="bc-header"><div><div class="bc-title">VALUATION</div><div class="bc-score" style="color:{val_color}">{scores["valuation"]}<span class="bc-max">/35</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">35% WEIGHT</div></div>
-      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:{scores['valuation']/35*100:.0f}%;background:{val_color};box-shadow:0 0 8px {val_color}44;"></div></div>
+      <div class="bc-header"><div><div class="bc-title">VALUATION</div><div class="bc-score" style="color:{val_color}">{scores["valuation"]}<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:{scores['valuation']/25*100:.0f}%;background:{val_color};box-shadow:0 0 8px {val_color}44;"></div></div>
       <ul class="bc-items">
         <li>P/E at {pe_ratio:.0f}x</li>
         <li>P/B at {pb_ratio:.1f}x</li>
@@ -2824,8 +3111,8 @@ def generate_html_report(data, scores):
       </ul>
     </div>
     <div class="breakdown-card">
-      <div class="bc-header"><div><div class="bc-title">FINANCIAL HEALTH</div><div class="bc-score" style="color:{fin_color}">{scores["financial"]}<span class="bc-max">/35</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">35% WEIGHT</div></div>
-      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:{scores['financial']/35*100:.0f}%;background:{fin_color};box-shadow:0 0 8px {fin_color}44;"></div></div>
+      <div class="bc-header"><div><div class="bc-title">FINANCIAL HEALTH</div><div class="bc-score" style="color:{fin_color}">{scores["financial"]}<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:{scores['financial']/25*100:.0f}%;background:{fin_color};box-shadow:0 0 8px {fin_color}44;"></div></div>
       <ul class="bc-items">
         <li>ROE: {roe*100:.1f}%</li>
         <li>Profit margin: {profit_margin*100:.1f}%</li>
@@ -2834,8 +3121,8 @@ def generate_html_report(data, scores):
       </ul>
     </div>
     <div class="breakdown-card">
-      <div class="bc-header"><div><div class="bc-title">GROWTH</div><div class="bc-score" style="color:{growth_color}">{scores["growth"]}<span class="bc-max">/30</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">30% WEIGHT</div></div>
-      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:{scores['growth']/30*100:.0f}%;background:{growth_color};box-shadow:0 0 8px {growth_color}44;"></div></div>
+      <div class="bc-header"><div><div class="bc-title">GROWTH</div><div class="bc-score" style="color:{growth_color}">{scores["growth"]}<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:{scores['growth']/25*100:.0f}%;background:{growth_color};box-shadow:0 0 8px {growth_color}44;"></div></div>
       <ul class="bc-items">
         <li>Revenue growth: {rev_growth*100:.1f}%</li>
         <li>Earnings growth: {earnings_growth*100:.1f}%</li>
@@ -2843,11 +3130,16 @@ def generate_html_report(data, scores):
         <li>Sector: {sector}</li>
       </ul>
     </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">⏱ Returns Across Time Horizons</div>
-    <div class="returns-strip">{returns_html}</div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">TECHNICAL</div><div class="bc-score" style="color:{tech_color}">{scores["technical"]}<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:{scores['technical']/25*100:.0f}%;background:{tech_color};box-shadow:0 0 8px {tech_color}44;"></div></div>
+      <ul class="bc-items">
+        <li>RSI, MACD, MA crossovers</li>
+        <li>200 DMA &amp; 50 EMA position</li>
+        <li>Volume trend analysis</li>
+        <li>Price momentum signals</li>
+      </ul>
+    </div>
   </div>
 
   <hr class="page-break">
@@ -2971,6 +3263,190 @@ document.querySelectorAll('.section, .breakdown-card, .metric-card').forEach(el 
   el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
   observer.observe(el);
 }});
+
+/* ── Interactive price & candlestick charts ────────────────────── */
+const CHART_DATA = {chart_json};
+
+function _setupCanvas(id) {{
+  const c = document.getElementById(id);
+  if (!c) return null;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  c.width = w * dpr; c.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  return {{ ctx, w, h }};
+}}
+
+function drawLineChart(tf) {{
+  const d = CHART_DATA[tf];
+  if (!d || !d.c.length) return;
+  const s = _setupCanvas('cv-line');
+  if (!s) return;
+  const {{ ctx, w, h }} = s;
+  const closes = d.c, n = closes.length;
+  const mn = Math.min(...closes), mx = Math.max(...closes);
+  const range = mx - mn || 1;
+  const pad = {{ t:18, b:24, l:55, r:12 }};
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+
+  const ret = ((closes[n-1] - closes[0]) / closes[0] * 100);
+  const retEl = document.getElementById('tf-line-ret');
+  if (retEl) {{
+    retEl.textContent = (ret >= 0 ? '+' : '') + ret.toFixed(2) + '%';
+    retEl.className = 'tf-ret ' + (ret >= 0 ? 'up' : 'dn');
+  }}
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {{
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    const val = mx - (i / 4) * range;
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
+    ctx.fillText(val >= 1000 ? val.toFixed(0) : val.toFixed(2), pad.l - 6, y + 3);
+  }}
+
+  const nLabels = Math.min(6, n);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < nLabels; i++) {{
+    const idx = Math.round(i / (nLabels - 1) * (n - 1));
+    const x = pad.l + (idx / (n - 1)) * cw;
+    ctx.fillText(d.d[idx], x, h - 4);
+  }}
+
+  const color = ret >= 0 ? '#00e5a0' : '#ff4d6d';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.8;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  closes.forEach((v, i) => {{
+    const x = pad.l + (i / (n - 1 || 1)) * cw;
+    const y = pad.t + (1 - (v - mn) / range) * ch;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }});
+  ctx.stroke();
+
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
+  grad.addColorStop(0, color + '22');
+  grad.addColorStop(1, color + '00');
+  ctx.lineTo(pad.l + cw, pad.t + ch);
+  ctx.lineTo(pad.l, pad.t + ch);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+}}
+
+function drawCandleChart(tf) {{
+  const d = CHART_DATA[tf];
+  if (!d || !d.c.length) return;
+  const s = _setupCanvas('cv-candle');
+  if (!s) return;
+  const {{ ctx, w, h }} = s;
+  const n = d.c.length;
+  const allVals = d.h.concat(d.l);
+  const mn = Math.min(...allVals), mx = Math.max(...allVals);
+  const range = mx - mn || 1;
+  const pad = {{ t:18, b:24, l:55, r:12 }};
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+
+  const ret = ((d.c[n-1] - d.c[0]) / d.c[0] * 100);
+  const retEl = document.getElementById('tf-candle-ret');
+  if (retEl) {{
+    retEl.textContent = (ret >= 0 ? '+' : '') + ret.toFixed(2) + '%';
+    retEl.className = 'tf-ret ' + (ret >= 0 ? 'up' : 'dn');
+  }}
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {{
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    const val = mx - (i / 4) * range;
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
+    ctx.fillText(val >= 1000 ? val.toFixed(0) : val.toFixed(2), pad.l - 6, y + 3);
+  }}
+
+  const nLabels = Math.min(6, n);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < nLabels; i++) {{
+    const idx = Math.round(i / (nLabels - 1) * (n - 1));
+    const x = pad.l + (idx / (n - 1)) * cw;
+    ctx.fillText(d.d[idx], x, h - 4);
+  }}
+
+  const barW = Math.max(1, Math.min(8, (cw / n) * 0.65));
+  for (let i = 0; i < n; i++) {{
+    const x = pad.l + ((i + 0.5) / n) * cw;
+    const oY = pad.t + (1 - (d.o[i] - mn) / range) * ch;
+    const cY = pad.t + (1 - (d.c[i] - mn) / range) * ch;
+    const hY = pad.t + (1 - (d.h[i] - mn) / range) * ch;
+    const lY = pad.t + (1 - (d.l[i] - mn) / range) * ch;
+    const bull = d.c[i] >= d.o[i];
+    const clr = bull ? '#00e5a0' : '#ff4d6d';
+    ctx.strokeStyle = clr; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, hY); ctx.lineTo(x, lY); ctx.stroke();
+    ctx.fillStyle = bull ? clr + '88' : clr;
+    const top = Math.min(oY, cY), bh = Math.max(1, Math.abs(oY - cY));
+    ctx.fillRect(x - barW/2, top, barW, bh);
+  }}
+
+  if (n >= 50) {{
+    const ema50 = _calcEMA(d.c, 50);
+    _drawMA(ctx, ema50, n, mn, range, pad, cw, ch, '#f5a623', [5,3]);
+  }}
+  if (n >= 200) {{
+    const dma200 = _calcSMA(d.c, 200);
+    _drawMA(ctx, dma200, n, mn, range, pad, cw, ch, '#a855f7', []);
+  }}
+}}
+
+function _calcEMA(data, period) {{
+  const result = new Array(data.length).fill(null);
+  if (data.length < period) return result;
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += data[i];
+  result[period-1] = sum / period;
+  const k = 2 / (period + 1);
+  for (let i = period; i < data.length; i++) result[i] = data[i] * k + result[i-1] * (1-k);
+  return result;
+}}
+function _calcSMA(data, period) {{
+  const result = new Array(data.length).fill(null);
+  if (data.length < period) return result;
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += data[i];
+  result[period-1] = sum / period;
+  for (let i = period; i < data.length; i++) {{ sum += data[i] - data[i-period]; result[i] = sum / period; }}
+  return result;
+}}
+function _drawMA(ctx, vals, n, mn, range, pad, cw, ch, color, dash) {{
+  ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.setLineDash(dash);
+  ctx.beginPath();
+  let started = false;
+  vals.forEach((v, i) => {{
+    if (v === null) return;
+    const x = pad.l + ((i + 0.5) / n) * cw;
+    const y = pad.t + (1 - (v - mn) / range) * ch;
+    if (!started) {{ ctx.moveTo(x, y); started = true; }} else ctx.lineTo(x, y);
+  }});
+  ctx.stroke();
+  ctx.setLineDash([]);
+}}
+
+function _bindTF(groupId, drawFn, defaultTf) {{
+  const btns = document.querySelectorAll('#' + groupId + ' .tf-btn');
+  btns.forEach(btn => {{
+    btn.addEventListener('click', () => {{
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      drawFn(btn.dataset.tf);
+    }});
+  }});
+  drawFn(defaultTf);
+}}
+_bindTF('tf-line', drawLineChart, '1Y');
+_bindTF('tf-candle', drawCandleChart, '6M');
 </script>
 </body>
 </html>'''

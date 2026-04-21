@@ -5,12 +5,17 @@ Dashboard Generator — top-level index.html that links to every report.
 Scans reports/, us_reports/, sector_reports/, fno_reports/ and builds a
 responsive dark-themed landing page with cards for each section, per-stock
 links, daily summaries, and date navigation.
+
+Also embeds lightweight market overview charts (NIFTY50, S&P500, GOLD,
+SILVER, US10Y, CRUDE OIL) via Yahoo Finance data rendered as inline SVG
+sparklines with selectable timeframes.
 """
 
 from __future__ import annotations
 
 import argparse
 import html as html_mod
+import json
 import os
 import re
 import sys
@@ -20,14 +25,21 @@ from zoneinfo import ZoneInfo
 
 IST = ZoneInfo("Asia/Kolkata")
 
-BASE_URL = ""
-
 REPORT_DIRS = {
     "nse": {"dir": "reports", "label": "NSE Stocks", "icon": "🇮🇳", "suffix": "_RiskReport.html", "color": "#3d9cf5"},
     "us": {"dir": "us_reports", "label": "US Stocks", "icon": "🇺🇸", "suffix": "_RiskReport.html", "color": "#a855f7"},
     "sectors": {"dir": "sector_reports", "label": "Sector Rotation", "icon": "🔄", "file": "SectorRotation_Report.html", "color": "#f5a623"},
     "fno": {"dir": "fno_reports", "label": "F&O Index Outlook", "icon": "📊", "file": "FNO_IndexOutlook_Report.html", "color": "#00e5a0"},
 }
+
+MARKET_TICKERS = [
+    {"symbol": "^NSEI",  "label": "NIFTY 50",   "color": "#3d9cf5"},
+    {"symbol": "^GSPC",  "label": "S&P 500",    "color": "#a855f7"},
+    {"symbol": "GC=F",   "label": "GOLD",       "color": "#f5a623"},
+    {"symbol": "SI=F",   "label": "SILVER",     "color": "#9ca3af"},
+    {"symbol": "^TNX",   "label": "US 10Y YIELD","color": "#ff4d6d"},
+    {"symbol": "CL=F",   "label": "CRUDE OIL",  "color": "#00e5a0"},
+]
 
 
 def _esc(s: str) -> str:
@@ -44,15 +56,16 @@ def _scan_dates(base: str) -> list[str]:
     return dates
 
 
-def _scan_stock_reports(base: str, date: str, suffix: str) -> list[dict[str, str]]:
-    folder = os.path.join(base, date)
+def _scan_stock_reports(dir_name: str, date: str, suffix: str, root: str) -> list[dict[str, str]]:
+    """Scan for stock reports, returning relative paths from root."""
+    folder = os.path.join(root, dir_name, date)
     if not os.path.isdir(folder):
         return []
     reports = []
     for f in sorted(os.listdir(folder)):
         if f.endswith(suffix):
             ticker = f.replace(suffix, "")
-            reports.append({"ticker": ticker, "path": f"{base}/{date}/{f}"})
+            reports.append({"ticker": ticker, "path": f"{dir_name}/{date}/{f}"})
     return reports
 
 
@@ -72,7 +85,6 @@ def _parse_summary(base: str, date: str) -> dict[str, str]:
     buy = len(re.findall(r"Signal:.*?(?:STRONG )?BUY", text))
     hold = len(re.findall(r"Signal:.*?HOLD", text))
     sell = len(re.findall(r"Signal:.*?SELL", text, re.I))
-    # fallback: also check pipe-table format
     buy += len(re.findall(r"\|\s*(?:STRONG )?BUY\s*\|", text))
     hold += len(re.findall(r"\|\s*HOLD\s*\|", text))
     sell += len(re.findall(r"\|\s*SELL\s*\|", text))
@@ -116,6 +128,37 @@ def _build_summary_badges(info: dict[str, str]) -> str:
     return '<div class="sum-badges">' + "".join(parts) + '</div>'
 
 
+# ── Market overview data ─────────────────────────────────────────────────────
+
+def _fetch_market_data() -> str:
+    """Fetch 1Y daily + 1D intraday (15m) data for each market ticker."""
+    try:
+        import yfinance as yf
+    except ImportError:
+        return "[]"
+
+    all_data = []
+    for t in MARKET_TICKERS:
+        entry = {"label": t["label"], "color": t["color"],
+                 "dates": [], "closes": [], "intra_times": [], "intra_closes": []}
+        try:
+            tk = yf.Ticker(t["symbol"])
+            hist = tk.history(period="1y")
+            if hist is not None and not hist.empty:
+                entry["dates"] = [d.strftime("%Y-%m-%d") for d in hist.index]
+                entry["closes"] = [round(float(c), 2) for c in hist["Close"]]
+            intra = tk.history(period="1d", interval="15m")
+            if intra is not None and not intra.empty:
+                entry["intra_times"] = [d.strftime("%H:%M") for d in intra.index]
+                entry["intra_closes"] = [round(float(c), 2) for c in intra["Close"]]
+        except Exception:
+            pass
+        all_data.append(entry)
+    return json.dumps(all_data, separators=(",", ":"))
+
+
+# ── Dashboard builder ────────────────────────────────────────────────────────
+
 def generate_dashboard(root: str) -> str:
     now = datetime.now(IST)
     gen_at = now.strftime("%Y-%m-%d %H:%M IST")
@@ -157,7 +200,7 @@ def generate_dashboard(root: str) -> str:
 </div>""")
         else:
             latest_date = dates[0] if dates else None
-            stock_reports = _scan_stock_reports(base, latest_date, cfg["suffix"]) if latest_date else []
+            stock_reports = _scan_stock_reports(cfg["dir"], latest_date, cfg["suffix"], root) if latest_date else []
             summary_info = _parse_summary(base, latest_date) if latest_date else {}
 
             date_options = ""
@@ -193,10 +236,14 @@ def generate_dashboard(root: str) -> str:
 
     sections_html = "\n".join(sections)
 
+    print("  📈 Fetching market overview data...")
+    market_json = _fetch_market_data()
+
     return _TEMPLATE.format(
         gen_at=_esc(gen_at),
         sections=sections_html,
         today=now.strftime("%A, %B %d %Y"),
+        market_json=market_json,
     )
 
 
@@ -218,17 +265,32 @@ _TEMPLATE = """<!DOCTYPE html>
 }}
 *,*::before,*::after {{ box-sizing:border-box; margin:0; padding:0; }}
 body {{ background:var(--bg); color:var(--text); font-family:var(--sans); font-size:13px; line-height:1.6; -webkit-font-smoothing:antialiased; }}
-.page {{ max-width:1100px; margin:0 auto; padding:32px 22px 60px; }}
+.page {{ max-width:1100px; margin:0 auto; padding:24px 22px 60px; }}
 
-.hero {{ text-align:center; padding:40px 20px 32px; position:relative; }}
-.hero::before {{ content:''; position:absolute; top:50%; left:50%; width:400px; height:400px; transform:translate(-50%,-50%);
-  background:radial-gradient(circle, rgba(61,156,245,0.06) 0%, transparent 70%); pointer-events:none; }}
-.hero-badge {{ font-family:var(--mono); font-size:10px; font-weight:600; color:var(--blue); letter-spacing:2.5px; text-transform:uppercase; }}
-.hero-title {{ font-family:var(--mono); font-size:28px; font-weight:700; color:#fff; margin-top:8px; letter-spacing:-0.5px; }}
-.hero-sub {{ font-family:var(--mono); font-size:11px; color:var(--text3); margin-top:8px; max-width:640px; margin-left:auto; margin-right:auto; line-height:1.7; }}
-.hero-date {{ font-family:var(--mono); font-size:12px; color:var(--text2); margin-top:14px; }}
+.hero {{ display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px 0 16px; border-bottom:1px solid var(--border); margin-bottom:20px; }}
+.hero-title {{ font-family:var(--mono); font-size:15px; font-weight:700; color:#fff; letter-spacing:-0.3px; }}
+.hero-date {{ font-family:var(--mono); font-size:10px; color:var(--text3); }}
 
-.grid {{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:28px; }}
+/* ── Market Overview Charts ────────────────────────────────── */
+.mkt-grid {{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px; }}
+@media(max-width:900px) {{ .mkt-grid {{ grid-template-columns:repeat(2,1fr); }} }}
+@media(max-width:520px) {{ .mkt-grid {{ grid-template-columns:1fr; }} }}
+
+.mkt-card {{ background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:14px 16px 10px; position:relative; overflow:hidden; }}
+.mkt-head {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }}
+.mkt-label {{ font-family:var(--mono); font-size:10px; font-weight:600; color:var(--text2); letter-spacing:1px; text-transform:uppercase; }}
+.mkt-price {{ font-family:var(--mono); font-size:18px; font-weight:700; color:#fff; }}
+.mkt-ret {{ font-family:var(--mono); font-size:11px; font-weight:600; margin-left:6px; }}
+.mkt-ret.up {{ color:var(--green); }}
+.mkt-ret.dn {{ color:var(--red); }}
+.mkt-tf {{ display:flex; gap:2px; margin-top:6px; }}
+.mkt-tf button {{ background:var(--bg4); border:1px solid var(--border); color:var(--text3); font-family:var(--mono); font-size:9px; padding:2px 7px; border-radius:4px; cursor:pointer; transition:all .15s; }}
+.mkt-tf button:hover {{ color:var(--text); border-color:var(--border2); }}
+.mkt-tf button.active {{ color:#fff; background:var(--bg3); border-color:var(--border2); }}
+.mkt-canvas {{ width:100%; height:60px; display:block; margin-top:4px; }}
+
+/* ── Report cards ──────────────────────────────────────────── */
+.grid {{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }}
 @media(max-width:800px) {{ .grid {{ grid-template-columns:1fr; }} }}
 
 .card {{ background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:22px 24px; position:relative; overflow:hidden; transition:border-color .2s; }}
@@ -275,32 +337,18 @@ body {{ background:var(--bg); color:var(--text); font-family:var(--sans); font-s
 .footer {{ text-align:center; margin-top:40px; padding:20px; font-family:var(--mono); font-size:9px; color:var(--text3); line-height:1.8; }}
 .footer a {{ color:var(--blue); text-decoration:none; }}
 .footer a:hover {{ text-decoration:underline; }}
-
-.quick-links {{ display:flex; justify-content:center; gap:12px; margin-top:20px; flex-wrap:wrap; }}
-.ql {{ font-family:var(--mono); font-size:10px; padding:6px 16px; border-radius:8px;
-  background:var(--bg3); border:1px solid var(--border); color:var(--text2); text-decoration:none; transition:all .15s; }}
-.ql:hover {{ color:#fff; border-color:var(--border2); background:var(--bg4); }}
 </style>
 </head>
 <body>
 <div class="page">
   <div class="hero">
-    <div class="hero-badge">Multi-Market Analysis Hub</div>
     <div class="hero-title">Market Analysis Dashboard</div>
-    <div class="hero-sub">
-      NSE &amp; US stock risk reports · Sector rotation analysis · F&amp;O option chain outlook ·
-      All reports generated automatically via GitHub Actions.
-    </div>
     <div class="hero-date">{today} · Updated {gen_at}</div>
-    <div class="quick-links">
-      <a class="ql" href="#nse">🇮🇳 NSE</a>
-      <a class="ql" href="#us">🇺🇸 US</a>
-      <a class="ql" href="#sectors">🔄 Sectors</a>
-      <a class="ql" href="#fno">📊 F&amp;O</a>
-    </div>
   </div>
 
-  <div class="grid" id="nse">
+  <div class="mkt-grid" id="mkt-grid"></div>
+
+  <div class="grid">
     {sections}
   </div>
 
@@ -312,31 +360,114 @@ body {{ background:var(--bg); color:var(--text); font-family:var(--sans); font-s
 </div>
 
 <script>
+const MKT_DATA = {market_json};
+const TF_DAYS = {{"1D":1,"1W":5,"1M":21,"3M":63,"1Y":252}};
+
+function initMarketCharts() {{
+  const grid = document.getElementById('mkt-grid');
+  if (!MKT_DATA || !MKT_DATA.length) return;
+
+  MKT_DATA.forEach((item, idx) => {{
+    const card = document.createElement('div');
+    card.className = 'mkt-card';
+    card.innerHTML = `
+      <div class="mkt-head">
+        <span class="mkt-label">${{item.label}}</span>
+        <div><span class="mkt-price" id="mp-${{idx}}">—</span><span class="mkt-ret" id="mr-${{idx}}"></span></div>
+      </div>
+      <canvas class="mkt-canvas" id="mc-${{idx}}"></canvas>
+      <div class="mkt-tf" id="mt-${{idx}}"></div>`;
+    grid.appendChild(card);
+
+    const tfDiv = document.getElementById('mt-'+idx);
+    Object.keys(TF_DAYS).forEach(tf => {{
+      const btn = document.createElement('button');
+      btn.textContent = tf;
+      if (tf === '3M') btn.classList.add('active');
+      btn.onclick = () => drawChart(idx, tf);
+      tfDiv.appendChild(btn);
+    }});
+
+    drawChart(idx, '3M');
+  }});
+}}
+
+function drawChart(idx, tf) {{
+  const item = MKT_DATA[idx];
+  let closes, labels;
+  if (tf === '1D') {{
+    closes = item.intra_closes || [];
+    labels = item.intra_times || [];
+    if (!closes.length) return;
+  }} else {{
+    if (!item.closes || !item.closes.length) return;
+    const n = Math.min(TF_DAYS[tf], item.closes.length);
+    closes = item.closes.slice(-n);
+    labels = item.dates.slice(-n);
+  }}
+  if (!closes.length) return;
+
+  const btns = document.querySelectorAll('#mt-'+idx+' button');
+  btns.forEach(b => b.classList.toggle('active', b.textContent===tf));
+
+  const last = closes[closes.length-1];
+  const first = closes[0];
+  const ret = ((last - first) / first * 100);
+  const isUp = ret >= 0;
+
+  document.getElementById('mp-'+idx).textContent = last >= 1000 ? last.toLocaleString('en-US',{{maximumFractionDigits:0}}) : last.toFixed(2);
+  const retEl = document.getElementById('mr-'+idx);
+  retEl.textContent = (isUp?'+':'') + ret.toFixed(2) + '%';
+  retEl.className = 'mkt-ret ' + (isUp?'up':'dn');
+
+  const canvas = document.getElementById('mc-'+idx);
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  const mn = Math.min(...closes);
+  const mx = Math.max(...closes);
+  const range = mx - mn || 1;
+  const pad = 2;
+
+  const color = item.color;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+
+  closes.forEach((v, i) => {{
+    const x = pad + (i / (closes.length - 1 || 1)) * (w - 2*pad);
+    const y = pad + (1 - (v - mn) / range) * (h - 2*pad);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }});
+  ctx.stroke();
+
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, color + '18');
+  grad.addColorStop(1, color + '00');
+  ctx.lineTo(pad + (w - 2*pad), h);
+  ctx.lineTo(pad, h);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+}}
+
+initMarketCharts();
+
 function switchDate(sel, key, dir, suffix) {{
   const date = sel.value;
   const wrap = document.getElementById('grid-'+key);
   if(!wrap) return;
   wrap.innerHTML = '<div class="empty">Loading…</div>';
-  /* We generate static HTML so we can't truly fetch dynamically here.
-     Instead redirect to the dated folder. */
   const base = dir + '/' + date + '/';
   window.location.href = base;
 }}
-
-/* Anchor-based scrolling for quick links */
-document.querySelectorAll('.ql').forEach(a => {{
-  a.addEventListener('click', e => {{
-    const id = a.getAttribute('href').slice(1);
-    const cards = document.querySelectorAll('.card');
-    const idx = {{'nse':0,'us':1,'sectors':2,'fno':3}}[id];
-    if(idx !== undefined && cards[idx]) {{
-      e.preventDefault();
-      cards[idx].scrollIntoView({{ behavior:'smooth', block:'center' }});
-      cards[idx].style.borderColor = 'var(--card-accent)';
-      setTimeout(() => cards[idx].style.borderColor = '', 1500);
-    }}
-  }});
-}});
 </script>
 </body>
 </html>"""
@@ -351,7 +482,9 @@ def main() -> int:
     root = os.path.abspath(args.root)
     html = generate_dashboard(root)
 
-    out = os.path.abspath(args.output)
+    out = args.output
+    if not os.path.isabs(out):
+        out = os.path.join(root, os.path.basename(out)) if os.path.dirname(out) in ("", ".") else os.path.abspath(out)
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
         f.write(html)
