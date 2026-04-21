@@ -52,10 +52,14 @@ jobs:
         run: |
           mkdir -p _site
 
-          # Copy all report directories (they already exist in the repo from daily-reports workflow)
+          # Copy report directories from the repo (committed by daily-reports workflow via git add -f).
+          # If a directory doesn't exist yet (first run), create an empty placeholder so the
+          # dashboard generator still works and links don't 404 once reports are committed.
           for dir in reports us_reports sector_reports fno_reports; do
             if [ -d "$dir" ]; then
               cp -r "$dir" "_site/$dir"
+            else
+              mkdir -p "_site/$dir"
             fi
           done
 
