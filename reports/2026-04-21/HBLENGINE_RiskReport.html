@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE:HBLENGINE · Risk Score Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090d; --bg2: #0d0e14; --bg3: #12131a; --bg4: #181922;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+    --green: #00e5a0; --green-dim: rgba(0,229,160,0.12);
+    --red: #ff4d6d; --red-dim: rgba(255,77,109,0.12);
+    --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
+    --blue: #3d9cf5; --blue-dim: rgba(61,156,245,0.12);
+    --purple: #9b7fff;
+    --text: #e8e9f0; --text2: #9899a8; --text3: #5c5d6e;
+    --mono: 'Fira Code', monospace; --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .page { max-width: 1120px; margin: 0 auto; padding: 32px 24px; }
+  .stock-header { display:flex; align-items:flex-start; justify-content:space-between; padding:28px 32px; background:linear-gradient(135deg,#0f1018,#131420 60%,#0d1020); border:1px solid var(--border2); border-radius:16px; position:relative; overflow:hidden; margin-bottom:20px; }
+  .stock-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--green),transparent); opacity:0.4; }
+  .sh-ticker { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--green); letter-spacing:2px; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+  .badge { border-radius:4px; padding:1px 6px; font-size:9px; font-weight:600; }
+  .badge-nse { background:var(--green-dim); color:var(--green); border:1px solid rgba(0,229,160,0.2); }
+  .badge-sector { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(61,156,245,0.2); }
+  .badge-earnings { background:rgba(245,166,35,0.1); color:#f5a623; border:1px solid rgba(245,166,35,0.25); }
+  .badge-imminent { background:rgba(245,166,35,0.25); color:#ffcc00; border:1px solid rgba(255,204,0,0.4); animation: pulse-amber 1.5s ease-in-out infinite; }
+  .badge-exdiv { background:rgba(61,156,245,0.1); color:#3d9cf5; border:1px solid rgba(61,156,245,0.25); }
+  @keyframes pulse-amber { 0%,100% { box-shadow:0 0 4px rgba(255,204,0,0.2); } 50% { box-shadow:0 0 12px rgba(255,204,0,0.5); } }
+  .sh-actions { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 2px 0; }
+  .sh-actions .badge { font-size:10px; padding:2px 8px; border-radius:4px; font-weight:600; letter-spacing:0.3px; }
+  .sh-name { font-family:var(--mono); font-size:26px; font-weight:700; color:#fff; letter-spacing:-0.5px; margin-bottom:8px; }
+  .sh-meta { display:flex; gap:16px; flex-wrap:wrap; font-family:var(--mono); font-size:10px; color:var(--text2); }
+  .sh-right { text-align:right; }
+  .sh-price { font-family:var(--mono); font-size:36px; font-weight:700; color:#fff; letter-spacing:-1px; }
+  .sh-change { font-family:var(--mono); font-size:13px; font-weight:600; margin-top:4px; }
+  .sh-volume { font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:8px; }
+  .sh-timestamp { font-family:var(--mono); font-size:9px; color:var(--text3); margin-top:4px; }
+  .sh-ranges { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+  .sh-range { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9px; }
+  .sh-range-label { color:var(--text3); width:32px; text-align:right; letter-spacing:0.5px; flex-shrink:0; }
+  .sh-range-val { color:var(--text3); width:42px; text-align:right; flex-shrink:0; }
+  .sh-range-track { flex:1; height:5px; background:linear-gradient(90deg,rgba(0,229,160,0.15),rgba(245,166,35,0.15),rgba(255,77,109,0.15)); border-radius:3px; position:relative; min-width:80px; }
+  .sh-range-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#00e5a0,#f5a623,#ff4d6d); }
+  .sh-range-dot { position:absolute; top:50%; width:10px; height:10px; border-radius:50%; border:2px solid var(--bg); transform:translate(-50%,-50%); }
+  .sh-range-zone { font-family:var(--mono); font-size:8px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; width:62px; text-align:left; flex-shrink:0; }
+  .gauge-kpi-row { display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }
+  .gauge-card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; }
+  .gauge-title { font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+  .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .kpi-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; transition:border-color 0.3s; }
+  .kpi-card:hover { border-color:var(--border2); }
+  .kpi-label { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:4px; }
+  .kpi-value { font-family:var(--mono); font-size:18px; font-weight:700; color:#fff; }
+  .kpi-sub { font-size:10px; color:var(--text2); margin-top:2px; }
+  .section { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:20px; }
+  .section-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  .card-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+  .metric-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:16px; position:relative; transition:transform 0.2s,box-shadow 0.2s; }
+  .metric-card:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+  .metric-card.beat { border-color:rgba(0,229,160,0.25); background:linear-gradient(145deg,var(--bg3),rgba(0,229,160,0.04)); }
+  .metric-card.beat::before { content:'✓ BEAT'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--green); background:var(--green-dim); border:1px solid rgba(0,229,160,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card.miss { border-color:rgba(255,77,109,0.25); background:linear-gradient(145deg,var(--bg3),rgba(255,77,109,0.04)); }
+  .metric-card.miss::before { content:'✕ MISS'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--red); background:var(--red-dim); border:1px solid rgba(255,77,109,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card.caution { border-color:rgba(245,166,35,0.25); background:linear-gradient(145deg,var(--bg3),rgba(245,166,35,0.04)); }
+  .metric-card.caution::before { content:'⚠ CAUTION'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--amber); background:var(--amber-dim); border:1px solid rgba(245,166,35,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card[data-tip] { cursor:pointer; }
+  .metric-card[data-tip]::after { content:attr(data-tip); position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:#1e1f2e; color:var(--text); border:1px solid var(--border2); border-radius:8px; padding:8px 12px; font-family:var(--mono); font-size:10px; line-height:1.5; white-space:normal; width:max-content; max-width:260px; z-index:50; pointer-events:none; opacity:0; transition:opacity 0.15s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+  .metric-card[data-tip]:hover::after { opacity:1; }
+  .mc-label { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+  .mc-value { font-family:var(--mono); font-size:22px; font-weight:700; color:#fff; }
+  .mc-bench { font-size:10px; color:var(--text2); margin-top:4px; }
+  .src-link { display:inline-block; margin-top:6px; font-size:9px; color:var(--blue); text-decoration:none; font-family:var(--mono); opacity:0.7; transition:opacity 0.2s; }
+  .src-link:hover { opacity:1; text-decoration:underline; }
+  .src-link-header { float:right; font-size:10px; color:var(--blue); text-decoration:none; font-family:var(--mono); font-weight:400; letter-spacing:0; text-transform:none; opacity:0.6; transition:opacity 0.2s; }
+  .src-link-header:hover { opacity:1; text-decoration:underline; }
+  .breakdown-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .breakdown-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .bc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .bc-title { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); }
+  .bc-score { font-family:var(--mono); font-size:28px; font-weight:700; }
+  .bc-max { font-family:var(--mono); font-size:12px; color:var(--text3); }
+  .bc-bar-track { height:4px; background:var(--bg4); border-radius:2px; overflow:hidden; margin-bottom:12px; }
+  .bc-bar-fill { height:100%; border-radius:2px; }
+  .bc-items { list-style:none; } .bc-items li { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text2); padding:3px 0; font-family:var(--mono); }
+  .bc-items li::before { content:'›'; color:var(--text3); }
+  .returns-strip { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
+  .page-break { border:none; border-top:2px dashed var(--border2); margin:36px 0; position:relative; }
+  .page-break::after { content:'PAGE 2'; position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:var(--bg); padding:0 12px; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:2px; }
+  table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
+  thead th { padding:10px 12px; text-align:right; color:var(--text3); font-weight:500; font-size:9px; letter-spacing:1px; text-transform:uppercase; border-bottom:2px solid var(--border2); }
+  thead th:first-child { text-align:left; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background 0.2s; } tbody tr:hover { background:rgba(255,255,255,0.02); }
+  tbody td { padding:10px 12px; text-align:right; } tbody td:first-child { text-align:left; color:var(--text2); }
+  .tg { color:var(--green)!important; } .tr { color:var(--red)!important; } .ta { color:var(--amber)!important; }
+  .exp-parent { user-select:none; } .exp-parent:hover { color:#3d9cf5!important; }
+  .exp-icon { display:inline-block;width:16px;height:16px;line-height:16px;text-align:center;font-size:12px;font-weight:700;color:#3d9cf5;background:rgba(61,156,245,0.12);border-radius:4px;margin-left:4px;vertical-align:middle;transition:transform 0.2s; }
+  .sub-row td { border-bottom-color:rgba(255,255,255,0.02)!important; }
+  .dual-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .col-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .col-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:12px; }
+  .col-item { display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; color:var(--text2); line-height:1.5; }
+  .col-item:last-child { border-bottom:none; }
+  .col-icon { font-size:14px; min-width:20px; text-align:center; }
+  .news-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .news-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px; transition:border-color 0.3s; }
+  .news-card:hover { border-color:var(--border2); }
+  .news-title { font-family:var(--mono); font-size:11px; color:#fff; line-height:1.5; margin-bottom:6px; }
+  .news-meta { font-family:var(--mono); font-size:9px; color:var(--text3); }
+  .verdict-card { background:linear-gradient(135deg,#0d0e18,#10111e); border:1px solid var(--border2); border-radius:16px; padding:28px; position:relative; overflow:hidden; margin-bottom:20px; }
+  .verdict-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--red),var(--amber),var(--green)); }
+  .verdict-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+  .verdict-rec { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--text3); }
+  .verdict-rating { font-family:var(--mono); font-size:32px; font-weight:700; }
+  .verdict-score { font-family:var(--mono); font-size:14px; }
+  .rating-bar-track { width:100%; height:6px; background:linear-gradient(90deg,var(--red) 0%,var(--amber) 50%,var(--green) 100%); border-radius:3px; position:relative; margin-bottom:24px; }
+  .rating-needle { position:absolute; top:-4px; width:14px; height:14px; background:#fff; border-radius:50%; transform:translateX(-50%); box-shadow:0 0 8px rgba(255,255,255,0.4); }
+  .verdict-text { font-size:13px; color:var(--text2); line-height:1.7; border-left:3px solid var(--amber); padding-left:16px; }
+  .verdict-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .vtag { font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 10px; border-radius:4px; border:1px solid; }
+  .vtag.green { color:var(--green); border-color:rgba(0,229,160,0.3); background:var(--green-dim); }
+  .vtag.red { color:var(--red); border-color:rgba(255,77,109,0.3); background:var(--red-dim); }
+  .vtag.amber { color:var(--amber); border-color:rgba(245,166,35,0.3); background:var(--amber-dim); }
+  .vtag.blue { color:var(--blue); border-color:rgba(61,156,245,0.3); background:var(--blue-dim); }
+  .copy-btn { position:fixed; bottom:24px; right:24px; background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:10px 16px; font-family:var(--mono); font-size:10px; color:var(--text2); cursor:pointer; display:flex; align-items:center; gap:6px; z-index:100; letter-spacing:1px; transition:all 0.3s; }
+  .copy-btn:hover { background:var(--bg4); color:#fff; border-color:var(--green); box-shadow:0 0 20px rgba(0,229,160,0.15); }
+  .footer { text-align:center; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:1px; padding:24px 0; border-top:1px solid var(--border); margin-top:8px; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .section, .stock-header, .gauge-kpi-row, .breakdown-grid, .verdict-card { animation: fadeIn 0.6s ease both; }
+  @media (max-width: 768px) { .stock-header { flex-direction:column; gap:16px; } .gauge-kpi-row { grid-template-columns:1fr; } .card-grid { grid-template-columns:1fr 1fr; } .breakdown-grid { grid-template-columns:1fr; } .dual-col { grid-template-columns:1fr; } .kpi-strip { grid-template-columns:repeat(2,1fr); } .returns-strip { grid-template-columns:repeat(3,1fr); } .news-grid { grid-template-columns:1fr; } }
+  .tf-btns { display:flex; gap:2px; }
+  .tf-btn { background:var(--bg4); border:1px solid var(--border); color:var(--text3); font-family:var(--mono); font-size:9px; padding:3px 9px; border-radius:4px; cursor:pointer; transition:all .15s; }
+  .tf-btn:hover { color:var(--text); border-color:var(--border2); }
+  .tf-btn.active { color:#fff; background:var(--bg3); border-color:var(--border2); }
+  .tf-ret { font-family:var(--mono); font-size:12px; font-weight:600; }
+  .tf-ret.up { color:var(--green); }
+  .tf-ret.dn { color:var(--red); }
+  @media print { .copy-btn { display:none; } .page { padding:16px; } .page-break { page-break-before:always; border:none; margin:0; } }
+</style>
+</head>
+<body>
+<div id="report-content">
+<div class="page">
+
+  <div class="stock-header">
+    <div>
+      <div class="sh-ticker"><span>NSE:HBLENGINE</span><span class="badge badge-nse">NSE</span><span class="badge badge-sector">Industrials</span></div>
+      <div class="sh-name">HBL ENGINEERING LTD</div>
+      <div class="sh-meta"><span>📊 Electrical Equipment & Parts</span></div>
+      
+      <div class="sh-ranges">
+        <div class="sh-range">
+          <span class="sh-range-label">Day</span>
+          <span class="sh-range-val">₹776</span>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:47.4%"></div><div class="sh-range-dot" style="left:47.4%;background:#f5a623;box-shadow:0 0 6px #f5a62380;"></div></div>
+          <span class="sh-range-val">₹792</span>
+          <span class="sh-range-zone" style="color:#f5a623">Neutral</span>
+        </div>
+        <div class="sh-range">
+          <span class="sh-range-label">52W</span>
+          <span class="sh-range-val">₹452</span>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:49.4%"></div><div class="sh-range-dot" style="left:49.4%;background:#f5a623;box-shadow:0 0 6px #f5a62380;"></div></div>
+          <span class="sh-range-val">₹1,122</span>
+          <span class="sh-range-zone" style="color:#f5a623">Neutral</span>
+        </div>
+      </div>
+    </div>
+    <div class="sh-right">
+      <div class="sh-price">₹783.30</div>
+      <div class="sh-change" style="color:#00e5a0">▲ ₹7.90 (+1.02%)</div>
+      <div class="sh-volume">Vol: 979,657 · Avg: 1,547,094</div>
+      <div class="sh-timestamp">As of April 21, 2026 · 13:13 IST</div>
+    </div>
+  </div>
+
+  <div class="gauge-kpi-row">
+    <div class="gauge-card">
+      <div class="gauge-title">COMPOSITE RISK SCORE</div>
+      <svg viewBox="0 0 260 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:260px;">
+  <defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff4d6d"/>
+      <stop offset="50%" stop-color="#f5a623"/>
+      <stop offset="100%" stop-color="#00e5a0"/>
+    </linearGradient>
+  </defs>
+  <path d="M 59.3 200.7 A 100 100 0 0 1 58.2 60.4" fill="none" stroke="#ff4d6d22" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 58.2 60.4 A 100 100 0 0 1 198.5 57.1" fill="none" stroke="#f5a62322" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 198.5 57.1 A 100 100 0 0 1 200.7 200.7" fill="none" stroke="#00e5a022" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 59.3 200.7 A 100 100 0 1 1 213.6 75.1" fill="none" stroke="url(#arcGrad)" stroke-width="8" stroke-linecap="round" filter="url(#glow)"/>
+  <line x1="55.0" y1="205.0" x2="50.8" y2="209.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="29.2" y1="162.8" x2="23.5" y2="164.6" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="25.3" y1="113.4" x2="19.4" y2="112.5" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="44.2" y1="67.7" x2="39.4" y2="64.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="81.9" y1="35.6" x2="79.2" y2="30.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="130.0" y1="24.0" x2="130.0" y2="18.0" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="178.1" y1="35.6" x2="180.8" y2="30.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="215.8" y1="67.7" x2="220.6" y2="64.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="234.7" y1="113.4" x2="240.6" y2="112.5" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="230.8" y1="162.8" x2="236.5" y2="164.6" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="205.0" y1="205.0" x2="209.2" y2="209.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="130" y1="130" x2="192.7" y2="88.8" stroke="#00e5a0" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)"/>
+  <circle cx="130" cy="130" r="6" fill="#00e5a0" filter="url(#glow)"/>
+  <circle cx="130" cy="130" r="3" fill="#08090d"/>
+  <text x="130" y="165" text-anchor="middle" font-family="'Fira Code',monospace" font-size="32" font-weight="700" fill="#fff">71</text>
+  <text x="130" y="182" text-anchor="middle" font-family="'Fira Code',monospace" font-size="9" fill="#00e5a0" letter-spacing="2">LOW RISK</text>
+</svg>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:8px;letter-spacing:1px;">
+        VAL:12/25 · FIN:18/25 · GRO:23/25 · TECH:18/25
+      </div>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card"><div class="kpi-label">📈 P/E RATIO</div><div class="kpi-value">27.3x</div><div class="kpi-sub">Trailing</div></div>
+      <div class="kpi-card"><div class="kpi-label">📖 P/B RATIO</div><div class="kpi-value">10.9x</div><div class="kpi-sub">Price to Book</div></div>
+      <div class="kpi-card"><div class="kpi-label">💰 EPS</div><div class="kpi-value">₹28.69</div><div class="kpi-sub">TTM</div></div>
+      <div class="kpi-card"><div class="kpi-label">🏛 MARKET CAP</div><div class="kpi-value">₹21,713Cr</div><div class="kpi-sub">Large Cap</div></div>
+      <div class="kpi-card"><div class="kpi-label">📊 ROE</div><div class="kpi-value">18.7%</div><div class="kpi-sub">Return on Equity</div></div>
+      <div class="kpi-card"><div class="kpi-label">📈 REV GROWTH</div><div class="kpi-value">94.0%</div><div class="kpi-sub">YoY</div></div>
+    </div>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">🏢 Company Overview</div>
+    <p style='font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px;'>Incorporated in 1983, HBL Power System Ltd manufactures and services different types of batteries, e-mobility, and other products[1]</p>
+    <div class="dual-col">
+      <div class="col-card" style="border-left:3px solid var(--green);">
+        <div class="col-title" style="color:var(--green);">PROS</div>
+        <ul style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:4px;color:var(--green);">Company is almost debt free.</li><li style="margin-bottom:4px;color:var(--green);">Company is expected to give good quarter</li><li style="margin-bottom:4px;color:var(--green);">Company has delivered good profit growth of 64.6% CAGR over last 5 years</li></ul>
+      </div>
+      <div class="col-card" style="border-left:3px solid var(--red);">
+        <div class="col-title" style="color:var(--red);">CONS</div>
+        <ul style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:4px;color:var(--red);">Stock is trading at 10.9 times its book value</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>📈 Price Movement</span>
+      <div class="tf-btns" id="tf-line">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn" data-tf="6M">6M</button><button class="tf-btn active" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-line-ret"></span>
+    </div>
+    <canvas id="cv-line" style="width:100%;height:280px;display:block;"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>🕯 Candlestick Chart</span>
+      <div class="tf-btns" id="tf-candle">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn active" data-tf="6M">6M</button><button class="tf-btn" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-candle-ret"></span>
+    </div>
+    <canvas id="cv-candle" style="width:100%;height:280px;display:block;"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets <a href="https://finance.yahoo.com/quote/HBLENGINE.NS/analysis/" target="_blank" class="src-link-header">Source: Yahoo Finance ↗</a></div>
+    <svg viewBox="0 0 480 90" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <rect x="123.3" y="25" width="211.1" height="30" rx="4" fill="rgba(0,229,160,0.08)" stroke="rgba(0,229,160,0.2)" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="228.9" y="20" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#00e5a0">FAIR VALUE ZONE</text>
+  <line x1="228.9" y1="22" x2="228.9" y2="58" stroke="#00e5a0" stroke-width="2"/>
+  <text x="228.9" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#00e5a0">₹783</text>
+  <text x="228.9" y="82" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">FAIR VALUE</text>
+  <text x="123.3" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹587</text>
+  <text x="334.4" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">₹979</text>
+  <line x1="228.9" y1="22" x2="228.9" y2="58" stroke="#00e5a0" stroke-width="3"/>
+  <polygon points="228.9,20 223.9,12 233.9,12" fill="#00e5a0"/>
+  <text x="228.9" y="8" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="#00e5a0">₹783 CMP</text>
+</svg>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">📉 P/E & P/B Trend (at current CMP)</div>
+    <div class="dual-col">
+      <div class="col-card"><div class="col-title">P/E RATIO TREND</div><svg viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <defs><linearGradient id="ag_PE" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3d9cf5" stop-opacity="0.20"/><stop offset="100%" stop-color="#3d9cf5" stop-opacity="0.01"/></linearGradient></defs>
+  <line x1="50" y1="20.0" x2="500" y2="20.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="23.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">1801.6</text>
+  <line x1="50" y1="57.0" x2="500" y2="57.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="60.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">1357.0</text>
+  <line x1="50" y1="94.0" x2="500" y2="94.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="97.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">912.4</text>
+  <line x1="50" y1="131.0" x2="500" y2="131.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="134.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">467.8</text>
+  <line x1="50" y1="168.0" x2="500" y2="168.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="171.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">23.2</text>
+  <text x="50.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2014</text>
+  <text x="87.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2015</text>
+  <text x="125.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2016</text>
+  <text x="162.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2017</text>
+  <text x="200.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2018</text>
+  <text x="237.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2019</text>
+  <text x="275.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2020</text>
+  <text x="312.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2021</text>
+  <text x="350.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2022</text>
+  <text x="387.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2023</text>
+  <text x="425.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2024</text>
+  <text x="462.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2025</text>
+  <text x="500.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">TTM</text>
+  <path d="M 50.0 128.4 L 87.5 53.5 L 125.0 59.4 L 162.5 127.3 L 200.0 112.7 L 237.5 104.7 L 275.0 101.3 L 312.5 39.6 L 350.0 150.7 L 387.5 151.6 L 425.0 163.5 L 462.5 163.4 L 500.0 167.7 L 500.0 168.0 L 50.0 168.0 Z" fill="url(#ag_PE)"/>
+  <polyline points="50.0,128.4 87.5,53.5 125.0,59.4 162.5,127.3 200.0,112.7 237.5,104.7 275.0,101.3 312.5,39.6 350.0,150.7 387.5,151.6 425.0,163.5 462.5,163.4 500.0,167.7" fill="none" stroke="#3d9cf5" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="50.0" cy="128.4" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2014: 498.9</title></circle>
+  <circle cx="87.5" cy="53.5" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2015: 1398.7</title></circle>
+  <circle cx="125.0" cy="59.4" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2016: 1327.6</title></circle>
+  <circle cx="162.5" cy="127.3" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2017: 512.0</title></circle>
+  <circle cx="200.0" cy="112.7" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2018: 687.1</title></circle>
+  <circle cx="237.5" cy="104.7" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2019: 783.3</title></circle>
+  <circle cx="275.0" cy="101.3" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2020: 824.5</title></circle>
+  <circle cx="312.5" cy="39.6" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2021: 1566.6</title></circle>
+  <circle cx="350.0" cy="150.7" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2022: 231.1</title></circle>
+  <circle cx="387.5" cy="151.6" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2023: 220.0</title></circle>
+  <circle cx="425.0" cy="163.5" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2024: 77.3</title></circle>
+  <circle cx="462.5" cy="163.4" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>Mar 2025: 78.4</title></circle>
+  <circle cx="500.0" cy="167.7" r="3" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"><title>TTM: 27.3</title></circle>
+  <text x="504.0" y="170.7" font-family="Fira Code,monospace" font-size="9" font-weight="600" fill="#3d9cf5">27.3</text>
+</svg></div>
+      <div class="col-card"><div class="col-title">P/B RATIO TREND</div><svg viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <defs><linearGradient id="ag_PB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9b7fff" stop-opacity="0.20"/><stop offset="100%" stop-color="#9b7fff" stop-opacity="0.01"/></linearGradient></defs>
+  <line x1="50" y1="20.0" x2="500" y2="20.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="23.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">4.0</text>
+  <line x1="50" y1="57.0" x2="500" y2="57.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="60.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">3.2</text>
+  <line x1="50" y1="94.0" x2="500" y2="94.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="97.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">2.5</text>
+  <line x1="50" y1="131.0" x2="500" y2="131.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="134.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">1.7</text>
+  <line x1="50" y1="168.0" x2="500" y2="168.0" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="44" y="171.0" text-anchor="end" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">0.9</text>
+  <text x="50.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2014</text>
+  <text x="87.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2015</text>
+  <text x="125.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2016</text>
+  <text x="162.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2017</text>
+  <text x="200.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2018</text>
+  <text x="237.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2019</text>
+  <text x="275.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2020</text>
+  <text x="312.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2021</text>
+  <text x="350.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2022</text>
+  <text x="387.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2023</text>
+  <text x="425.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2024</text>
+  <text x="462.5" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">'2025</text>
+  <text x="500.0" y="194" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">S'2025</text>
+  <path d="M 50.0 45.2 L 87.5 46.1 L 125.0 58.4 L 162.5 68.4 L 200.0 72.8 L 237.5 75.6 L 275.0 76.6 L 312.5 78.2 L 350.0 91.3 L 387.5 102.3 L 425.0 126.7 L 462.5 142.0 L 500.0 160.0 L 500.0 168.0 L 50.0 168.0 Z" fill="url(#ag_PB)"/>
+  <polyline points="50.0,45.2 87.5,46.1 125.0,58.4 162.5,68.4 200.0,72.8 237.5,75.6 275.0,76.6 312.5,78.2 350.0,91.3 387.5,102.3 425.0,126.7 462.5,142.0 500.0,160.0" fill="none" stroke="#9b7fff" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="50.0" cy="45.2" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2014: 3.5</title></circle>
+  <circle cx="87.5" cy="46.1" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2015: 3.5</title></circle>
+  <circle cx="125.0" cy="58.4" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2016: 3.2</title></circle>
+  <circle cx="162.5" cy="68.4" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2017: 3.0</title></circle>
+  <circle cx="200.0" cy="72.8" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2018: 2.9</title></circle>
+  <circle cx="237.5" cy="75.6" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2019: 2.9</title></circle>
+  <circle cx="275.0" cy="76.6" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2020: 2.8</title></circle>
+  <circle cx="312.5" cy="78.2" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2021: 2.8</title></circle>
+  <circle cx="350.0" cy="91.3" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2022: 2.5</title></circle>
+  <circle cx="387.5" cy="102.3" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2023: 2.3</title></circle>
+  <circle cx="425.0" cy="126.7" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2024: 1.8</title></circle>
+  <circle cx="462.5" cy="142.0" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Mar 2025: 1.5</title></circle>
+  <circle cx="500.0" cy="160.0" r="3" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"><title>Sep 2025: 1.1</title></circle>
+  <text x="504.0" y="163.0" font-family="Fira Code,monospace" font-size="9" font-weight="600" fill="#9b7fff">1.1</text>
+</svg></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💎 Valuation & Financial Metrics</div>
+    <div class="card-grid">
+      <div class="metric-card caution" data-tip="P/E at 27.3 is between 20 and 40 — moderate"><div class="mc-label">P/E RATIO</div><div class="mc-value">27.3x</div><div class="mc-bench">Trailing twelve months</div></div>
+      <div class="metric-card miss" data-tip="P/B at 10.9 exceeds 10 — elevated"><div class="mc-label">P/B RATIO</div><div class="mc-value">10.9x</div><div class="mc-bench">Price to Book value</div></div>
+      <div class="metric-card beat" data-tip="ROE % at 18.7 exceeds 15 — strong"><div class="mc-label">ROE</div><div class="mc-value">18.7%</div><div class="mc-bench">Return on Equity</div></div>
+      <div class="metric-card beat" data-tip="Profit Margin % at 25.1 exceeds 10 — strong"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">25.1%</div><div class="mc-bench">Net profit margin</div></div>
+      <div class="metric-card beat" data-tip="OPM % at 33.2 exceeds 15 — strong"><div class="mc-label">OPM</div><div class="mc-value">33.2%</div><div class="mc-bench">Operating profit margin</div></div>
+      <div class="metric-card caution" data-tip="Analyst target: Data unavailable"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">₹0</div><div class="mc-bench">Range: ₹587 - ₹979</div><a href="https://finance.yahoo.com/quote/HBLENGINE.NS/analysis/" target="_blank" class="src-link">Yahoo Finance ↗</a></div>
+      <div class="metric-card beat" data-tip="PEG at 0.6 is below 1.0 — attractive"><div class="mc-label">PEG RATIO</div><div class="mc-value">0.55</div><div class="mc-bench">Price/Earnings to Growth</div></div>
+      <div class="metric-card caution" data-tip="EV/EBITDA at 19.2 is between 12 and 20 — moderate"><div class="mc-label">EV/EBITDA</div><div class="mc-value">19.2x</div><div class="mc-bench">Enterprise value ratio</div></div>
+      <div class="metric-card caution" data-tip="Current Ratio: Data unavailable"><div class="mc-label">CURRENT RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Liquidity measure</div></div>
+      <div class="metric-card miss" data-tip="Div Yield % at 0.3 is below 0.5 — weak"><div class="mc-label">DIVIDEND YIELD</div><div class="mc-value">0.26%</div><div class="mc-bench">Annual yield</div></div>
+      <div class="metric-card beat" data-tip="ROA % at 29.7 exceeds 10 — strong"><div class="mc-label">ROA</div><div class="mc-value">29.7%</div><div class="mc-bench">Return on Assets</div></div>
+      <div class="metric-card beat" data-tip="Gross Margin % at 51.6 exceeds 40 — strong"><div class="mc-label">GROSS MARGIN</div><div class="mc-value">51.6%</div><div class="mc-bench">Gross profit margin</div></div>
+    </div>
+    <div style="margin-top:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:8px;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px;">INDUSTRY AVERAGES — OTHER INDUSTRIAL PRODUCTS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;">
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/E</span> <span style="color:#fff;font-weight:600;">45.4x</span> <span style="color:#00e5a0;font-size:9px;">(below avg)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/B</span> <span style="color:#fff;font-weight:600;">5.0x</span> <span style="color:var(--text3);font-size:9px;">(sector fair)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROCE</span> <span style="color:#fff;font-weight:600;">21.3%</span> <span style="color:#00e5a0;font-size:9px;">(above avg)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROE</span> <span style="color:#fff;font-weight:600;">20%</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">OPM</span> <span style="color:#fff;font-weight:600;">20%</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">Div Yield</span> <span style="color:#fff;font-weight:600;">0.33%</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">D/E</span> <span style="color:#fff;font-weight:600;">&lt;30</span> <span style="color:var(--text3);font-size:9px;">(sector comfort)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="breakdown-grid">
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">VALUATION</div><div class="bc-score" style="color:#f5a623">12<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:48%;background:#f5a623;box-shadow:0 0 8px #f5a62344;"></div></div>
+      <ul class="bc-items">
+        <li>P/E at 27x</li>
+        <li>P/B at 10.9x</li>
+        <li>Analyst target: ₹0 (+0.0%)</li>
+        <li>1Y return: +50.2%</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">FINANCIAL HEALTH</div><div class="bc-score" style="color:#00e5a0">18<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:72%;background:#00e5a0;box-shadow:0 0 8px #00e5a044;"></div></div>
+      <ul class="bc-items">
+        <li>ROE: 18.7%</li>
+        <li>Profit margin: 25.1%</li>
+        <li>Revenue growth: 94.0%</li>
+        <li>Debt/Equity: 4%</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">GROWTH</div><div class="bc-score" style="color:#00e5a0">23<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:92%;background:#00e5a0;box-shadow:0 0 8px #00e5a044;"></div></div>
+      <ul class="bc-items">
+        <li>Revenue growth: 94.0%</li>
+        <li>Earnings growth: 244.2%</li>
+        <li>Beta: -0.15</li>
+        <li>Sector: Industrials</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">TECHNICAL</div><div class="bc-score" style="color:#00e5a0">18<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:72%;background:#00e5a0;box-shadow:0 0 8px #00e5a044;"></div></div>
+      <ul class="bc-items">
+        <li>RSI, MACD, MA crossovers</li>
+        <li>200 DMA &amp; 50 EMA position</li>
+        <li>Volume trend analysis</li>
+        <li>Price momentum signals</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="page-break">
+
+  <div class="section">
+    <div class="section-title">📋 Quarterly Performance Trend</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Quarter</th><th>Revenue</th><th>QoQ %</th><th>Net Profit</th><th>QoQ %</th><th>Op. Cash Flow</th><th>EBITDA Margin</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Q2 FY25</td>
+          <td>N/A</td><td style="color:var(--text3)">—</td>
+          <td class="">N/A</td><td style="color:var(--text3)">—</td>
+          <td>N/A</td>
+          <td>N/A</td>
+        </tr>
+        <tr>
+          <td>Q3 FY25</td>
+          <td>₹451 Cr</td><td style="color:var(--text3)">—</td>
+          <td class="tg">₹65 Cr</td><td style="color:var(--text3)">—</td>
+          <td>N/A</td>
+          <td>21.1%</td>
+        </tr>
+        <tr>
+          <td>Q4 FY25</td>
+          <td>₹462 Cr</td><td class="tg">+2.6%</td>
+          <td class="tg">₹45 Cr</td><td class="tr">-30.4%</td>
+          <td>N/A</td>
+          <td>20.2%</td>
+        </tr>
+        <tr>
+          <td>Q1 FY26</td>
+          <td>₹602 Cr</td><td class="tg">+30.2%</td>
+          <td class="tg">₹143 Cr</td><td class="tg">+218.7%</td>
+          <td>N/A</td>
+          <td>34.6%</td>
+        </tr>
+        <tr>
+          <td>Q2 FY26</td>
+          <td>₹1,223 Cr</td><td class="tg">+103.2%</td>
+          <td class="tg">₹387 Cr</td><td class="tg">+170.3%</td>
+          <td>N/A</td>
+          <td>43.8%</td>
+        </tr>
+        <tr>
+          <td>Q3 FY26</td>
+          <td>₹874 Cr</td><td class="tr">-28.5%</td>
+          <td class="tg">₹221 Cr</td><td class="tr">-43.0%</td>
+          <td>N/A</td>
+          <td>35.7%</td>
+        </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📊 Year-on-Year Trend</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>FY</th><th>Revenue</th><th>YoY %</th><th>Net Profit</th><th>YoY %</th><th>Op. Cash Flow</th><th>YoY %</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>FY22</td>
+          <td>₹1,213 Cr</td><td style="color:var(--text3)">—</td>
+          <td>₹94 Cr</td><td style="color:var(--text3)">—</td>
+          <td>₹62 Cr</td><td style="color:var(--text3)">—</td>
+        </tr>
+        <tr>
+          <td>FY23</td>
+          <td>₹1,358 Cr</td><td class="tg">+12.0%</td>
+          <td>₹99 Cr</td><td class="tg">+5.1%</td>
+          <td>₹122 Cr</td><td class="tg">+96.0%</td>
+        </tr>
+        <tr>
+          <td>FY24</td>
+          <td>₹2,221 Cr</td><td class="tg">+63.6%</td>
+          <td>₹281 Cr</td><td class="tg">+184.7%</td>
+          <td>₹270 Cr</td><td class="tg">+120.7%</td>
+        </tr>
+        <tr>
+          <td>FY25</td>
+          <td>₹1,954 Cr</td><td class="tr">-12.1%</td>
+          <td>₹277 Cr</td><td class="tr">-1.4%</td>
+          <td>₹239 Cr</td><td class="tr">-11.5%</td>
+        </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">📅 Quarterly Results <a href="https://www.screener.in/company/HBLENGINE/consolidated/" target="_blank" class="src-link-header">Source: Screener ↗</a></div>
+    <div style="overflow-x:auto;"><table><thead><tr><th></th><th>Jun 2023</th><th>Sep 2023</th><th>Dec 2023</th><th>Mar 2024</th><th>Jun 2024</th><th>Sep 2024</th><th>Dec 2024</th><th>Mar 2025</th><th>Jun 2025</th><th>Sep 2025</th><th>Dec 2025</th></tr></thead><tbody><tr><td class="exp-parent" onclick="toggleGroup('grp12')" style="cursor:pointer;font-weight:600;color:#fff;">Sales <span class="exp-icon" id="icon-grp12">+</span></td><td style="font-weight:600;color:#fff;">467</td><td class="tg" style="font-weight:600;color:#fff;">557</td><td class="tg" style="font-weight:600;color:#fff;">599</td><td class="tg" style="font-weight:600;color:#fff;">610</td><td class="tr" style="font-weight:600;color:#fff;">520</td><td class="tg" style="font-weight:600;color:#fff;">521</td><td class="tr" style="font-weight:600;color:#fff;">451</td><td class="tg" style="font-weight:600;color:#fff;">476</td><td class="tg" style="font-weight:600;color:#fff;">602</td><td class="tg" style="font-weight:600;color:#fff;">1,223</td><td class="tr" style="font-weight:600;color:#fff;">874</td></tr>
+<tr class="sub-row sub-grp12" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">YOY Sales Growth %</td><td style="font-size:0.85em;">46%</td><td class="tg" style="font-size:0.85em;">77%</td><td class="tg" style="font-size:0.85em;">80%</td><td class="tr" style="font-size:0.85em;">52%</td><td class="tr" style="font-size:0.85em;">11%</td><td class="tr" style="font-size:0.85em;">-6%</td><td class="tr" style="font-size:0.85em;">-25%</td><td class="tg" style="font-size:0.85em;">-22%</td><td class="tg" style="font-size:0.85em;">16%</td><td class="tg" style="font-size:0.85em;">135%</td><td class="tr" style="font-size:0.85em;">94%</td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp13')" style="cursor:pointer;">Expenses <span class="exp-icon" id="icon-grp13">+</span></td><td>390</td><td class="tg">456</td><td class="tg">486</td><td class="tr">479</td><td class="tr">410</td><td class="tg">412</td><td class="tr">357</td><td class="tg">396</td><td class="tg">410</td><td class="tg">679</td><td class="tr">572</td></tr>
+<tr class="sub-row sub-grp13" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Material Cost %</td><td style="font-size:0.85em;">54.74%</td><td class="tr" style="font-size:0.85em;">52.06%</td><td class="tg" style="font-size:0.85em;">52.28%</td><td class="tr" style="font-size:0.85em;">47.66%</td><td class="tg" style="font-size:0.85em;">49.58%</td><td class="tg" style="font-size:0.85em;">49.84%</td><td class="tr" style="font-size:0.85em;">48.02%</td><td class="tg" style="font-size:0.85em;">49.83%</td><td class="tr" style="font-size:0.85em;">43.20%</td><td class="tr" style="font-size:0.85em;">36.57%</td><td class="tg" style="font-size:0.85em;">41.65%</td></tr>
+<tr class="sub-row sub-grp13" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Employee Cost %</td><td style="font-size:0.85em;">6.52%</td><td class="tg" style="font-size:0.85em;">6.64%</td><td class="tr" style="font-size:0.85em;">6.17%</td><td class="tg" style="font-size:0.85em;">8.72%</td><td class="tr" style="font-size:0.85em;">7.64%</td><td class="tg" style="font-size:0.85em;">8.47%</td><td class="tg" style="font-size:0.85em;">10.34%</td><td class="tr" style="font-size:0.85em;">10.21%</td><td class="tr" style="font-size:0.85em;">8.98%</td><td class="tr" style="font-size:0.85em;">6.36%</td><td class="tg" style="font-size:0.85em;">9.30%</td></tr>
+<tr><td style="font-weight:600;color:#fff;">Operating Profit</td><td style="font-weight:600;color:#fff;">78</td><td class="tg" style="font-weight:600;color:#fff;">101</td><td class="tg" style="font-weight:600;color:#fff;">113</td><td class="tg" style="font-weight:600;color:#fff;">131</td><td class="tr" style="font-weight:600;color:#fff;">110</td><td class="tr" style="font-weight:600;color:#fff;">109</td><td class="tr" style="font-weight:600;color:#fff;">94</td><td class="tr" style="font-weight:600;color:#fff;">79</td><td class="tg" style="font-weight:600;color:#fff;">192</td><td class="tg" style="font-weight:600;color:#fff;">544</td><td class="tr" style="font-weight:600;color:#fff;">302</td></tr>
+<tr><td>OPM %</td><td>17%</td><td class="tg">18%</td><td class="tg">19%</td><td class="tg">22%</td><td class="tr">21%</td><td>21%</td><td>21%</td><td class="tr">17%</td><td class="tg">32%</td><td class="tg">44%</td><td class="tr">35%</td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp14')" style="cursor:pointer;">Other Income <span class="exp-icon" id="icon-grp14">+</span></td><td>3</td><td>3</td><td class="tr">2</td><td class="tr">-19</td><td class="tg">5</td><td class="tg">12</td><td class="tr">2</td><td class="tg">6</td><td class="tg">17</td><td class="tr">-8</td><td class="tg">10</td></tr>
+<tr class="sub-row sub-grp14" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Exceptional items</td><td style="font-size:0.85em;">0.01</td><td class="tr" style="font-size:0.85em;">-0.11</td><td class="tr" style="font-size:0.85em;">-2.84</td><td class="tr" style="font-size:0.85em;">-25.14</td><td class="tg" style="font-size:0.85em;">-0.04</td><td class="tg" style="font-size:0.85em;">0.19</td><td class="tr" style="font-size:0.85em;">-0.04</td><td class="tr" style="font-size:0.85em;">-1.09</td><td class="tr" style="font-size:0.85em;">-3.11</td><td class="tr" style="font-size:0.85em;">-23.85</td><td class="tg" style="font-size:0.85em;">-0.97</td></tr>
+<tr class="sub-row sub-grp14" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other income normal</td><td style="font-size:0.85em;">2.72</td><td class="tg" style="font-size:0.85em;">3.36</td><td class="tg" style="font-size:0.85em;">5.28</td><td class="tg" style="font-size:0.85em;">6.54</td><td class="tr" style="font-size:0.85em;">5.48</td><td class="tg" style="font-size:0.85em;">12.23</td><td class="tr" style="font-size:0.85em;">1.54</td><td class="tg" style="font-size:0.85em;">6.83</td><td class="tg" style="font-size:0.85em;">19.64</td><td class="tr" style="font-size:0.85em;">15.78</td><td class="tr" style="font-size:0.85em;">10.54</td></tr>
+<tr><td>Interest</td><td>2</td><td class="tg">3</td><td>3</td><td class="tg">4</td><td class="tr">2</td><td class="tg">3</td><td class="tg">5</td><td class="tr">4</td><td class="tg">6</td><td class="tr">3</td><td>3</td></tr>
+<tr><td>Depreciation</td><td>10</td><td>10</td><td class="tg">11</td><td>11</td><td>11</td><td>11</td><td>11</td><td>11</td><td class="tg">12</td><td>12</td><td>12</td></tr>
+<tr><td>Profit before tax</td><td>69</td><td class="tg">91</td><td class="tg">102</td><td class="tr">98</td><td class="tg">103</td><td class="tg">107</td><td class="tr">79</td><td class="tr">71</td><td class="tg">191</td><td class="tg">520</td><td class="tr">297</td></tr>
+<tr><td>Tax %</td><td>25%</td><td class="tg">26%</td><td class="tr">23%</td><td class="tg">33%</td><td class="tr">26%</td><td class="tg">29%</td><td class="tr">26%</td><td>26%</td><td>26%</td><td>26%</td><td class="tg">27%</td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp15')" style="cursor:pointer;font-weight:600;color:#fff;">Net Profit <span class="exp-icon" id="icon-grp15">+</span></td><td style="font-weight:600;color:#fff;">52</td><td class="tg" style="font-weight:600;color:#fff;">68</td><td class="tg" style="font-weight:600;color:#fff;">79</td><td class="tg" style="font-weight:600;color:#fff;">81</td><td class="tr" style="font-weight:600;color:#fff;">80</td><td class="tg" style="font-weight:600;color:#fff;">87</td><td class="tr" style="font-weight:600;color:#fff;">65</td><td class="tr" style="font-weight:600;color:#fff;">45</td><td class="tg" style="font-weight:600;color:#fff;">143</td><td class="tg" style="font-weight:600;color:#fff;">387</td><td class="tr" style="font-weight:600;color:#fff;">220</td></tr>
+<tr class="sub-row sub-grp15" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit from Associates</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">1</td><td style="font-size:0.85em;">1</td><td class="tg" style="font-size:0.85em;">16</td><td class="tr" style="font-size:0.85em;">4</td><td class="tg" style="font-size:0.85em;">11</td><td class="tr" style="font-size:0.85em;">6</td><td class="tr" style="font-size:0.85em;">-8</td><td class="tg" style="font-size:0.85em;">2</td><td class="tr" style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">3</td></tr>
+<tr class="sub-row sub-grp15" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Minority share</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td></tr>
+<tr class="sub-row sub-grp15" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Exceptional items AT</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">-2</td><td class="tr" style="font-size:0.85em;">-17</td><td class="tg" style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">-1</td><td class="tr" style="font-size:0.85em;">-2</td><td class="tr" style="font-size:0.85em;">-18</td><td class="tg" style="font-size:0.85em;">-1</td></tr>
+<tr class="sub-row sub-grp15" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit excl Excep</td><td style="font-size:0.85em;">52</td><td class="tg" style="font-size:0.85em;">68</td><td class="tg" style="font-size:0.85em;">81</td><td class="tg" style="font-size:0.85em;">98</td><td class="tr" style="font-size:0.85em;">80</td><td class="tg" style="font-size:0.85em;">87</td><td class="tr" style="font-size:0.85em;">65</td><td class="tr" style="font-size:0.85em;">46</td><td class="tg" style="font-size:0.85em;">146</td><td class="tg" style="font-size:0.85em;">405</td><td class="tr" style="font-size:0.85em;">221</td></tr>
+<tr class="sub-row sub-grp15" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit for PE</td><td style="font-size:0.85em;">52</td><td class="tg" style="font-size:0.85em;">69</td><td class="tg" style="font-size:0.85em;">81</td><td class="tg" style="font-size:0.85em;">98</td><td class="tr" style="font-size:0.85em;">80</td><td class="tg" style="font-size:0.85em;">87</td><td class="tr" style="font-size:0.85em;">65</td><td class="tr" style="font-size:0.85em;">46</td><td class="tg" style="font-size:0.85em;">146</td><td class="tg" style="font-size:0.85em;">405</td><td class="tr" style="font-size:0.85em;">221</td></tr>
+<tr class="sub-row sub-grp15" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit for EPS</td><td style="font-size:0.85em;">52</td><td class="tg" style="font-size:0.85em;">69</td><td class="tg" style="font-size:0.85em;">79</td><td class="tg" style="font-size:0.85em;">81</td><td class="tr" style="font-size:0.85em;">80</td><td class="tg" style="font-size:0.85em;">87</td><td class="tr" style="font-size:0.85em;">65</td><td class="tr" style="font-size:0.85em;">45</td><td class="tg" style="font-size:0.85em;">143</td><td class="tg" style="font-size:0.85em;">387</td><td class="tr" style="font-size:0.85em;">221</td></tr>
+<tr class="sub-row sub-grp15" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">YOY Profit Growth %</td><td style="font-size:0.85em;">157%</td><td class="tg" style="font-size:0.85em;">265%</td><td class="tr" style="font-size:0.85em;">249%</td><td class="tr" style="font-size:0.85em;">175%</td><td class="tr" style="font-size:0.85em;">55%</td><td class="tr" style="font-size:0.85em;">27%</td><td class="tr" style="font-size:0.85em;">-20%</td><td class="tr" style="font-size:0.85em;">-53%</td><td class="tg" style="font-size:0.85em;">82%</td><td class="tg" style="font-size:0.85em;">365%</td><td class="tr" style="font-size:0.85em;">242%</td></tr>
+<tr><td style="font-weight:600;color:#fff;">EPS in Rs</td><td style="font-weight:600;color:#fff;">1.87</td><td class="tg" style="font-weight:600;color:#fff;">2.48</td><td class="tg" style="font-weight:600;color:#fff;">2.85</td><td class="tg" style="font-weight:600;color:#fff;">2.94</td><td class="tr" style="font-weight:600;color:#fff;">2.89</td><td class="tg" style="font-weight:600;color:#fff;">3.15</td><td class="tr" style="font-weight:600;color:#fff;">2.33</td><td class="tr" style="font-weight:600;color:#fff;">1.62</td><td class="tg" style="font-weight:600;color:#fff;">5.17</td><td class="tg" style="font-weight:600;color:#fff;">13.97</td><td class="tr" style="font-weight:600;color:#fff;">7.96</td></tr>
+<tr><td>Raw PDF</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">📊 Profit & Loss Statement <a href="https://www.screener.in/company/HBLENGINE/consolidated/" target="_blank" class="src-link-header">Source: Screener ↗</a></div>
+    <div style="overflow-x:auto;"><table><thead><tr><th></th><th>Mar 2018</th><th>Mar 2019</th><th>Mar 2020</th><th>Mar 2021</th><th>Mar 2022</th><th>Mar 2023</th><th>Mar 2024</th><th>Mar 2025</th><th>TTM</th></tr></thead><tbody><tr><td class="exp-parent" onclick="toggleGroup('grp1')" style="cursor:pointer;font-weight:600;color:#fff;">Sales <span class="exp-icon" id="icon-grp1">+</span></td><td style="font-weight:600;color:#fff;">1,603</td><td class="tr" style="font-weight:600;color:#fff;">1,266</td><td class="tr" style="font-weight:600;color:#fff;">1,092</td><td class="tr" style="font-weight:600;color:#fff;">912</td><td class="tg" style="font-weight:600;color:#fff;">1,236</td><td class="tg" style="font-weight:600;color:#fff;">1,369</td><td class="tg" style="font-weight:600;color:#fff;">2,233</td><td class="tr" style="font-weight:600;color:#fff;">1,967</td><td class="tg" style="font-weight:600;color:#fff;">3,174</td></tr>
+<tr class="sub-row sub-grp1" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Sales Growth %</td><td style="font-size:0.85em;">13.33%</td><td class="tr" style="font-size:0.85em;">-21.03%</td><td class="tg" style="font-size:0.85em;">-13.75%</td><td class="tr" style="font-size:0.85em;">-16.46%</td><td class="tg" style="font-size:0.85em;">35.54%</td><td class="tr" style="font-size:0.85em;">10.72%</td><td class="tg" style="font-size:0.85em;">63.18%</td><td class="tr" style="font-size:0.85em;">-11.92%</td><td style="font-size:0.85em;"></td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp2')" style="cursor:pointer;">Expenses <span class="exp-icon" id="icon-grp2">+</span></td><td>1,477</td><td class="tr">1,169</td><td class="tr">1,011</td><td class="tr">845</td><td class="tg">1,097</td><td class="tg">1,217</td><td class="tg">1,810</td><td class="tr">1,574</td><td class="tg">2,056</td></tr>
+<tr class="sub-row sub-grp2" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Manufacturing Cost %</td><td style="font-size:0.85em;">12.12%</td><td class="tg" style="font-size:0.85em;">12.50%</td><td class="tg" style="font-size:0.85em;">13.12%</td><td class="tg" style="font-size:0.85em;">13.66%</td><td class="tr" style="font-size:0.85em;">12.42%</td><td class="tr" style="font-size:0.85em;">12.34%</td><td class="tg" style="font-size:0.85em;">16.17%</td><td class="tr" style="font-size:0.85em;">14.50%</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp2" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Employee Cost %</td><td style="font-size:0.85em;">6.11%</td><td class="tg" style="font-size:0.85em;">6.91%</td><td class="tg" style="font-size:0.85em;">8.31%</td><td class="tg" style="font-size:0.85em;">9.01%</td><td class="tr" style="font-size:0.85em;">8.08%</td><td class="tr" style="font-size:0.85em;">8.06%</td><td class="tr" style="font-size:0.85em;">7.06%</td><td class="tg" style="font-size:0.85em;">9.10%</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp2" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other Cost %</td><td style="font-size:0.85em;">7.48%</td><td class="tg" style="font-size:0.85em;">8.48%</td><td class="tr" style="font-size:0.85em;">8.25%</td><td class="tr" style="font-size:0.85em;">8.21%</td><td class="tr" style="font-size:0.85em;">7.33%</td><td class="tg" style="font-size:0.85em;">7.69%</td><td class="tr" style="font-size:0.85em;">6.33%</td><td class="tg" style="font-size:0.85em;">7.08%</td><td style="font-size:0.85em;"></td></tr>
+<tr><td style="font-weight:600;color:#fff;">Operating Profit</td><td style="font-weight:600;color:#fff;">126</td><td class="tr" style="font-weight:600;color:#fff;">97</td><td class="tr" style="font-weight:600;color:#fff;">81</td><td class="tr" style="font-weight:600;color:#fff;">67</td><td class="tg" style="font-weight:600;color:#fff;">139</td><td class="tg" style="font-weight:600;color:#fff;">151</td><td class="tg" style="font-weight:600;color:#fff;">423</td><td class="tr" style="font-weight:600;color:#fff;">393</td><td class="tg" style="font-weight:600;color:#fff;">1,118</td></tr>
+<tr><td>OPM %</td><td>8%</td><td>8%</td><td class="tr">7%</td><td>7%</td><td class="tg">11%</td><td>11%</td><td class="tg">19%</td><td class="tg">20%</td><td class="tg">35%</td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp3')" style="cursor:pointer;">Other Income <span class="exp-icon" id="icon-grp3">+</span></td><td>16</td><td class="tg">21</td><td class="tg">22</td><td class="tr">6</td><td class="tg">26</td><td class="tr">20</td><td class="tr">8</td><td class="tg">38</td><td class="tr">24</td></tr>
+<tr class="sub-row sub-grp3" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Exceptional items</td><td style="font-size:0.85em;">-9.90</td><td class="tg" style="font-size:0.85em;">6.64</td><td class="tr" style="font-size:0.85em;">4.89</td><td class="tr" style="font-size:0.85em;">-5.40</td><td class="tg" style="font-size:0.85em;">10.73</td><td class="tr" style="font-size:0.85em;">1.33</td><td class="tr" style="font-size:0.85em;">-28.08</td><td class="tg" style="font-size:0.85em;">-1.71</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp3" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other income normal</td><td style="font-size:0.85em;">25.86</td><td class="tr" style="font-size:0.85em;">14.10</td><td class="tg" style="font-size:0.85em;">17.61</td><td class="tr" style="font-size:0.85em;">10.97</td><td class="tg" style="font-size:0.85em;">15.25</td><td class="tg" style="font-size:0.85em;">19.04</td><td class="tg" style="font-size:0.85em;">35.60</td><td class="tg" style="font-size:0.85em;">40.00</td><td style="font-size:0.85em;"></td></tr>
+<tr><td>Interest</td><td>41</td><td class="tr">31</td><td class="tr">22</td><td class="tr">15</td><td class="tr">7</td><td>7</td><td class="tg">13</td><td>13</td><td class="tg">16</td></tr>
+<tr><td>Depreciation</td><td>46</td><td class="tr">44</td><td class="tr">41</td><td class="tr">39</td><td class="tr">35</td><td>35</td><td class="tg">41</td><td class="tg">44</td><td class="tg">47</td></tr>
+<tr><td>Profit before tax</td><td>55</td><td class="tr">43</td><td class="tr">40</td><td class="tr">19</td><td class="tg">122</td><td class="tg">130</td><td class="tg">377</td><td class="tr">374</td><td class="tg">1,079</td></tr>
+<tr><td>Tax %</td><td>42%</td><td class="tr">35%</td><td>35%</td><td class="tr">29%</td><td class="tr">23%</td><td class="tg">24%</td><td class="tg">26%</td><td>26%</td><td></td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp4')" style="cursor:pointer;font-weight:600;color:#fff;">Net Profit <span class="exp-icon" id="icon-grp4">+</span></td><td style="font-weight:600;color:#fff;">32</td><td class="tr" style="font-weight:600;color:#fff;">28</td><td class="tr" style="font-weight:600;color:#fff;">26</td><td class="tr" style="font-weight:600;color:#fff;">14</td><td class="tg" style="font-weight:600;color:#fff;">94</td><td class="tg" style="font-weight:600;color:#fff;">98</td><td class="tg" style="font-weight:600;color:#fff;">280</td><td class="tr" style="font-weight:600;color:#fff;">276</td><td class="tg" style="font-weight:600;color:#fff;">795</td></tr>
+<tr class="sub-row sub-grp4" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit from Associates</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp4" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Minority share</td><td style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">1</td><td class="tr" style="font-size:0.85em;">0</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp4" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Exceptional items AT</td><td style="font-size:0.85em;">-5</td><td class="tg" style="font-size:0.85em;">4</td><td class="tr" style="font-size:0.85em;">3</td><td class="tr" style="font-size:0.85em;">-3</td><td class="tg" style="font-size:0.85em;">8</td><td class="tr" style="font-size:0.85em;">1</td><td class="tr" style="font-size:0.85em;">-21</td><td class="tg" style="font-size:0.85em;">-1</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp4" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit excl Excep</td><td style="font-size:0.85em;">37</td><td class="tr" style="font-size:0.85em;">24</td><td class="tr" style="font-size:0.85em;">23</td><td class="tr" style="font-size:0.85em;">17</td><td class="tg" style="font-size:0.85em;">86</td><td class="tg" style="font-size:0.85em;">97</td><td class="tg" style="font-size:0.85em;">301</td><td class="tr" style="font-size:0.85em;">278</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp4" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit for PE</td><td style="font-size:0.85em;">37</td><td class="tr" style="font-size:0.85em;">24</td><td class="tr" style="font-size:0.85em;">23</td><td class="tr" style="font-size:0.85em;">17</td><td class="tg" style="font-size:0.85em;">86</td><td class="tg" style="font-size:0.85em;">98</td><td class="tg" style="font-size:0.85em;">302</td><td class="tr" style="font-size:0.85em;">278</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp4" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit for EPS</td><td style="font-size:0.85em;">32</td><td class="tr" style="font-size:0.85em;">28</td><td class="tr" style="font-size:0.85em;">26</td><td class="tr" style="font-size:0.85em;">14</td><td class="tg" style="font-size:0.85em;">94</td><td class="tg" style="font-size:0.85em;">99</td><td class="tg" style="font-size:0.85em;">281</td><td class="tr" style="font-size:0.85em;">277</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp4" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit Growth %</td><td style="font-size:0.85em;">-0%</td><td style="font-size:0.85em;">-36%</td><td class="tg" style="font-size:0.85em;">-3%</td><td class="tr" style="font-size:0.85em;">-26%</td><td class="tg" style="font-size:0.85em;">402%</td><td class="tr" style="font-size:0.85em;">14%</td><td class="tg" style="font-size:0.85em;">209%</td><td class="tr" style="font-size:0.85em;">-8%</td><td style="font-size:0.85em;"></td></tr>
+<tr><td style="font-weight:600;color:#fff;">EPS in Rs</td><td style="font-weight:600;color:#fff;">1.14</td><td class="tr" style="font-weight:600;color:#fff;">1.00</td><td class="tr" style="font-weight:600;color:#fff;">0.95</td><td class="tr" style="font-weight:600;color:#fff;">0.50</td><td class="tg" style="font-weight:600;color:#fff;">3.39</td><td class="tg" style="font-weight:600;color:#fff;">3.56</td><td class="tg" style="font-weight:600;color:#fff;">10.13</td><td class="tr" style="font-weight:600;color:#fff;">9.99</td><td class="tg" style="font-weight:600;color:#fff;">28.72</td></tr>
+<tr><td>Dividend Payout %</td><td>22%</td><td class="tg">30%</td><td class="tg">32%</td><td class="tg">71%</td><td class="tr">12%</td><td class="tg">13%</td><td class="tr">5%</td><td class="tg">10%</td><td></td></tr>
+</tbody></table></div>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">🏦 Balance Sheet <a href="https://www.screener.in/company/HBLENGINE/consolidated/" target="_blank" class="src-link-header">Source: Screener ↗</a></div>
+    <div style="overflow-x:auto;"><table><thead><tr><th></th><th>Mar 2018</th><th>Mar 2019</th><th>Mar 2020</th><th>Mar 2021</th><th>Mar 2022</th><th>Mar 2023</th><th>Mar 2024</th><th>Mar 2025</th><th>Sep 2025</th></tr></thead><tbody><tr><td>Equity Capital</td><td>28</td><td>28</td><td>28</td><td>28</td><td>28</td><td>28</td><td>28</td><td>28</td><td>28</td></tr>
+<tr><td>Reserves</td><td>724</td><td class="tg">739</td><td class="tg">745</td><td class="tg">754</td><td class="tg">838</td><td class="tg">924</td><td class="tg">1,193</td><td class="tg">1,455</td><td class="tg">1,957</td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp5')" style="cursor:pointer;">Borrowings <span class="exp-icon" id="icon-grp5">+</span></td><td>366</td><td class="tr">232</td><td class="tr">161</td><td class="tr">70</td><td class="tr">63</td><td class="tg">86</td><td class="tr">67</td><td class="tg">74</td><td class="tg">87</td></tr>
+<tr class="sub-row sub-grp5" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Long term Borrowings</td><td style="font-size:0.85em;">6</td><td class="tg" style="font-size:0.85em;">7</td><td class="tr" style="font-size:0.85em;">1</td><td class="tg" style="font-size:0.85em;">11</td><td class="tg" style="font-size:0.85em;">28</td><td class="tg" style="font-size:0.85em;">39</td><td class="tr" style="font-size:0.85em;">23</td><td class="tr" style="font-size:0.85em;">6</td><td class="tr" style="font-size:0.85em;">5</td></tr>
+<tr class="sub-row sub-grp5" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Short term Borrowings</td><td style="font-size:0.85em;">338</td><td class="tr" style="font-size:0.85em;">209</td><td class="tr" style="font-size:0.85em;">140</td><td class="tr" style="font-size:0.85em;">48</td><td class="tr" style="font-size:0.85em;">22</td><td class="tg" style="font-size:0.85em;">38</td><td class="tr" style="font-size:0.85em;">36</td><td class="tg" style="font-size:0.85em;">49</td><td class="tg" style="font-size:0.85em;">60</td></tr>
+<tr class="sub-row sub-grp5" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Lease Liabilities</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">11</td><td class="tg" style="font-size:0.85em;">12</td><td style="font-size:0.85em;">12</td><td class="tr" style="font-size:0.85em;">8</td><td style="font-size:0.85em;">8</td><td class="tg" style="font-size:0.85em;">20</td><td class="tg" style="font-size:0.85em;">22</td></tr>
+<tr class="sub-row sub-grp5" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other Borrowings</td><td style="font-size:0.85em;">22</td><td class="tr" style="font-size:0.85em;">16</td><td class="tr" style="font-size:0.85em;">10</td><td class="tr" style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;"></td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp6')" style="cursor:pointer;">Other Liabilities <span class="exp-icon" id="icon-grp6">+</span></td><td>224</td><td class="tr">162</td><td class="tg">169</td><td class="tg">184</td><td class="tg">204</td><td class="tg">257</td><td class="tg">366</td><td class="tg">422</td><td class="tg">605</td></tr>
+<tr class="sub-row sub-grp6" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Non controlling int</td><td style="font-size:0.85em;">-2</td><td class="tg" style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-1</td><td class="tg" style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">-0</td></tr>
+<tr class="sub-row sub-grp6" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Trade Payables</td><td style="font-size:0.85em;">126</td><td class="tr" style="font-size:0.85em;">76</td><td class="tg" style="font-size:0.85em;">78</td><td class="tr" style="font-size:0.85em;">67</td><td class="tg" style="font-size:0.85em;">88</td><td class="tg" style="font-size:0.85em;">98</td><td class="tg" style="font-size:0.85em;">130</td><td class="tg" style="font-size:0.85em;">181</td><td class="tr" style="font-size:0.85em;">158</td></tr>
+<tr class="sub-row sub-grp6" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Advance from Customers</td><td style="font-size:0.85em;">12</td><td style="font-size:0.85em;">12</td><td class="tg" style="font-size:0.85em;">13</td><td class="tr" style="font-size:0.85em;">11</td><td class="tg" style="font-size:0.85em;">19</td><td class="tg" style="font-size:0.85em;">24</td><td class="tg" style="font-size:0.85em;">49</td><td class="tg" style="font-size:0.85em;">56</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp6" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other liability items</td><td style="font-size:0.85em;">88</td><td class="tr" style="font-size:0.85em;">74</td><td class="tg" style="font-size:0.85em;">78</td><td class="tg" style="font-size:0.85em;">106</td><td class="tr" style="font-size:0.85em;">98</td><td class="tg" style="font-size:0.85em;">134</td><td class="tg" style="font-size:0.85em;">187</td><td class="tr" style="font-size:0.85em;">186</td><td class="tg" style="font-size:0.85em;">447</td></tr>
+<tr><td style="font-weight:600;color:#fff;">Total Liabilities</td><td style="font-weight:600;color:#fff;">1,342</td><td class="tr" style="font-weight:600;color:#fff;">1,161</td><td class="tr" style="font-weight:600;color:#fff;">1,103</td><td class="tr" style="font-weight:600;color:#fff;">1,036</td><td class="tg" style="font-weight:600;color:#fff;">1,133</td><td class="tg" style="font-weight:600;color:#fff;">1,294</td><td class="tg" style="font-weight:600;color:#fff;">1,654</td><td class="tg" style="font-weight:600;color:#fff;">1,980</td><td class="tg" style="font-weight:600;color:#fff;">2,677</td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp7')" style="cursor:pointer;">Fixed Assets <span class="exp-icon" id="icon-grp7">+</span></td><td>363</td><td class="tr">321</td><td class="tr">304</td><td class="tr">279</td><td class="tr">265</td><td class="tg">320</td><td class="tg">354</td><td class="tg">397</td><td class="tg">416</td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Land</td><td style="font-size:0.85em;">40.52</td><td class="tr" style="font-size:0.85em;">38.04</td><td class="tr" style="font-size:0.85em;">36.47</td><td class="tr" style="font-size:0.85em;">36.31</td><td class="tg" style="font-size:0.85em;">40.47</td><td class="tr" style="font-size:0.85em;">38.61</td><td class="tr" style="font-size:0.85em;">38.49</td><td class="tg" style="font-size:0.85em;">52.04</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Building</td><td style="font-size:0.85em;">198.95</td><td class="tr" style="font-size:0.85em;">183.85</td><td class="tr" style="font-size:0.85em;">166.42</td><td class="tg" style="font-size:0.85em;">167.61</td><td class="tr" style="font-size:0.85em;">158.02</td><td class="tg" style="font-size:0.85em;">179.56</td><td class="tg" style="font-size:0.85em;">189.42</td><td class="tg" style="font-size:0.85em;">200.90</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Plant Machinery</td><td style="font-size:0.85em;">461.29</td><td class="tr" style="font-size:0.85em;">451.40</td><td class="tr" style="font-size:0.85em;">441.10</td><td class="tr" style="font-size:0.85em;">406.22</td><td class="tr" style="font-size:0.85em;">380.24</td><td class="tg" style="font-size:0.85em;">409.70</td><td class="tg" style="font-size:0.85em;">440.61</td><td class="tg" style="font-size:0.85em;">482.27</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Equipments</td><td style="font-size:0.85em;">22.97</td><td class="tr" style="font-size:0.85em;">19.19</td><td class="tr" style="font-size:0.85em;">18.83</td><td class="tr" style="font-size:0.85em;">17.13</td><td class="tg" style="font-size:0.85em;">22.31</td><td class="tg" style="font-size:0.85em;">23.74</td><td class="tg" style="font-size:0.85em;">34.28</td><td class="tg" style="font-size:0.85em;">45.49</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Furniture n fittings</td><td style="font-size:0.85em;">7.96</td><td class="tr" style="font-size:0.85em;">6.11</td><td class="tr" style="font-size:0.85em;">4.98</td><td class="tg" style="font-size:0.85em;">5.18</td><td class="tg" style="font-size:0.85em;">5.69</td><td class="tg" style="font-size:0.85em;">9.04</td><td class="tg" style="font-size:0.85em;">9.75</td><td class="tg" style="font-size:0.85em;">11.70</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Vehicles</td><td style="font-size:0.85em;">11.14</td><td class="tr" style="font-size:0.85em;">9.25</td><td class="tr" style="font-size:0.85em;">8.97</td><td class="tr" style="font-size:0.85em;">8.94</td><td class="tg" style="font-size:0.85em;">10.93</td><td class="tg" style="font-size:0.85em;">11.94</td><td class="tg" style="font-size:0.85em;">16.85</td><td class="tg" style="font-size:0.85em;">17.12</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Intangible Assets</td><td style="font-size:0.85em;">10.26</td><td style="font-size:0.85em;">10.26</td><td style="font-size:0.85em;">10.26</td><td style="font-size:0.85em;">10.26</td><td style="font-size:0.85em;">10.26</td><td class="tg" style="font-size:0.85em;">16.69</td><td class="tg" style="font-size:0.85em;">20.22</td><td style="font-size:0.85em;">20.22</td><td class="tr" style="font-size:0.85em;">4.60</td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other fixed assets</td><td style="font-size:0.85em;">47.44</td><td class="tr" style="font-size:0.85em;">30.57</td><td class="tg" style="font-size:0.85em;">57.64</td><td class="tg" style="font-size:0.85em;">58.03</td><td class="tg" style="font-size:0.85em;">65.58</td><td class="tg" style="font-size:0.85em;">66.62</td><td class="tg" style="font-size:0.85em;">66.94</td><td class="tg" style="font-size:0.85em;">67.26</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Gross Block</td><td style="font-size:0.85em;">800.53</td><td class="tr" style="font-size:0.85em;">748.67</td><td class="tr" style="font-size:0.85em;">744.67</td><td class="tr" style="font-size:0.85em;">709.68</td><td class="tr" style="font-size:0.85em;">693.50</td><td class="tg" style="font-size:0.85em;">755.90</td><td class="tg" style="font-size:0.85em;">816.56</td><td class="tg" style="font-size:0.85em;">897.00</td><td style="font-size:0.85em;"></td></tr>
+<tr class="sub-row sub-grp7" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Accumulated Depreciation</td><td style="font-size:0.85em;">437.10</td><td class="tr" style="font-size:0.85em;">427.97</td><td class="tg" style="font-size:0.85em;">440.97</td><td class="tr" style="font-size:0.85em;">430.67</td><td class="tr" style="font-size:0.85em;">428.99</td><td class="tg" style="font-size:0.85em;">435.50</td><td class="tg" style="font-size:0.85em;">462.32</td><td class="tg" style="font-size:0.85em;">500.37</td><td style="font-size:0.85em;"></td></tr>
+<tr><td>CWIP</td><td>26</td><td class="tg">37</td><td class="tr">27</td><td class="tg">43</td><td class="tg">81</td><td class="tr">50</td><td class="tr">20</td><td class="tg">68</td><td class="tg">129</td></tr>
+<tr><td>Investments</td><td>5</td><td>5</td><td class="tg">6</td><td class="tg">7</td><td class="tg">8</td><td class="tg">9</td><td class="tg">108</td><td class="tg">290</td><td class="tg">319</td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp8')" style="cursor:pointer;">Other Assets <span class="exp-icon" id="icon-grp8">+</span></td><td>947</td><td class="tr">797</td><td class="tr">766</td><td class="tr">707</td><td class="tg">779</td><td class="tg">915</td><td class="tg">1,171</td><td class="tg">1,225</td><td class="tg">1,813</td></tr>
+<tr class="sub-row sub-grp8" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Inventories</td><td style="font-size:0.85em;">367</td><td class="tr" style="font-size:0.85em;">325</td><td class="tr" style="font-size:0.85em;">304</td><td class="tr" style="font-size:0.85em;">290</td><td class="tg" style="font-size:0.85em;">307</td><td class="tg" style="font-size:0.85em;">336</td><td class="tg" style="font-size:0.85em;">433</td><td class="tg" style="font-size:0.85em;">534</td><td class="tg" style="font-size:0.85em;">589</td></tr>
+<tr class="sub-row sub-grp8" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Trade receivables</td><td style="font-size:0.85em;">453</td><td class="tr" style="font-size:0.85em;">363</td><td class="tr" style="font-size:0.85em;">305</td><td class="tr" style="font-size:0.85em;">254</td><td class="tg" style="font-size:0.85em;">293</td><td class="tg" style="font-size:0.85em;">312</td><td class="tg" style="font-size:0.85em;">352</td><td class="tg" style="font-size:0.85em;">373</td><td class="tg" style="font-size:0.85em;">843</td></tr>
+<tr class="sub-row sub-grp8" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Cash Equivalents</td><td style="font-size:0.85em;">20</td><td class="tg" style="font-size:0.85em;">33</td><td class="tg" style="font-size:0.85em;">75</td><td class="tr" style="font-size:0.85em;">68</td><td class="tg" style="font-size:0.85em;">105</td><td class="tg" style="font-size:0.85em;">146</td><td class="tg" style="font-size:0.85em;">235</td><td class="tr" style="font-size:0.85em;">143</td><td class="tg" style="font-size:0.85em;">222</td></tr>
+<tr class="sub-row sub-grp8" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Loans n Advances</td><td style="font-size:0.85em;">28</td><td class="tr" style="font-size:0.85em;">17</td><td class="tg" style="font-size:0.85em;">24</td><td class="tr" style="font-size:0.85em;">17</td><td class="tg" style="font-size:0.85em;">24</td><td class="tg" style="font-size:0.85em;">60</td><td class="tr" style="font-size:0.85em;">24</td><td class="tg" style="font-size:0.85em;">27</td><td class="tg" style="font-size:0.85em;">66</td></tr>
+<tr class="sub-row sub-grp8" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other asset items</td><td style="font-size:0.85em;">79</td><td class="tr" style="font-size:0.85em;">59</td><td class="tr" style="font-size:0.85em;">58</td><td class="tg" style="font-size:0.85em;">78</td><td class="tr" style="font-size:0.85em;">50</td><td class="tg" style="font-size:0.85em;">60</td><td class="tg" style="font-size:0.85em;">128</td><td class="tg" style="font-size:0.85em;">148</td><td class="tr" style="font-size:0.85em;">93</td></tr>
+<tr><td style="font-weight:600;color:#fff;">Total Assets</td><td style="font-weight:600;color:#fff;">1,342</td><td class="tr" style="font-weight:600;color:#fff;">1,161</td><td class="tr" style="font-weight:600;color:#fff;">1,103</td><td class="tr" style="font-weight:600;color:#fff;">1,036</td><td class="tg" style="font-weight:600;color:#fff;">1,133</td><td class="tg" style="font-weight:600;color:#fff;">1,294</td><td class="tg" style="font-weight:600;color:#fff;">1,654</td><td class="tg" style="font-weight:600;color:#fff;">1,980</td><td class="tg" style="font-weight:600;color:#fff;">2,677</td></tr>
+</tbody></table></div>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">💰 Cash Flow Statement <a href="https://www.screener.in/company/HBLENGINE/consolidated/" target="_blank" class="src-link-header">Source: Screener ↗</a></div>
+    <div style="overflow-x:auto;"><table><thead><tr><th></th><th>Mar 2017</th><th>Mar 2018</th><th>Mar 2019</th><th>Mar 2020</th><th>Mar 2021</th><th>Mar 2022</th><th>Mar 2023</th><th>Mar 2024</th><th>Mar 2025</th></tr></thead><tbody><tr><td class="exp-parent" onclick="toggleGroup('grp9')" style="cursor:pointer;">Cash from Operating Activity <span class="exp-icon" id="icon-grp9">+</span></td><td>43</td><td class="tg">159</td><td class="tg">167</td><td class="tr">149</td><td class="tr">121</td><td class="tr">62</td><td class="tg">122</td><td class="tg">273</td><td class="tr">239</td></tr>
+<tr class="sub-row sub-grp9" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Profit from operations</td><td style="font-size:0.85em;">139</td><td class="tr" style="font-size:0.85em;">132</td><td class="tr" style="font-size:0.85em;">100</td><td class="tr" style="font-size:0.85em;">84</td><td class="tr" style="font-size:0.85em;">74</td><td class="tg" style="font-size:0.85em;">149</td><td class="tg" style="font-size:0.85em;">173</td><td class="tg" style="font-size:0.85em;">458</td><td class="tr" style="font-size:0.85em;">432</td></tr>
+<tr class="sub-row sub-grp9" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Receivables</td><td style="font-size:0.85em;">-48</td><td class="tg" style="font-size:0.85em;">18</td><td class="tg" style="font-size:0.85em;">90</td><td class="tr" style="font-size:0.85em;">55</td><td class="tr" style="font-size:0.85em;">42</td><td class="tr" style="font-size:0.85em;">-46</td><td class="tg" style="font-size:0.85em;">-21</td><td class="tr" style="font-size:0.85em;">-80</td><td class="tg" style="font-size:0.85em;">-26</td></tr>
+<tr class="sub-row sub-grp9" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Inventory</td><td style="font-size:0.85em;">-12</td><td class="tg" style="font-size:0.85em;">40</td><td class="tg" style="font-size:0.85em;">43</td><td class="tr" style="font-size:0.85em;">21</td><td class="tr" style="font-size:0.85em;">14</td><td class="tr" style="font-size:0.85em;">-17</td><td class="tr" style="font-size:0.85em;">-29</td><td class="tr" style="font-size:0.85em;">-96</td><td class="tr" style="font-size:0.85em;">-101</td></tr>
+<tr class="sub-row sub-grp9" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Payables</td><td style="font-size:0.85em;">-1</td><td class="tr" style="font-size:0.85em;">-38</td><td class="tr" style="font-size:0.85em;">-49</td><td class="tg" style="font-size:0.85em;">2</td><td class="tr" style="font-size:0.85em;">-11</td><td class="tg" style="font-size:0.85em;">20</td><td class="tr" style="font-size:0.85em;">11</td><td class="tg" style="font-size:0.85em;">32</td><td class="tg" style="font-size:0.85em;">51</td></tr>
+<tr class="sub-row sub-grp9" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Loans Advances</td><td style="font-size:0.85em;">-9</td><td class="tg" style="font-size:0.85em;">25</td><td class="tr" style="font-size:0.85em;">15</td><td class="tr" style="font-size:0.85em;">-15</td><td class="tr" style="font-size:0.85em;">-26</td><td class="tg" style="font-size:0.85em;">-12</td><td class="tg" style="font-size:0.85em;">-4</td><td class="tg" style="font-size:0.85em;">-1</td><td class="tg" style="font-size:0.85em;">0</td></tr>
+<tr class="sub-row sub-grp9" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other WC items</td><td style="font-size:0.85em;">-18</td><td class="tg" style="font-size:0.85em;">8</td><td class="tr" style="font-size:0.85em;">-13</td><td class="tg" style="font-size:0.85em;">16</td><td class="tg" style="font-size:0.85em;">28</td><td class="tr" style="font-size:0.85em;">-5</td><td class="tg" style="font-size:0.85em;">30</td><td class="tg" style="font-size:0.85em;">47</td><td class="tr" style="font-size:0.85em;">-17</td></tr>
+<tr class="sub-row sub-grp9" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Working capital changes</td><td style="font-size:0.85em;">-87</td><td class="tg" style="font-size:0.85em;">53</td><td class="tg" style="font-size:0.85em;">85</td><td class="tr" style="font-size:0.85em;">78</td><td class="tr" style="font-size:0.85em;">48</td><td class="tr" style="font-size:0.85em;">-60</td><td class="tg" style="font-size:0.85em;">-14</td><td class="tr" style="font-size:0.85em;">-98</td><td class="tg" style="font-size:0.85em;">-93</td></tr>
+<tr class="sub-row sub-grp9" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Direct taxes</td><td style="font-size:0.85em;">-9</td><td class="tr" style="font-size:0.85em;">-28</td><td class="tg" style="font-size:0.85em;">-19</td><td class="tg" style="font-size:0.85em;">-13</td><td class="tg" style="font-size:0.85em;">-3</td><td class="tr" style="font-size:0.85em;">-27</td><td class="tr" style="font-size:0.85em;">-37</td><td class="tr" style="font-size:0.85em;">-88</td><td class="tr" style="font-size:0.85em;">-100</td></tr>
+<tr class="sub-row sub-grp9" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Exceptional CF items</td><td style="font-size:0.85em;">1</td><td class="tg" style="font-size:0.85em;">2</td><td class="tr" style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">2</td><td class="tr" style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">1</td><td class="tr" style="font-size:0.85em;">0</td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp10')" style="cursor:pointer;">Cash from Investing Activity <span class="exp-icon" id="icon-grp10">+</span></td><td>60</td><td class="tr">-8</td><td class="tg">1</td><td class="tr">-6</td><td class="tr">-32</td><td class="tg">-17</td><td class="tr">-50</td><td class="tr">-139</td><td class="tr">-320</td></tr>
+<tr class="sub-row sub-grp10" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Fixed assets purchased</td><td style="font-size:0.85em;">-39</td><td class="tg" style="font-size:0.85em;">-16</td><td class="tr" style="font-size:0.85em;">-27</td><td class="tr" style="font-size:0.85em;">-38</td><td class="tr" style="font-size:0.85em;">-39</td><td class="tr" style="font-size:0.85em;">-68</td><td class="tg" style="font-size:0.85em;">-64</td><td class="tg" style="font-size:0.85em;">-53</td><td class="tr" style="font-size:0.85em;">-153</td></tr>
+<tr class="sub-row sub-grp10" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Fixed assets sold</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">6</td><td class="tg" style="font-size:0.85em;">28</td><td class="tg" style="font-size:0.85em;">29</td><td class="tr" style="font-size:0.85em;">3</td><td class="tg" style="font-size:0.85em;">47</td><td class="tr" style="font-size:0.85em;">10</td><td class="tr" style="font-size:0.85em;">8</td><td class="tr" style="font-size:0.85em;">2</td></tr>
+<tr class="sub-row sub-grp10" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Investments purchased</td><td style="font-size:0.85em;">-2</td><td class="tg" style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td></tr>
+<tr class="sub-row sub-grp10" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Investments sold</td><td style="font-size:0.85em;">6</td><td class="tr" style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td></tr>
+<tr class="sub-row sub-grp10" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Interest received</td><td style="font-size:0.85em;">4</td><td style="font-size:0.85em;">4</td><td class="tr" style="font-size:0.85em;">3</td><td class="tg" style="font-size:0.85em;">4</td><td style="font-size:0.85em;">4</td><td class="tg" style="font-size:0.85em;">5</td><td class="tg" style="font-size:0.85em;">6</td><td style="font-size:0.85em;">6</td><td class="tg" style="font-size:0.85em;">11</td></tr>
+<tr class="sub-row sub-grp10" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Investment in group cos</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-181</td></tr>
+<tr class="sub-row sub-grp10" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Redemp n Canc of Shares</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td></tr>
+<tr class="sub-row sub-grp10" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Acquisition of companies</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-2</td><td class="tg" style="font-size:0.85em;">-1</td><td style="font-size:0.85em;">-1</td><td style="font-size:0.85em;">-1</td><td style="font-size:0.85em;">-1</td><td style="font-size:0.85em;">-1</td><td class="tr" style="font-size:0.85em;">-99</td><td class="tg" style="font-size:0.85em;">0</td></tr>
+<tr class="sub-row sub-grp10" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other investing items</td><td style="font-size:0.85em;">91</td><td class="tr" style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-2</td><td class="tg" style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">0</td><td style="font-size:0.85em;">-0</td><td style="font-size:0.85em;">-1</td><td class="tg" style="font-size:0.85em;">1</td></tr>
+<tr><td class="exp-parent" onclick="toggleGroup('grp11')" style="cursor:pointer;">Cash from Financing Activity <span class="exp-icon" id="icon-grp11">+</span></td><td>-114</td><td class="tr">-150</td><td class="tr">-163</td><td class="tg">-114</td><td class="tg">-104</td><td class="tg">-22</td><td class="tg">10</td><td class="tr">-42</td><td class="tg">-26</td></tr>
+<tr class="sub-row sub-grp11" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Proceeds from borrowings</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.56</td><td class="tg" style="font-size:0.85em;">19.99</td><td class="tg" style="font-size:0.85em;">27.49</td><td class="tr" style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">12.11</td></tr>
+<tr class="sub-row sub-grp11" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Repayment of borrowings</td><td style="font-size:0.85em;">-10.70</td><td class="tr" style="font-size:0.85em;">-19.52</td><td class="tr" style="font-size:0.85em;">-134.18</td><td class="tg" style="font-size:0.85em;">-82.00</td><td class="tr" style="font-size:0.85em;">-92.35</td><td class="tg" style="font-size:0.85em;">-28.14</td><td class="tg" style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">-18.33</td><td class="tg" style="font-size:0.85em;">-16.71</td></tr>
+<tr class="sub-row sub-grp11" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Interest paid fin</td><td style="font-size:0.85em;">-36.90</td><td class="tg" style="font-size:0.85em;">-28.41</td><td class="tg" style="font-size:0.85em;">-20.87</td><td class="tg" style="font-size:0.85em;">-12.60</td><td class="tg" style="font-size:0.85em;">-6.48</td><td class="tg" style="font-size:0.85em;">-2.08</td><td class="tr" style="font-size:0.85em;">-4.03</td><td class="tr" style="font-size:0.85em;">-8.00</td><td class="tg" style="font-size:0.85em;">-4.24</td></tr>
+<tr class="sub-row sub-grp11" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Dividends paid</td><td style="font-size:0.85em;">-7.61</td><td class="tr" style="font-size:0.85em;">-8.34</td><td class="tr" style="font-size:0.85em;">-8.35</td><td class="tr" style="font-size:0.85em;">-16.71</td><td class="tg" style="font-size:0.85em;">-2.77</td><td class="tr" style="font-size:0.85em;">-9.70</td><td class="tr" style="font-size:0.85em;">-11.09</td><td class="tr" style="font-size:0.85em;">-12.47</td><td class="tr" style="font-size:0.85em;">-13.86</td></tr>
+<tr class="sub-row sub-grp11" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Financial liabilities</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">-2.73</td><td class="tg" style="font-size:0.85em;">-2.52</td><td class="tg" style="font-size:0.85em;">-2.38</td><td class="tr" style="font-size:0.85em;">-2.82</td><td class="tr" style="font-size:0.85em;">-3.47</td><td class="tg" style="font-size:0.85em;">-3.08</td></tr>
+<tr class="sub-row sub-grp11" style="display:none;"><td style="padding-left:2.2rem;color:#8a8b9f;font-size:0.85em;">Other financing items</td><td style="font-size:0.85em;">-59.17</td><td class="tr" style="font-size:0.85em;">-93.23</td><td class="tg" style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.00</td><td style="font-size:0.85em;">0.01</td></tr>
+<tr><td>Net Cash Flow</td><td>-11</td><td class="tg">1</td><td class="tg">5</td><td class="tg">29</td><td class="tr">-14</td><td class="tg">23</td><td class="tg">82</td><td class="tg">91</td><td class="tr">-107</td></tr>
+<tr><td>Free Cash Flow</td><td>5</td><td class="tg">149</td><td class="tg">168</td><td class="tr">140</td><td class="tr">86</td><td class="tr">41</td><td class="tg">68</td><td class="tg">228</td><td class="tr">89</td></tr>
+<tr><td>CFO/OP</td><td>41%</td><td class="tg">149%</td><td class="tg">192%</td><td class="tg">201%</td><td class="tr">184%</td><td class="tr">65%</td><td class="tg">105%</td><td class="tr">85%</td><td class="tg">86%</td></tr>
+</tbody></table></div>
+  </div>
+
+  
+  <div class="section">
+    <div class="section-title">📈 Key Financial Ratios</div>
+    <div style="overflow-x:auto;"><table><thead><tr><th></th><th>Mar 2017</th><th>Mar 2018</th><th>Mar 2019</th><th>Mar 2020</th><th>Mar 2021</th><th>Mar 2022</th><th>Mar 2023</th><th>Mar 2024</th><th>Mar 2025</th></tr></thead><tbody><tr><td>Debtor Days</td><td>122</td><td class="tr">103</td><td class="tg">105</td><td class="tr">102</td><td>102</td><td class="tr">86</td><td class="tr">83</td><td class="tr">58</td><td class="tg">69</td></tr>
+<tr><td>Inventory Days</td><td>168</td><td class="tr">126</td><td class="tg">145</td><td class="tg">162</td><td class="tg">188</td><td class="tr">149</td><td class="tr">147</td><td class="tr">137</td><td class="tg">201</td></tr>
+<tr><td>Days Payable</td><td>68</td><td class="tr">43</td><td class="tr">34</td><td class="tg">41</td><td class="tg">44</td><td class="tr">42</td><td class="tg">43</td><td class="tr">41</td><td class="tg">68</td></tr>
+<tr><td>Cash Conversion Cycle</td><td>222</td><td class="tr">186</td><td class="tg">216</td><td class="tg">222</td><td class="tg">246</td><td class="tr">193</td><td class="tr">188</td><td class="tr">154</td><td class="tg">202</td></tr>
+<tr><td>Working Capital Days</td><td>66</td><td class="tg">73</td><td class="tg">104</td><td class="tg">121</td><td class="tg">149</td><td class="tr">126</td><td class="tr">117</td><td class="tr">81</td><td class="tg">106</td></tr>
+<tr><td>ROCE %</td><td>8%</td><td class="tg">9%</td><td class="tr">6%</td><td>6%</td><td class="tr">4%</td><td class="tg">13%</td><td class="tg">14%</td><td class="tg">36%</td><td class="tr">27%</td></tr>
+</tbody></table></div>
+  </div>
+
+  
+
+  <div class="section">
+    <div class="section-title">🏛 Shareholding Pattern</div>
+    
+        <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th></th><th>Sep 2024</th><th>Dec 2024</th><th>Mar 2025</th><th>Jun 2025</th><th>Sep 2025</th><th>Dec 2025</th></tr></thead>
+          <tbody><tr><td><strong>Promoters</strong></td><td class="">59.10%</td><td class="">59.10%</td><td class="">59.10%</td><td class="">59.10%</td><td class="">59.11%</td><td class="">59.11%</td></tr><tr><td><strong>FIIs</strong></td><td class="">4.91%</td><td class="tg">5.22%</td><td class="tr">4.83%</td><td class="">4.83%</td><td class="tg">7.10%</td><td class="tr">5.87%</td></tr><tr><td><strong>DIIs</strong></td><td class="">0.96%</td><td class="tr">0.39%</td><td class="tr">0.36%</td><td class="">0.36%</td><td class="tg">0.64%</td><td class="tg">0.82%</td></tr><tr><td><strong>Public</strong></td><td class="">35.03%</td><td class="tg">35.27%</td><td class="tg">35.70%</td><td class="">35.70%</td><td class="tr">33.12%</td><td class="tg">34.20%</td></tr><tr><td><strong>No. of Shareholders</strong></td><td>3,68,688</td><td>3,58,798</td><td>3,81,826</td><td>3,81,826</td><td>3,26,066</td><td>3,42,335</td></tr></tbody>
+        </table>
+        </div>
+  </div>
+
+  <div class="dual-col">
+    <div class="col-card">
+      <div class="col-title" style="color:var(--green);">🟢 CATALYSTS</div>
+      <div class="col-item"><span class="col-icon">🏆</span><span><strong>Revenue Growth 94%:</strong> Strong top-line momentum indicating market demand.</span></div>
+<div class="col-item"><span class="col-icon">💹</span><span><strong>High ROE (18.7%):</strong> Strong return on equity indicating efficient capital use.</span></div>
+<div class="col-item"><span class="col-icon">🔀</span><span><strong>Healthy Margins (25.1%):</strong> Good profitability profile.</span></div>
+<div class="col-item"><span class="col-icon">🇮</span><span><strong>Low Beta (-0.15):</strong> Less volatile than market — defensive play.</span></div>
+<div class="col-item"><span class="col-icon">🇳</span><span><strong>Earnings Growth (244%):</strong> Strong profit expansion.</span></div>
+    </div>
+    <div class="col-card">
+      <div class="col-title" style="color:var(--red);">🔴 RISKS</div>
+      <div class="col-item"><span class="col-icon">📜</span><span><strong>High P/B (10.9x):</strong> Significant book value premium.</span></div>
+<div class="col-item"><span class="col-icon">💰</span><span><strong>Market Risk:</strong> Broader market correction or sentiment shift could impact stock.</span></div>
+<div class="col-item"><span class="col-icon">🔓</span><span><strong>Sector Risk:</strong> Regulatory or competitive changes in Industrials space.</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🕸 Factor Analysis · Radar</div>
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+      <div style="flex:0 0 auto;max-width:420px;">
+        <svg viewBox="0 0 480 440" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:480px;">
+  <defs><filter id="spiderGlow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <polygon points="240.0,194.0 264.7,212.0 255.3,241.0 224.7,241.0 215.3,212.0" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,168.0 289.5,203.9 270.6,262.1 209.4,262.1 190.5,203.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,142.0 314.2,195.9 285.8,283.1 194.2,283.1 165.8,195.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,116.0 338.9,187.9 301.1,304.1 178.9,304.1 141.1,187.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,90.0 363.6,179.8 316.4,325.2 163.6,325.2 116.4,179.8" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="240.0" y2="90.0" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="363.6" y2="179.8" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="316.4" y2="325.2" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="163.6" y2="325.2" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="116.4" y2="179.8" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <polygon points="240.0,142.0 301.8,199.9 278.2,272.6 186.5,293.6 153.5,191.9" fill="rgba(0,229,160,0.12)" stroke="#00e5a0" stroke-width="2" filter="url(#spiderGlow)"/>
+  <circle cx="240.0" cy="142.0" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Momentum 6/10: 1M +25.2%, 6M -17.7%, RSI 66, MACD bullish, Below 200DMA</title></circle>
+  <circle cx="301.8" cy="199.9" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Sentiment 5/10: Rec: none</title></circle>
+  <circle cx="278.2" cy="272.6" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Value 5/10: P/E 27.3, P/B 10.9, PEG 0.55, EV/EBITDA 19.2</title></circle>
+  <circle cx="186.5" cy="293.6" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Quality 7/10: Margin 25.1%, D/E 4</title></circle>
+  <circle cx="153.5" cy="191.9" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Low Volatility 7/10: Beta -0.15, Ann. vol 48%</title></circle>
+  <text x="240.0" y="62.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Momentum</text>
+  <text x="240.0" y="48.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">6</text>
+  <text x="390.5" y="168.4" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Sentiment</text>
+  <text x="403.8" y="164.1" text-anchor="start" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">5</text>
+  <text x="334.5" y="352.6" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Value</text>
+  <text x="342.7" y="363.9" text-anchor="start" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">5</text>
+  <text x="145.5" y="352.6" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Quality</text>
+  <text x="137.3" y="363.9" text-anchor="end" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">7</text>
+  <text x="89.5" y="168.4" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Low Vol</text>
+  <text x="76.2" y="164.1" text-anchor="end" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">7</text>
+</svg>
+      </div>
+      <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #f5a623;"><span style="color:#fff;font-weight:600;">Momentum</span> <span style="color:#f5a623;font-weight:700;">6/10</span><br><span style="color:var(--text3);">1M +25.2%, 6M -17.7%, RSI 66, MACD bullish, Below 200DMA</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #f5a623;"><span style="color:#fff;font-weight:600;">Sentiment</span> <span style="color:#f5a623;font-weight:700;">5/10</span><br><span style="color:var(--text3);">Rec: none</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #f5a623;"><span style="color:#fff;font-weight:600;">Value</span> <span style="color:#f5a623;font-weight:700;">5/10</span><br><span style="color:var(--text3);">P/E 27.3, P/B 10.9, PEG 0.55, EV/EBITDA 19.2</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #00e5a0;"><span style="color:#fff;font-weight:600;">Quality</span> <span style="color:#00e5a0;font-weight:700;">7/10</span><br><span style="color:var(--text3);">Margin 25.1%, D/E 4</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #00e5a0;"><span style="color:#fff;font-weight:600;">Low Volatility</span> <span style="color:#00e5a0;font-weight:700;">7/10</span><br><span style="color:var(--text3);">Beta -0.15, Ann. vol 48%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🏭 Industry Peers — Other Industrial Products</div>
+    <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>#</th><th>Company</th><th>CMP</th><th>P/E</th><th>Mkt Cap</th><th>ROCE</th><th>Qtr Profit</th><th>Score</th></tr></thead>
+          <tbody><tr style="border-left:3px solid var(--green);background:rgba(0,229,160,0.04);"><td>1</td><td><a href="https://www.screener.in/company/ESABINDIA/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Esab India <span style="color:var(--green);font-size:9px;">★</span></a></td><td>₹5,773</td><td>45.4</td><td>₹8,888</td><td>70.0%</td><td><span class="tg">+29.6%</span></td><td>80</td></tr><tr style="border-left:3px solid var(--amber);background:rgba(245,166,35,0.04);"><td>2</td><td><a href="https://www.screener.in/company/HBLENGINE/consolidated/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">HBL Engineering</a></td><td>₹783</td><td>26.6</td><td>₹21,730</td><td>27.3%</td><td><span class="tg">+242.4%</span></td><td>77</td></tr><tr><td>3</td><td><a href="https://www.screener.in/company/INOXINDIA/consolidated/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Inox India</a></td><td>₹1,486</td><td>53.3</td><td>₹13,486</td><td>38.0%</td><td><span class="tg">+26.3%</span></td><td>68</td></tr><tr><td>4</td><td><a href="https://www.screener.in/company/ENVIRO/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Envirotech Sys.</a></td><td>₹114</td><td>12.4</td><td>₹214</td><td>31.6%</td><td><span class="tg">+111.3%</span></td><td>58</td></tr><tr><td>5</td><td><a href="https://www.screener.in/company/TANKUP/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Tankup Engi.</a></td><td>₹600</td><td>104.5</td><td>₹318</td><td>21.3%</td><td><span class="tg">+292.3%</span></td><td>55</td></tr><tr><td>6</td><td><a href="https://www.screener.in/company/KRN/consolidated/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">KRN Heat Exchan</a></td><td>₹1,213</td><td>111.0</td><td>₹7,546</td><td>20.8%</td><td><span class="tg">+65.0%</span></td><td>55</td></tr><tr><td>7</td><td><a href="https://www.screener.in/company/SUBROS/consolidated/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Subros</a></td><td>₹787</td><td>30.5</td><td>₹5,123</td><td>19.9%</td><td><span class="tg">+22.4%</span></td><td>54</td></tr><tr><td>8</td><td><a href="https://www.screener.in/company/PTCIL/consolidated/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">PTC Industries</a></td><td>₹16,165</td><td>364.1</td><td>₹24,253</td><td>7.7%</td><td><span class="tg">+25.9%</span></td><td>53</td></tr><tr><td>9</td><td><a href="https://www.screener.in/company/ADOR/consolidated/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;">Ador Welding</a></td><td>₹1,037</td><td>25.4</td><td>₹1,808</td><td>20.3%</td><td><span class="tg">+101.5%</span></td><td>53</td></tr></tbody>
+        </table></div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--amber);margin-top:10px;text-align:center;">★ Esab India ranks higher on combined P/E, ROCE, and growth metrics in Other Industrial Products</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎯 Decision Matrix</div>
+    
+    <div style="overflow-x:auto;margin-bottom:16px;"><table>
+    <thead><tr><th style="width:80px;">Action</th><th>If Stock Rises</th><th>If Stock Falls</th></tr></thead>
+    <tbody>
+    <tr style="border-left:3px solid var(--green);"><td style="color:var(--green);font-weight:700;">BUY</td><td>Benefit from potential re-rating; strong 27% ROCE compounds</td><td>OPM of 33% provides margin buffer</td></tr>
+    <tr style="border-left:3px solid var(--amber);"><td style="color:var(--amber);font-weight:700;">HOLD</td><td>Retain existing position; wait for better entry; FII stake falling (-1.23%)</td><td>Miss further upside if momentum continues; 1M return of +25.2% shows momentum</td></tr>
+    <tr style="border-left:3px solid var(--red);"><td style="color:var(--red);font-weight:700;">SELL</td><td>Lock in +50.2% 1Y return</td><td>Avoid further drawdown</td></tr>
+    </tbody></table></div>
+    <div class="dual-col">
+      <div class="col-card" style="border-left:3px solid var(--green);">
+        <div class="col-title" style="color:var(--green);">REASONS TO BUY</div>
+        <ul style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:6px;">ROCE at 27% indicates strong capital efficiency</li>
+<li style="margin-bottom:6px;">ROE of 18.7% above sector threshold</li>
+<li style="margin-bottom:6px;">Revenue growing at 94.0% YoY</li>
+<li style="margin-bottom:6px;">Operating margin of 33% shows pricing power</li></ul>
+      </div>
+      <div class="col-card" style="border-left:3px solid var(--red);">
+        <div class="col-title" style="color:var(--red);">REASONS TO SELL / AVOID</div>
+        <ul style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:6px;">FII stake falling (-1.23%) — institutional exit signal</li>
+<li style="margin-bottom:6px;">1Y return of +50.2% — profit booking opportunity</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📰 Latest News</div>
+    <div class="news-grid"><div style="color:var(--text3);font-size:11px;text-align:center;padding:20px 0;">No recent news available for this stock</div></div>
+  </div>
+
+  <div class="verdict-card">
+    <div class="verdict-header">
+      <div><div class="verdict-rec">RECOMMENDATION</div><div class="verdict-rating" style="color:#f5a623">HOLD</div></div>
+      <div style="text-align:right;"><div class="verdict-rec">COMPOSITE SCORE</div><div class="verdict-score" style="color:#f5a623"><span style="font-size:28px;font-weight:700;">71</span>/100</div></div>
+    </div>
+    <div class="rating-bar-track"><div class="rating-needle" style="left:45%;"></div></div>
+    <div class="verdict-text"><strong>HBL ENGINEERING LTD</strong> trades at ₹783.30 with a composite risk score of 71/100.
+    The stock scores 12/25 on valuation, 18/25 on financial health, 23/25 on growth, and 18/25 on technicals.
+    The company is currently profitable with strong return on equity.
+    <br><br>
+    The stock is trading near or above analyst consensus targets.
+    Revenue growth is at 94.0% — a strong positive signal.
+    <br><br>Within <strong>Other Industrial Products</strong>, <strong>Esab India</strong> (P/E 45.4, ROCE 70.0%) ranks higher on techno-fundamental metrics and may be worth considering.
+    <br><br>
+    <strong>Bottom Line:</strong> Neutral for Industrials — wait for better entry or catalyst. The current recommendation is <strong style="color:#f5a623">HOLD</strong>.</div>
+    <div class="verdict-tags"><span class="vtag green">PROFITABLE</span>
+<span class="vtag green">HIGH ROE</span>
+<span class="vtag green">STRONG GROWTH</span></div>
+  </div>
+
+  <div class="footer">
+    RISK SCORE REPORT · NSE:HBLENGINE · GENERATED APR 21, 2026 13:13 IST · DATA VIA YAHOO FINANCE + SCREENER.IN<br>
+    DISCLAIMER: THIS IS NOT FINANCIAL ADVICE. DATA MAY BE DELAYED. ALWAYS VERIFY WITH OFFICIAL SOURCES BEFORE INVESTING.
+  </div>
+
+</div>
+</div>
+
+<button class="copy-btn" onclick="copyReport()" id="copyBtn">📋 COPY REPORT</button>
+<script>
+function toggleGroup(gid) {
+  const rows = document.querySelectorAll('.sub-' + gid);
+  const icon = document.getElementById('icon-' + gid);
+  const visible = rows.length > 0 && rows[0].style.display !== 'none';
+  rows.forEach(r => { r.style.display = visible ? 'none' : 'table-row'; });
+  if (icon) icon.textContent = visible ? '+' : '−';
+}
+function copyReport() {
+  const content = document.getElementById('report-content').innerText;
+  navigator.clipboard.writeText(content).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.innerHTML = '✓ COPIED!';
+    btn.style.borderColor = '#00e5a0';
+    setTimeout(() => { btn.innerHTML = '📋 COPY REPORT'; btn.style.borderColor = ''; }, 2000);
+  });
+}
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => { if (entry.isIntersecting) { entry.target.style.opacity = '1'; entry.target.style.transform = 'translateY(0)'; } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section, .breakdown-card, .metric-card').forEach(el => {
+  el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+
+/* ── Interactive price & candlestick charts ────────────────────── */
+const CHART_DATA = {"1D":{"d":["09:15","09:30","09:45","10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45","12:00","12:15","12:30","12:45","13:00","13:15","13:30","13:45","14:00","14:15","14:30","14:45","15:00","15:15"],"o":[777.65,782.0,790.0,790.15,790.1,789.8,789.8,787.8,787.35,785.85,785.05,784.55,786.65,786.5,785.05,784.05,783.9,784.85,782.15,783.9,782.2,782.0,787.75,783.45,784.15],"h":[785.6,791.85,791.0,791.45,791.5,791.55,790.0,788.45,789.0,786.25,785.85,787.95,787.45,786.7,785.05,784.7,785.05,786.0,783.85,784.5,782.95,788.8,788.5,784.65,784.5],"l":[777.65,780.9,787.25,788.7,789.0,787.7,787.0,786.8,785.5,784.8,784.0,775.4,785.1,785.0,783.3,783.0,783.9,782.05,782.15,781.3,781.2,779.25,782.2,782.5,781.8],"c":[782.45,790.0,790.0,790.05,789.3,789.75,787.8,786.95,785.5,785.05,784.4,786.25,786.5,785.65,784.35,783.9,784.95,782.1,783.7,782.2,782.3,787.85,783.7,784.5,782.7],"v":[80682,100694,57999,43462,34291,43993,36600,16305,34159,21264,13972,12201,11007,6434,11412,11041,7802,27339,6422,12093,20741,114992,119817,45744,67455]},"1W":{"d":["2026-04-15","2026-04-16","2026-04-17","2026-04-20","2026-04-21"],"o":[766.0,792.0,783.05,787.95,775.8],"h":[791.95,793.35,794.9,792.9,791.85],"l":[761.1,771.75,778.0,772.35,775.6],"c":[785.9,783.25,786.5,775.4,783.3],"v":[2673996,1580225,1185365,1058685,979657]},"1M":{"d":["2026-03-23","2026-03-24","2026-03-25","2026-03-27","2026-03-30","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-15","2026-04-16","2026-04-17","2026-04-20","2026-04-21"],"o":[650.0,640.0,665.0,666.0,634.1,640.05,643.35,666.95,678.5,720.0,721.0,727.0,712.8,766.0,792.0,783.05,787.95,775.8],"h":[657.9,667.5,679.85,676.9,643.3,669.7,673.5,679.65,687.85,723.0,737.7,745.9,754.7,791.95,793.35,794.9,792.9,791.85],"l":[618.4,639.0,664.8,639.0,613.0,638.7,629.1,645.3,668.85,696.6,707.0,725.0,706.0,761.1,771.75,778.0,772.35,775.6],"c":[625.6,660.25,666.6,642.05,614.8,660.3,667.4,676.05,680.6,718.35,722.55,730.65,751.95,785.9,783.25,786.5,775.4,783.3],"v":[1338504,2485443,1167500,2149846,1619703,1531296,1627811,1728963,1890294,1957755,1898605,1581903,2308662,2673996,1580225,1185365,1058685,979657]},"6M":{"d":["2025-10-21","2025-10-23","2025-10-24","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-10-31","2025-11-03","2025-11-04","2025-11-06","2025-11-07","2025-11-10","2025-11-11","2025-11-12","2025-11-13","2025-11-14","2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-27","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-01","2026-01-02","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-16","2026-01-19","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-27","2026-03-30","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-15","2026-04-16","2026-04-17","2026-04-20","2026-04-21"],"o":[947.55,952.24,921.82,929.6,987.75,998.42,1011.39,997.43,1001.62,987.45,989.45,957.53,1057.27,1091.18,1011.39,977.48,960.02,1042.31,1035.63,999.42,942.27,928.6,897.18,883.22,882.72,887.71,876.74,883.72,868.11,846.81,842.73,808.96,805.92,801.93,811.95,800.93,802.93,808.41,812.85,796.94,765.57,819.34,847.81,848.81,876.74,882.52,899.68,921.12,931.6,925.61,915.59,932.59,968.8,946.56,949.55,907.66,872.75,857.84,843.82,782.98,787.97,751.56,703.19,719.09,724.08,710.17,708.17,747.02,762.78,756.05,800.43,789.71,793.95,774.0,782.98,776.3,785.97,773.01,772.0,758.0,739.9,748.0,735.0,722.55,725.05,706.95,705.0,710.8,697.0,648.3,649.95,652.0,660.25,664.0,662.9,688.0,664.05,682.55,658.95,658.0,668.0,660.0,662.6,650.0,640.0,665.0,666.0,634.1,640.05,643.35,666.95,678.5,720.0,721.0,727.0,712.8,766.0,792.0,783.05,787.95,775.8],"h":[957.33,955.48,935.59,994.93,1001.76,1016.18,1030.99,1017.37,1010.69,996.83,992.44,996.23,1119.11,1105.15,1015.28,1007.4,1049.19,1052.28,1042.31,1004.41,943.86,942.07,906.66,906.66,887.11,899.68,891.8,897.33,870.55,853.05,843.62,830.46,814.85,812.0,820.73,802.88,821.53,815.89,812.85,797.89,826.72,846.42,879.63,876.14,890.65,912.45,945.56,938.58,934.89,929.0,942.47,982.36,975.28,957.53,956.13,916.58,877.73,866.76,882.72,817.79,788.76,755.05,737.1,731.11,726.62,719.09,744.03,769.76,791.96,774.85,804.92,802.43,796.29,794.35,805.77,790.96,814.9,785.97,774.45,758.0,754.95,752.0,758.8,733.15,727.35,709.9,716.05,718.2,704.8,689.9,664.0,668.0,689.9,664.0,690.0,701.85,696.0,684.2,667.55,669.0,693.9,675.85,680.4,657.9,667.5,679.85,676.9,643.3,669.7,673.5,679.65,687.85,723.0,737.7,745.9,754.7,791.95,793.35,794.9,792.9,791.85],"l":[946.31,918.93,919.63,929.6,980.87,993.69,989.45,995.58,977.58,979.97,955.53,955.63,1032.93,985.46,963.81,958.43,958.43,1019.57,1021.86,927.61,920.32,887.81,873.75,872.95,871.55,872.75,866.06,862.77,840.73,829.71,805.07,796.79,791.61,783.08,793.1,790.06,800.93,801.23,793.45,758.14,760.04,808.76,842.82,840.83,868.06,873.99,896.04,899.18,914.69,913.19,914.64,926.36,942.57,939.72,904.76,872.75,846.37,832.7,838.84,755.75,749.17,698.2,699.3,710.57,702.29,690.62,706.48,736.85,747.22,740.19,773.1,783.18,774.05,762.63,751.06,773.45,766.02,770.11,760.0,735.0,739.15,727.0,718.2,716.8,701.0,694.1,701.6,695.1,680.4,645.0,642.5,641.25,658.1,645.0,656.6,668.0,655.5,656.0,641.2,656.45,668.0,656.2,656.0,618.4,639.0,664.8,639.0,613.0,638.7,629.1,645.3,668.85,696.6,707.0,725.0,706.0,761.1,771.75,778.0,772.35,775.6],"c":[951.69,922.52,929.3,989.9,999.12,1009.1,1000.17,1001.62,985.86,992.34,963.61,976.68,1095.97,991.64,972.59,962.32,1038.62,1035.73,1026.05,932.99,928.7,894.59,882.92,879.33,882.22,875.24,883.42,868.11,844.32,841.98,808.11,805.52,801.48,809.86,797.14,799.74,809.66,814.25,797.89,760.84,816.74,843.27,847.41,873.5,879.33,895.19,921.97,930.75,924.21,916.93,935.14,966.9,946.21,954.44,908.75,875.99,858.93,843.87,875.99,794.0,754.35,703.33,703.38,724.73,704.28,703.04,732.66,766.77,781.58,769.56,790.96,796.84,777.54,782.68,771.31,778.29,770.41,774.95,762.6,738.25,745.7,731.25,727.0,720.35,705.5,700.55,708.65,700.15,684.75,664.7,646.0,663.55,676.9,650.95,684.6,670.6,689.8,658.5,656.25,665.1,680.5,659.65,659.5,625.6,660.25,666.6,642.05,614.8,660.3,667.4,676.05,680.6,718.35,722.55,730.65,751.95,785.9,783.25,786.5,775.4,783.3],"v":[360404,982982,720216,6528014,1646101,1643393,1193321,863625,1079116,728234,1272507,1231051,27033470,13722310,7091433,3913425,14393770,2445936,1369869,6554047,3596257,3847627,2213927,2655245,1507766,1459409,1501812,1350940,1373255,1340422,1998595,2038877,1487452,1614195,962947,809430,976001,614196,573972,2850547,10043490,4553936,2020447,1773464,1498824,2377317,5938576,1952950,1156880,522197,1421909,3400290,1062052,902428,1538055,1635058,1916728,1156178,2305129,12507090,2859676,3928325,5026138,1801140,1215987,1905972,1511305,3204164,1631835,1071008,1414403,947930,657238,1009287,5121810,940137,5681063,1136085,760201,1035664,712574,1204711,1445496,842416,1016700,879976,726822,899276,1005342,1630290,1224850,1482002,1460754,1002752,1276386,1031080,1158252,1074284,1402605,573125,1274106,783411,946550,1338504,2485443,1167500,2149846,1619703,1531296,1627811,1728963,1890294,1957755,1898605,1581903,2308662,2673996,1580225,1185365,1058685,979657]},"1Y":{"d":["2025-04-21","2025-04-22","2025-04-23","2025-04-24","2025-04-25","2025-04-28","2025-04-29","2025-04-30","2025-05-02","2025-05-05","2025-05-06","2025-05-07","2025-05-08","2025-05-09","2025-05-12","2025-05-13","2025-05-14","2025-05-15","2025-05-16","2025-05-19","2025-05-20","2025-05-21","2025-05-22","2025-05-23","2025-05-26","2025-05-27","2025-05-28","2025-05-29","2025-05-30","2025-06-02","2025-06-03","2025-06-04","2025-06-05","2025-06-06","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-16","2025-06-17","2025-06-18","2025-06-19","2025-06-20","2025-06-23","2025-06-24","2025-06-25","2025-06-26","2025-06-27","2025-06-30","2025-07-01","2025-07-02","2025-07-03","2025-07-04","2025-07-07","2025-07-08","2025-07-09","2025-07-10","2025-07-11","2025-07-14","2025-07-15","2025-07-16","2025-07-17","2025-07-18","2025-07-21","2025-07-22","2025-07-23","2025-07-24","2025-07-25","2025-07-28","2025-07-29","2025-07-30","2025-07-31","2025-08-01","2025-08-04","2025-08-05","2025-08-06","2025-08-07","2025-08-08","2025-08-11","2025-08-12","2025-08-13","2025-08-14","2025-08-18","2025-08-19","2025-08-20","2025-08-21","2025-08-22","2025-08-25","2025-08-26","2025-08-28","2025-08-29","2025-09-01","2025-09-02","2025-09-03","2025-09-04","2025-09-05","2025-09-08","2025-09-09","2025-09-10","2025-09-11","2025-09-12","2025-09-15","2025-09-16","2025-09-17","2025-09-18","2025-09-19","2025-09-22","2025-09-23","2025-09-24","2025-09-25","2025-09-26","2025-09-29","2025-09-30","2025-10-01","2025-10-03","2025-10-06","2025-10-07","2025-10-08","2025-10-09","2025-10-10","2025-10-13","2025-10-14","2025-10-15","2025-10-16","2025-10-17","2025-10-20","2025-10-21","2025-10-23","2025-10-24","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-10-31","2025-11-03","2025-11-04","2025-11-06","2025-11-07","2025-11-10","2025-11-11","2025-11-12","2025-11-13","2025-11-14","2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-27","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-01","2026-01-02","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-16","2026-01-19","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-27","2026-03-30","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-15","2026-04-16","2026-04-17","2026-04-20","2026-04-21"],"o":[517.06,523.03,532.0,519.2,516.51,505.5,498.13,491.25,484.73,494.09,499.03,463.61,479.4,453.35,488.17,504.06,505.6,564.88,575.04,568.51,587.64,570.46,570.86,569.96,542.01,555.46,567.87,569.86,588.74,601.44,600.94,592.77,607.92,612.45,607.22,603.08,603.68,606.72,583.06,600.74,604.63,587.89,578.03,561.44,571.8,572.85,591.98,587.89,583.81,590.98,591.78,623.56,626.55,634.62,628.04,631.68,626.15,619.57,617.68,608.71,597.51,602.44,605.62,608.71,597.11,596.11,590.68,584.8,586.65,567.87,552.18,578.78,568.86,587.59,600.74,608.91,611.55,590.23,593.67,657.53,690.41,688.26,748.59,767.02,769.11,806.97,790.03,785.1,797.65,773.1,762.39,777.08,808.96,836.86,845.82,854.59,846.82,859.67,835.86,851.3,846.82,853.55,868.71,906.21,884.67,876.74,855.79,836.19,816.89,809.81,828.06,817.84,835.84,812.9,813.5,839.43,849.81,859.18,870.75,882.72,872.75,874.74,916.93,911.7,897.68,917.63,938.18,947.55,952.24,921.82,929.6,987.75,998.42,1011.39,997.43,1001.62,987.45,989.45,957.53,1057.27,1091.18,1011.39,977.48,960.02,1042.31,1035.63,999.42,942.27,928.6,897.18,883.22,882.72,887.71,876.74,883.72,868.11,846.81,842.73,808.96,805.92,801.93,811.95,800.93,802.93,808.41,812.85,796.94,765.57,819.34,847.81,848.81,876.74,882.52,899.68,921.12,931.6,925.61,915.59,932.59,968.8,946.56,949.55,907.66,872.75,857.84,843.82,782.98,787.97,751.56,703.19,719.09,724.08,710.17,708.17,747.02,762.78,756.05,800.43,789.71,793.95,774.0,782.98,776.3,785.97,773.01,772.0,758.0,739.9,748.0,735.0,722.55,725.05,706.95,705.0,710.8,697.0,648.3,649.95,652.0,660.25,664.0,662.9,688.0,664.05,682.55,658.95,658.0,668.0,660.0,662.6,650.0,640.0,665.0,666.0,634.1,640.05,643.35,666.95,678.5,720.0,721.0,727.0,712.8,766.0,792.0,783.05,787.95,775.8],"h":[530.96,541.76,537.48,526.02,537.98,514.07,505.3,493.84,502.11,501.71,501.72,480.2,485.82,470.23,507.44,509.98,574.79,580.32,582.81,594.42,590.58,576.48,574.14,585.0,565.82,568.86,576.83,595.26,602.64,615.64,606.12,615.09,624.65,615.99,612.6,609.06,624.45,610.71,594.72,617.53,605.52,593.07,582.11,580.52,575.29,606.62,595.56,593.27,600.1,598.25,641.59,629.63,643.48,635.61,647.32,637.31,626.25,636.61,629.63,608.81,608.51,607.52,613.99,612.4,601.59,601.64,594.77,592.03,587.09,572.25,580.42,591.58,591.58,603.58,611.45,617.08,611.7,599.75,603.43,689.41,710.33,776.08,784.65,777.08,791.38,808.71,805.97,811.85,799.84,779.92,790.93,831.87,849.76,861.36,869.63,861.06,869.73,862.76,855.09,876.71,860.42,874.49,912.0,911.9,889.8,900.68,862.62,844.32,829.86,830.41,848.81,855.59,846.81,831.8,836.24,847.61,864.37,876.39,896.39,887.71,887.11,927.01,941.92,925.51,923.62,961.42,947.45,957.33,955.48,935.59,994.93,1001.76,1016.18,1030.99,1017.37,1010.69,996.83,992.44,996.23,1119.11,1105.15,1015.28,1007.4,1049.19,1052.28,1042.31,1004.41,943.86,942.07,906.66,906.66,887.11,899.68,891.8,897.33,870.55,853.05,843.62,830.46,814.85,812.0,820.73,802.88,821.53,815.89,812.85,797.89,826.72,846.42,879.63,876.14,890.65,912.45,945.56,938.58,934.89,929.0,942.47,982.36,975.28,957.53,956.13,916.58,877.73,866.76,882.72,817.79,788.76,755.05,737.1,731.11,726.62,719.09,744.03,769.76,791.96,774.85,804.92,802.43,796.29,794.35,805.77,790.96,814.9,785.97,774.45,758.0,754.95,752.0,758.8,733.15,727.35,709.9,716.05,718.2,704.8,689.9,664.0,668.0,689.9,664.0,690.0,701.85,696.0,684.2,667.55,669.0,693.9,675.85,680.4,657.9,667.5,679.85,676.9,643.3,669.7,673.5,679.65,687.85,723.0,737.7,745.9,754.7,791.95,793.35,794.9,792.9,791.85],"l":[515.76,522.19,515.66,513.22,494.24,493.55,488.37,477.21,478.2,488.51,473.87,462.11,462.26,450.31,485.87,497.13,505.6,560.94,563.48,567.77,567.92,561.19,564.98,566.57,540.47,551.73,561.59,563.88,580.32,596.11,589.34,590.08,605.38,600.74,599.75,598.05,595.91,594.91,580.47,595.26,588.29,574.99,556.21,561.44,562.89,571.9,585.1,577.13,583.81,581.47,591.78,613.2,619.67,619.92,624.75,620.77,614.24,616.23,605.43,594.37,596.81,599.25,604.38,597.06,591.08,589.68,580.97,582.81,567.92,550.03,549.54,577.18,567.87,579.72,598.65,601.84,591.78,583.91,587.79,643.68,682.59,678.5,732.65,747.24,758.65,775.59,783.26,782.06,771.75,760.19,750.88,773.64,808.06,832.97,827.49,842.14,845.82,827.89,829.88,848.26,843.83,844.72,867.76,880.73,870.75,847.91,827.86,810.91,803.43,804.52,815.45,809.46,804.92,808.01,803.93,822.53,830.06,854.89,852.8,861.03,868.81,868.76,907.76,878.73,897.68,913.39,928.7,946.31,918.93,919.63,929.6,980.87,993.69,989.45,995.58,977.58,979.97,955.53,955.63,1032.93,985.46,963.81,958.43,958.43,1019.57,1021.86,927.61,920.32,887.81,873.75,872.95,871.55,872.75,866.06,862.77,840.73,829.71,805.07,796.79,791.61,783.08,793.1,790.06,800.93,801.23,793.45,758.14,760.04,808.76,842.82,840.83,868.06,873.99,896.04,899.18,914.69,913.19,914.64,926.36,942.57,939.72,904.76,872.75,846.37,832.7,838.84,755.75,749.17,698.2,699.3,710.57,702.29,690.62,706.48,736.85,747.22,740.19,773.1,783.18,774.05,762.63,751.06,773.45,766.02,770.11,760.0,735.0,739.15,727.0,718.2,716.8,701.0,694.1,701.6,695.1,680.4,645.0,642.5,641.25,658.1,645.0,656.6,668.0,655.5,656.0,641.2,656.45,668.0,656.2,656.0,618.4,639.0,664.8,639.0,613.0,638.7,629.1,645.3,668.85,696.6,707.0,725.0,706.0,761.1,771.75,778.0,772.35,775.6],"c":[521.44,529.26,523.68,515.61,509.29,495.89,492.05,480.15,491.55,498.43,475.86,477.06,466.75,466.65,503.66,504.65,566.92,575.04,566.62,585.05,570.46,571.95,567.12,573.94,553.17,561.89,567.32,587.59,598.05,600.89,590.98,605.08,608.07,604.78,601.39,601.54,608.81,598.95,587.19,603.33,591.08,577.03,561.44,576.24,564.18,588.94,587.89,583.26,588.74,590.68,618.08,624.5,633.67,628.09,634.42,625.65,617.13,620.32,608.91,597.51,603.53,603.78,608.02,600.1,594.22,590.78,583.06,586.05,570.71,556.91,577.33,580.02,585.0,597.6,607.72,608.51,600.24,592.52,597.55,681.39,689.41,760.54,762.78,769.96,786.89,788.99,791.83,797.65,777.38,768.41,777.98,804.08,835.96,851.25,847.86,848.01,859.27,834.17,845.52,863.9,850.11,871.05,907.11,884.67,875.94,856.14,836.19,816.39,810.21,827.27,817.94,833.5,808.61,811.51,832.15,844.67,857.44,868.91,886.71,873.25,880.23,914.39,915.34,894.09,919.08,933.64,941.62,951.69,922.52,929.3,989.9,999.12,1009.1,1000.17,1001.62,985.86,992.34,963.61,976.68,1095.97,991.64,972.59,962.32,1038.62,1035.73,1026.05,932.99,928.7,894.59,882.92,879.33,882.22,875.24,883.42,868.11,844.32,841.98,808.11,805.52,801.48,809.86,797.14,799.74,809.66,814.25,797.89,760.84,816.74,843.27,847.41,873.5,879.33,895.19,921.97,930.75,924.21,916.93,935.14,966.9,946.21,954.44,908.75,875.99,858.93,843.87,875.99,794.0,754.35,703.33,703.38,724.73,704.28,703.04,732.66,766.77,781.58,769.56,790.96,796.84,777.54,782.68,771.31,778.29,770.41,774.95,762.6,738.25,745.7,731.25,727.0,720.35,705.5,700.55,708.65,700.15,684.75,664.7,646.0,663.55,676.9,650.95,684.6,670.6,689.8,658.5,656.25,665.1,680.5,659.65,659.5,625.6,660.25,666.6,642.05,614.8,660.3,667.4,676.05,680.6,718.35,722.55,730.65,751.95,785.9,783.25,786.5,775.4,783.3],"v":[1473087,1877412,1269299,1242677,2567447,1286223,1073123,992040,2058178,843388,935448,868870,622062,837099,1247244,666622,20091750,5999881,1948870,2464691,1391665,830098,649460,1655170,3167877,1170100,1423758,3224017,1973560,2190546,959429,1658927,1508086,747723,663656,550411,1875688,889115,908823,3234858,741935,806651,975577,991677,724451,3228194,601672,625076,839096,850361,23588780,2380197,3232708,1113021,1635986,747370,710922,1152122,822500,625557,587494,429197,642899,547552,496148,385542,614288,453871,571699,958251,703745,704281,752769,1325331,886149,837101,496255,534611,704755,34613970,17899990,16668460,17123970,4695170,3402843,2960402,1713377,2536791,1126396,1042106,2061033,8544737,4600302,2730654,2661994,946325,1156728,1132405,860845,1298103,1033705,995586,2156997,1205724,721333,1547789,1367371,1021886,1014656,869246,1102038,3198869,1268313,869978,993616,796768,1708833,1066254,1825643,1204567,727140,4481310,3188573,1799335,1463041,3985894,1183068,360404,982982,720216,6528014,1646101,1643393,1193321,863625,1079116,728234,1272507,1231051,27033470,13722310,7091433,3913425,14393770,2445936,1369869,6554047,3596257,3847627,2213927,2655245,1507766,1459409,1501812,1350940,1373255,1340422,1998595,2038877,1487452,1614195,962947,809430,976001,614196,573972,2850547,10043490,4553936,2020447,1773464,1498824,2377317,5938576,1952950,1156880,522197,1421909,3400290,1062052,902428,1538055,1635058,1916728,1156178,2305129,12507090,2859676,3928325,5026138,1801140,1215987,1905972,1511305,3204164,1631835,1071008,1414403,947930,657238,1009287,5121810,940137,5681063,1136085,760201,1035664,712574,1204711,1445496,842416,1016700,879976,726822,899276,1005342,1630290,1224850,1482002,1460754,1002752,1276386,1031080,1158252,1074284,1402605,573125,1274106,783411,946550,1338504,2485443,1167500,2149846,1619703,1531296,1627811,1728963,1890294,1957755,1898605,1581903,2308662,2673996,1580225,1185365,1058685,979657]},"3Y":{"d":["2024-12-12","2024-12-13","2024-12-16","2024-12-17","2024-12-18","2024-12-19","2024-12-20","2024-12-23","2024-12-24","2024-12-26","2024-12-27","2024-12-30","2024-12-31","2025-01-01","2025-01-02","2025-01-03","2025-01-06","2025-01-07","2025-01-08","2025-01-09","2025-01-10","2025-01-13","2025-01-14","2025-01-15","2025-01-16","2025-01-17","2025-01-20","2025-01-21","2025-01-22","2025-01-23","2025-01-24","2025-01-27","2025-01-28","2025-01-29","2025-01-30","2025-01-31","2025-02-01","2025-02-03","2025-02-04","2025-02-05","2025-02-06","2025-02-07","2025-02-10","2025-02-11","2025-02-12","2025-02-13","2025-02-14","2025-02-17","2025-02-18","2025-02-19","2025-02-20","2025-02-21","2025-02-24","2025-02-25","2025-02-27","2025-02-28","2025-03-03","2025-03-04","2025-03-05","2025-03-06","2025-03-07","2025-03-10","2025-03-11","2025-03-12","2025-03-13","2025-03-17","2025-03-18","2025-03-19","2025-03-20","2025-03-21","2025-03-24","2025-03-25","2025-03-26","2025-03-27","2025-03-28","2025-04-01","2025-04-02","2025-04-03","2025-04-04","2025-04-07","2025-04-08","2025-04-09","2025-04-11","2025-04-15","2025-04-16","2025-04-17","2025-04-21","2025-04-22","2025-04-23","2025-04-24","2025-04-25","2025-04-28","2025-04-29","2025-04-30","2025-05-02","2025-05-05","2025-05-06","2025-05-07","2025-05-08","2025-05-09","2025-05-12","2025-05-13","2025-05-14","2025-05-15","2025-05-16","2025-05-19","2025-05-20","2025-05-21","2025-05-22","2025-05-23","2025-05-26","2025-05-27","2025-05-28","2025-05-29","2025-05-30","2025-06-02","2025-06-03","2025-06-04","2025-06-05","2025-06-06","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-16","2025-06-17","2025-06-18","2025-06-19","2025-06-20","2025-06-23","2025-06-24","2025-06-25","2025-06-26","2025-06-27","2025-06-30","2025-07-01","2025-07-02","2025-07-03","2025-07-04","2025-07-07","2025-07-08","2025-07-09","2025-07-10","2025-07-11","2025-07-14","2025-07-15","2025-07-16","2025-07-17","2025-07-18","2025-07-21","2025-07-22","2025-07-23","2025-07-24","2025-07-25","2025-07-28","2025-07-29","2025-07-30","2025-07-31","2025-08-01","2025-08-04","2025-08-05","2025-08-06","2025-08-07","2025-08-08","2025-08-11","2025-08-12","2025-08-13","2025-08-14","2025-08-18","2025-08-19","2025-08-20","2025-08-21","2025-08-22","2025-08-25","2025-08-26","2025-08-28","2025-08-29","2025-09-01","2025-09-02","2025-09-03","2025-09-04","2025-09-05","2025-09-08","2025-09-09","2025-09-10","2025-09-11","2025-09-12","2025-09-15","2025-09-16","2025-09-17","2025-09-18","2025-09-19","2025-09-22","2025-09-23","2025-09-24","2025-09-25","2025-09-26","2025-09-29","2025-09-30","2025-10-01","2025-10-03","2025-10-06","2025-10-07","2025-10-08","2025-10-09","2025-10-10","2025-10-13","2025-10-14","2025-10-15","2025-10-16","2025-10-17","2025-10-20","2025-10-21","2025-10-23","2025-10-24","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-10-31","2025-11-03","2025-11-04","2025-11-06","2025-11-07","2025-11-10","2025-11-11","2025-11-12","2025-11-13","2025-11-14","2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-27","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-01","2026-01-02","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-16","2026-01-19","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-27","2026-03-30","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-15","2026-04-16","2026-04-17","2026-04-20","2026-04-21"],"o":[679.45,668.49,722.29,707.14,701.36,658.68,674.37,654.49,629.09,646.42,631.63,629.44,615.69,619.77,630.83,626.6,624.65,593.72,604.73,599.95,592.77,550.08,526.52,549.34,537.98,545.0,559.9,567.72,549.93,542.96,543.41,510.08,507.84,515.02,563.88,562.84,600.74,574.04,579.62,575.84,582.36,571.65,552.92,473.32,500.72,501.67,490.76,489.81,477.21,453.3,483.18,487.27,472.23,468.29,469.14,443.38,437.06,418.38,438.35,461.27,452.35,452.95,428.39,441.69,424.41,412.1,407.02,419.42,472.33,460.67,468.14,484.88,471.38,456.98,465.25,488.71,513.07,507.09,522.64,438.55,499.07,485.13,491.2,511.08,516.06,512.57,517.06,523.03,532.0,519.2,516.51,505.5,498.13,491.25,484.73,494.09,499.03,463.61,479.4,453.35,488.17,504.06,505.6,564.88,575.04,568.51,587.64,570.46,570.86,569.96,542.01,555.46,567.87,569.86,588.74,601.44,600.94,592.77,607.92,612.45,607.22,603.08,603.68,606.72,583.06,600.74,604.63,587.89,578.03,561.44,571.8,572.85,591.98,587.89,583.81,590.98,591.78,623.56,626.55,634.62,628.04,631.68,626.15,619.57,617.68,608.71,597.51,602.44,605.62,608.71,597.11,596.11,590.68,584.8,586.65,567.87,552.18,578.78,568.86,587.59,600.74,608.91,611.55,590.23,593.67,657.53,690.41,688.26,748.59,767.02,769.11,806.97,790.03,785.1,797.65,773.1,762.39,777.08,808.96,836.86,845.82,854.59,846.82,859.67,835.86,851.3,846.82,853.55,868.71,906.21,884.67,876.74,855.79,836.19,816.89,809.81,828.06,817.84,835.84,812.9,813.5,839.43,849.81,859.18,870.75,882.72,872.75,874.74,916.93,911.7,897.68,917.63,938.18,947.55,952.24,921.82,929.6,987.75,998.42,1011.39,997.43,1001.62,987.45,989.45,957.53,1057.27,1091.18,1011.39,977.48,960.02,1042.31,1035.63,999.42,942.27,928.6,897.18,883.22,882.72,887.71,876.74,883.72,868.11,846.81,842.73,808.96,805.92,801.93,811.95,800.93,802.93,808.41,812.85,796.94,765.57,819.34,847.81,848.81,876.74,882.52,899.68,921.12,931.6,925.61,915.59,932.59,968.8,946.56,949.55,907.66,872.75,857.84,843.82,782.98,787.97,751.56,703.19,719.09,724.08,710.17,708.17,747.02,762.78,756.05,800.43,789.71,793.95,774.0,782.98,776.3,785.97,773.01,772.0,758.0,739.9,748.0,735.0,722.55,725.05,706.95,705.0,710.8,697.0,648.3,649.95,652.0,660.25,664.0,662.9,688.0,664.05,682.55,658.95,658.0,668.0,660.0,662.6,650.0,640.0,665.0,666.0,634.1,640.05,643.35,666.95,678.5,720.0,721.0,727.0,712.8,766.0,792.0,783.05,787.95,775.8],"h":[692.3,695.39,736.88,717.65,703.01,683.13,680.34,661.96,650.56,655.49,639.6,640.49,626.5,636.01,639.55,631.18,625.15,609.96,611.65,606.62,593.87,560.84,545.95,553.67,563.33,559.05,572.85,578.78,551.78,550.88,549.34,524.53,534.74,545.5,591.78,598.5,621.27,597.55,582.81,585.8,585.0,572.7,555.81,493.99,512.92,514.62,507.99,497.23,483.18,493.05,491.01,498.88,478.05,476.21,473.12,451.2,448.22,442.94,458.18,467.44,465.6,460.47,441.99,442.79,429.84,418.08,422.41,494.29,475.21,476.66,488.17,496.93,478.15,472.67,477.21,530.41,520.74,536.68,527.97,488.37,504.36,490.56,504.11,521.19,520.79,520.1,530.96,541.76,537.48,526.02,537.98,514.07,505.3,493.84,502.11,501.71,501.72,480.2,485.82,470.23,507.44,509.98,574.79,580.32,582.81,594.42,590.58,576.48,574.14,585.0,565.82,568.86,576.83,595.26,602.64,615.64,606.12,615.09,624.65,615.99,612.6,609.06,624.45,610.71,594.72,617.53,605.52,593.07,582.11,580.52,575.29,606.62,595.56,593.27,600.1,598.25,641.59,629.63,643.48,635.61,647.32,637.31,626.25,636.61,629.63,608.81,608.51,607.52,613.99,612.4,601.59,601.64,594.77,592.03,587.09,572.25,580.42,591.58,591.58,603.58,611.45,617.08,611.7,599.75,603.43,689.41,710.33,776.08,784.65,777.08,791.38,808.71,805.97,811.85,799.84,779.92,790.93,831.87,849.76,861.36,869.63,861.06,869.73,862.76,855.09,876.71,860.42,874.49,912.0,911.9,889.8,900.68,862.62,844.32,829.86,830.41,848.81,855.59,846.81,831.8,836.24,847.61,864.37,876.39,896.39,887.71,887.11,927.01,941.92,925.51,923.62,961.42,947.45,957.33,955.48,935.59,994.93,1001.76,1016.18,1030.99,1017.37,1010.69,996.83,992.44,996.23,1119.11,1105.15,1015.28,1007.4,1049.19,1052.28,1042.31,1004.41,943.86,942.07,906.66,906.66,887.11,899.68,891.8,897.33,870.55,853.05,843.62,830.46,814.85,812.0,820.73,802.88,821.53,815.89,812.85,797.89,826.72,846.42,879.63,876.14,890.65,912.45,945.56,938.58,934.89,929.0,942.47,982.36,975.28,957.53,956.13,916.58,877.73,866.76,882.72,817.79,788.76,755.05,737.1,731.11,726.62,719.09,744.03,769.76,791.96,774.85,804.92,802.43,796.29,794.35,805.77,790.96,814.9,785.97,774.45,758.0,754.95,752.0,758.8,733.15,727.35,709.9,716.05,718.2,704.8,689.9,664.0,668.0,689.9,664.0,690.0,701.85,696.0,684.2,667.55,669.0,693.9,675.85,680.4,657.9,667.5,679.85,676.9,643.3,669.7,673.5,679.65,687.85,723.0,737.7,745.9,754.7,791.95,793.35,794.9,792.9,791.85],"l":[664.55,661.61,697.88,692.45,673.12,658.08,645.57,622.21,627.69,626.84,623.86,608.71,609.21,617.88,621.66,620.17,586.8,592.77,593.42,589.78,557.46,523.03,526.52,524.58,537.98,538.88,552.82,544.95,528.66,538.23,525.28,493.74,471.33,514.52,555.11,560.2,564.48,568.96,566.62,574.94,568.96,544.95,514.07,446.47,460.42,488.91,476.41,468.34,448.86,447.42,473.27,473.37,461.02,458.63,450.31,428.39,404.03,413.0,435.66,449.31,451.65,429.59,421.96,419.62,410.21,403.48,407.02,419.42,457.33,457.73,465.4,465.9,454.39,452.4,461.27,488.71,506.6,505.65,499.12,438.45,480.79,472.28,483.58,509.04,510.18,508.49,515.76,522.19,515.66,513.22,494.24,493.55,488.37,477.21,478.2,488.51,473.87,462.11,462.26,450.31,485.87,497.13,505.6,560.94,563.48,567.77,567.92,561.19,564.98,566.57,540.47,551.73,561.59,563.88,580.32,596.11,589.34,590.08,605.38,600.74,599.75,598.05,595.91,594.91,580.47,595.26,588.29,574.99,556.21,561.44,562.89,571.9,585.1,577.13,583.81,581.47,591.78,613.2,619.67,619.92,624.75,620.77,614.24,616.23,605.43,594.37,596.81,599.25,604.38,597.06,591.08,589.68,580.97,582.81,567.92,550.03,549.54,577.18,567.87,579.72,598.65,601.84,591.78,583.91,587.79,643.68,682.59,678.5,732.65,747.24,758.65,775.59,783.26,782.06,771.75,760.19,750.88,773.64,808.06,832.97,827.49,842.14,845.82,827.89,829.88,848.26,843.83,844.72,867.76,880.73,870.75,847.91,827.86,810.91,803.43,804.52,815.45,809.46,804.92,808.01,803.93,822.53,830.06,854.89,852.8,861.03,868.81,868.76,907.76,878.73,897.68,913.39,928.7,946.31,918.93,919.63,929.6,980.87,993.69,989.45,995.58,977.58,979.97,955.53,955.63,1032.93,985.46,963.81,958.43,958.43,1019.57,1021.86,927.61,920.32,887.81,873.75,872.95,871.55,872.75,866.06,862.77,840.73,829.71,805.07,796.79,791.61,783.08,793.1,790.06,800.93,801.23,793.45,758.14,760.04,808.76,842.82,840.83,868.06,873.99,896.04,899.18,914.69,913.19,914.64,926.36,942.57,939.72,904.76,872.75,846.37,832.7,838.84,755.75,749.17,698.2,699.3,710.57,702.29,690.62,706.48,736.85,747.22,740.19,773.1,783.18,774.05,762.63,751.06,773.45,766.02,770.11,760.0,735.0,739.15,727.0,718.2,716.8,701.0,694.1,701.6,695.1,680.4,645.0,642.5,641.25,658.1,645.0,656.6,668.0,655.5,656.0,641.2,656.45,668.0,656.2,656.0,618.4,639.0,664.8,639.0,613.0,638.7,629.1,645.3,668.85,696.6,707.0,725.0,706.0,761.1,771.75,778.0,772.35,775.6],"c":[668.29,692.4,702.26,698.97,676.76,673.97,650.21,629.09,645.97,629.63,629.34,611.15,619.52,630.83,624.4,622.16,590.03,601.79,599.95,592.52,566.77,525.87,540.97,530.16,547.64,555.31,563.23,549.78,543.71,543.56,527.42,499.52,510.68,542.66,561.99,594.62,574.04,573.89,572.65,579.22,574.54,548.39,526.77,480.15,505.55,490.76,499.17,475.81,455.59,487.12,487.97,476.51,468.44,461.81,451.9,431.48,422.81,437.11,456.88,451.7,454.54,433.37,436.51,421.62,413.25,404.88,417.18,480.59,458.38,463.56,479.2,470.73,458.13,463.71,470.73,509.78,514.17,526.52,506.05,479.65,486.32,476.21,499.07,516.96,513.17,515.76,521.44,529.26,523.68,515.61,509.29,495.89,492.05,480.15,491.55,498.43,475.86,477.06,466.75,466.65,503.66,504.65,566.92,575.04,566.62,585.05,570.46,571.95,567.12,573.94,553.17,561.89,567.32,587.59,598.05,600.89,590.98,605.08,608.07,604.78,601.39,601.54,608.81,598.95,587.19,603.33,591.08,577.03,561.44,576.24,564.18,588.94,587.89,583.26,588.74,590.68,618.08,624.5,633.67,628.09,634.42,625.65,617.13,620.32,608.91,597.51,603.53,603.78,608.02,600.1,594.22,590.78,583.06,586.05,570.71,556.91,577.33,580.02,585.0,597.6,607.72,608.51,600.24,592.52,597.55,681.39,689.41,760.54,762.78,769.96,786.89,788.99,791.83,797.65,777.38,768.41,777.98,804.08,835.96,851.25,847.86,848.01,859.27,834.17,845.52,863.9,850.11,871.05,907.11,884.67,875.94,856.14,836.19,816.39,810.21,827.27,817.94,833.5,808.61,811.51,832.15,844.67,857.44,868.91,886.71,873.25,880.23,914.39,915.34,894.09,919.08,933.64,941.62,951.69,922.52,929.3,989.9,999.12,1009.1,1000.17,1001.62,985.86,992.34,963.61,976.68,1095.97,991.64,972.59,962.32,1038.62,1035.73,1026.05,932.99,928.7,894.59,882.92,879.33,882.22,875.24,883.42,868.11,844.32,841.98,808.11,805.52,801.48,809.86,797.14,799.74,809.66,814.25,797.89,760.84,816.74,843.27,847.41,873.5,879.33,895.19,921.97,930.75,924.21,916.93,935.14,966.9,946.21,954.44,908.75,875.99,858.93,843.87,875.99,794.0,754.35,703.33,703.38,724.73,704.28,703.04,732.66,766.77,781.58,769.56,790.96,796.84,777.54,782.68,771.31,778.29,770.41,774.95,762.6,738.25,745.7,731.25,727.0,720.35,705.5,700.55,708.65,700.15,684.75,664.7,646.0,663.55,676.9,650.95,684.6,670.6,689.8,658.5,656.25,665.1,680.5,659.65,659.5,625.6,660.25,666.6,642.05,614.8,660.3,667.4,676.05,680.6,718.35,722.55,730.65,751.95,785.9,783.25,786.5,775.4,783.3],"v":[2037150,6924717,12127400,3481123,2318205,1985726,2102883,1034056,1163760,889480,814579,984680,788558,623239,784865,633702,1214858,917335,989719,683107,1717952,1998008,1120198,896727,1988393,1056779,1253067,1153220,976210,601258,888825,1414115,2487330,1817448,6696272,2533892,3621258,1556821,801209,618580,596522,1113562,1467878,15781550,13260460,2269240,2623001,2046910,1675762,2449664,1175991,985321,946726,669798,1100642,1643897,1994683,1523974,1800504,1192605,1109371,891527,1035138,1203389,1453061,1142703,1492116,18455810,3011299,2054239,2579500,3709740,1764774,2345409,2168441,36806760,5012345,3615907,2328090,2329262,2279580,984368,1642766,1584282,895602,880181,1473087,1877412,1269299,1242677,2567447,1286223,1073123,992040,2058178,843388,935448,868870,622062,837099,1247244,666622,20091750,5999881,1948870,2464691,1391665,830098,649460,1655170,3167877,1170100,1423758,3224017,1973560,2190546,959429,1658927,1508086,747723,663656,550411,1875688,889115,908823,3234858,741935,806651,975577,991677,724451,3228194,601672,625076,839096,850361,23588780,2380197,3232708,1113021,1635986,747370,710922,1152122,822500,625557,587494,429197,642899,547552,496148,385542,614288,453871,571699,958251,703745,704281,752769,1325331,886149,837101,496255,534611,704755,34613970,17899990,16668460,17123970,4695170,3402843,2960402,1713377,2536791,1126396,1042106,2061033,8544737,4600302,2730654,2661994,946325,1156728,1132405,860845,1298103,1033705,995586,2156997,1205724,721333,1547789,1367371,1021886,1014656,869246,1102038,3198869,1268313,869978,993616,796768,1708833,1066254,1825643,1204567,727140,4481310,3188573,1799335,1463041,3985894,1183068,360404,982982,720216,6528014,1646101,1643393,1193321,863625,1079116,728234,1272507,1231051,27033470,13722310,7091433,3913425,14393770,2445936,1369869,6554047,3596257,3847627,2213927,2655245,1507766,1459409,1501812,1350940,1373255,1340422,1998595,2038877,1487452,1614195,962947,809430,976001,614196,573972,2850547,10043490,4553936,2020447,1773464,1498824,2377317,5938576,1952950,1156880,522197,1421909,3400290,1062052,902428,1538055,1635058,1916728,1156178,2305129,12507090,2859676,3928325,5026138,1801140,1215987,1905972,1511305,3204164,1631835,1071008,1414403,947930,657238,1009287,5121810,940137,5681063,1136085,760201,1035664,712574,1204711,1445496,842416,1016700,879976,726822,899276,1005342,1630290,1224850,1482002,1460754,1002752,1276386,1031080,1158252,1074284,1402605,573125,1274106,783411,946550,1338504,2485443,1167500,2149846,1619703,1531296,1627811,1728963,1890294,1957755,1898605,1581903,2308662,2673996,1580225,1185365,1058685,979657]},"5Y":{"d":["2024-12-12","2024-12-13","2024-12-16","2024-12-17","2024-12-18","2024-12-19","2024-12-20","2024-12-23","2024-12-24","2024-12-26","2024-12-27","2024-12-30","2024-12-31","2025-01-01","2025-01-02","2025-01-03","2025-01-06","2025-01-07","2025-01-08","2025-01-09","2025-01-10","2025-01-13","2025-01-14","2025-01-15","2025-01-16","2025-01-17","2025-01-20","2025-01-21","2025-01-22","2025-01-23","2025-01-24","2025-01-27","2025-01-28","2025-01-29","2025-01-30","2025-01-31","2025-02-01","2025-02-03","2025-02-04","2025-02-05","2025-02-06","2025-02-07","2025-02-10","2025-02-11","2025-02-12","2025-02-13","2025-02-14","2025-02-17","2025-02-18","2025-02-19","2025-02-20","2025-02-21","2025-02-24","2025-02-25","2025-02-27","2025-02-28","2025-03-03","2025-03-04","2025-03-05","2025-03-06","2025-03-07","2025-03-10","2025-03-11","2025-03-12","2025-03-13","2025-03-17","2025-03-18","2025-03-19","2025-03-20","2025-03-21","2025-03-24","2025-03-25","2025-03-26","2025-03-27","2025-03-28","2025-04-01","2025-04-02","2025-04-03","2025-04-04","2025-04-07","2025-04-08","2025-04-09","2025-04-11","2025-04-15","2025-04-16","2025-04-17","2025-04-21","2025-04-22","2025-04-23","2025-04-24","2025-04-25","2025-04-28","2025-04-29","2025-04-30","2025-05-02","2025-05-05","2025-05-06","2025-05-07","2025-05-08","2025-05-09","2025-05-12","2025-05-13","2025-05-14","2025-05-15","2025-05-16","2025-05-19","2025-05-20","2025-05-21","2025-05-22","2025-05-23","2025-05-26","2025-05-27","2025-05-28","2025-05-29","2025-05-30","2025-06-02","2025-06-03","2025-06-04","2025-06-05","2025-06-06","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-16","2025-06-17","2025-06-18","2025-06-19","2025-06-20","2025-06-23","2025-06-24","2025-06-25","2025-06-26","2025-06-27","2025-06-30","2025-07-01","2025-07-02","2025-07-03","2025-07-04","2025-07-07","2025-07-08","2025-07-09","2025-07-10","2025-07-11","2025-07-14","2025-07-15","2025-07-16","2025-07-17","2025-07-18","2025-07-21","2025-07-22","2025-07-23","2025-07-24","2025-07-25","2025-07-28","2025-07-29","2025-07-30","2025-07-31","2025-08-01","2025-08-04","2025-08-05","2025-08-06","2025-08-07","2025-08-08","2025-08-11","2025-08-12","2025-08-13","2025-08-14","2025-08-18","2025-08-19","2025-08-20","2025-08-21","2025-08-22","2025-08-25","2025-08-26","2025-08-28","2025-08-29","2025-09-01","2025-09-02","2025-09-03","2025-09-04","2025-09-05","2025-09-08","2025-09-09","2025-09-10","2025-09-11","2025-09-12","2025-09-15","2025-09-16","2025-09-17","2025-09-18","2025-09-19","2025-09-22","2025-09-23","2025-09-24","2025-09-25","2025-09-26","2025-09-29","2025-09-30","2025-10-01","2025-10-03","2025-10-06","2025-10-07","2025-10-08","2025-10-09","2025-10-10","2025-10-13","2025-10-14","2025-10-15","2025-10-16","2025-10-17","2025-10-20","2025-10-21","2025-10-23","2025-10-24","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-10-31","2025-11-03","2025-11-04","2025-11-06","2025-11-07","2025-11-10","2025-11-11","2025-11-12","2025-11-13","2025-11-14","2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-27","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-01","2026-01-02","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-16","2026-01-19","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-27","2026-03-30","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-15","2026-04-16","2026-04-17","2026-04-20","2026-04-21"],"o":[679.45,668.49,722.29,707.14,701.36,658.68,674.37,654.49,629.09,646.42,631.63,629.44,615.69,619.77,630.83,626.6,624.65,593.72,604.73,599.95,592.77,550.08,526.52,549.34,537.98,545.0,559.9,567.72,549.93,542.96,543.41,510.08,507.84,515.02,563.88,562.84,600.74,574.04,579.62,575.84,582.36,571.65,552.92,473.32,500.72,501.67,490.76,489.81,477.21,453.3,483.18,487.27,472.23,468.29,469.14,443.38,437.06,418.38,438.35,461.27,452.35,452.95,428.39,441.69,424.41,412.1,407.02,419.42,472.33,460.67,468.14,484.88,471.38,456.98,465.25,488.71,513.07,507.09,522.64,438.55,499.07,485.13,491.2,511.08,516.06,512.57,517.06,523.03,532.0,519.2,516.51,505.5,498.13,491.25,484.73,494.09,499.03,463.61,479.4,453.35,488.17,504.06,505.6,564.88,575.04,568.51,587.64,570.46,570.86,569.96,542.01,555.46,567.87,569.86,588.74,601.44,600.94,592.77,607.92,612.45,607.22,603.08,603.68,606.72,583.06,600.74,604.63,587.89,578.03,561.44,571.8,572.85,591.98,587.89,583.81,590.98,591.78,623.56,626.55,634.62,628.04,631.68,626.15,619.57,617.68,608.71,597.51,602.44,605.62,608.71,597.11,596.11,590.68,584.8,586.65,567.87,552.18,578.78,568.86,587.59,600.74,608.91,611.55,590.23,593.67,657.53,690.41,688.26,748.59,767.02,769.11,806.97,790.03,785.1,797.65,773.1,762.39,777.08,808.96,836.86,845.82,854.59,846.82,859.67,835.86,851.3,846.82,853.55,868.71,906.21,884.67,876.74,855.79,836.19,816.89,809.81,828.06,817.84,835.84,812.9,813.5,839.43,849.81,859.18,870.75,882.72,872.75,874.74,916.93,911.7,897.68,917.63,938.18,947.55,952.24,921.82,929.6,987.75,998.42,1011.39,997.43,1001.62,987.45,989.45,957.53,1057.27,1091.18,1011.39,977.48,960.02,1042.31,1035.63,999.42,942.27,928.6,897.18,883.22,882.72,887.71,876.74,883.72,868.11,846.81,842.73,808.96,805.92,801.93,811.95,800.93,802.93,808.41,812.85,796.94,765.57,819.34,847.81,848.81,876.74,882.52,899.68,921.12,931.6,925.61,915.59,932.59,968.8,946.56,949.55,907.66,872.75,857.84,843.82,782.98,787.97,751.56,703.19,719.09,724.08,710.17,708.17,747.02,762.78,756.05,800.43,789.71,793.95,774.0,782.98,776.3,785.97,773.01,772.0,758.0,739.9,748.0,735.0,722.55,725.05,706.95,705.0,710.8,697.0,648.3,649.95,652.0,660.25,664.0,662.9,688.0,664.05,682.55,658.95,658.0,668.0,660.0,662.6,650.0,640.0,665.0,666.0,634.1,640.05,643.35,666.95,678.5,720.0,721.0,727.0,712.8,766.0,792.0,783.05,787.95,775.8],"h":[692.3,695.39,736.88,717.65,703.01,683.13,680.34,661.96,650.56,655.49,639.6,640.49,626.5,636.01,639.55,631.18,625.15,609.96,611.65,606.62,593.87,560.84,545.95,553.67,563.33,559.05,572.85,578.78,551.78,550.88,549.34,524.53,534.74,545.5,591.78,598.5,621.27,597.55,582.81,585.8,585.0,572.7,555.81,493.99,512.92,514.62,507.99,497.23,483.18,493.05,491.01,498.88,478.05,476.21,473.12,451.2,448.22,442.94,458.18,467.44,465.6,460.47,441.99,442.79,429.84,418.08,422.41,494.29,475.21,476.66,488.17,496.93,478.15,472.67,477.21,530.41,520.74,536.68,527.97,488.37,504.36,490.56,504.11,521.19,520.79,520.1,530.96,541.76,537.48,526.02,537.98,514.07,505.3,493.84,502.11,501.71,501.72,480.2,485.82,470.23,507.44,509.98,574.79,580.32,582.81,594.42,590.58,576.48,574.14,585.0,565.82,568.86,576.83,595.26,602.64,615.64,606.12,615.09,624.65,615.99,612.6,609.06,624.45,610.71,594.72,617.53,605.52,593.07,582.11,580.52,575.29,606.62,595.56,593.27,600.1,598.25,641.59,629.63,643.48,635.61,647.32,637.31,626.25,636.61,629.63,608.81,608.51,607.52,613.99,612.4,601.59,601.64,594.77,592.03,587.09,572.25,580.42,591.58,591.58,603.58,611.45,617.08,611.7,599.75,603.43,689.41,710.33,776.08,784.65,777.08,791.38,808.71,805.97,811.85,799.84,779.92,790.93,831.87,849.76,861.36,869.63,861.06,869.73,862.76,855.09,876.71,860.42,874.49,912.0,911.9,889.8,900.68,862.62,844.32,829.86,830.41,848.81,855.59,846.81,831.8,836.24,847.61,864.37,876.39,896.39,887.71,887.11,927.01,941.92,925.51,923.62,961.42,947.45,957.33,955.48,935.59,994.93,1001.76,1016.18,1030.99,1017.37,1010.69,996.83,992.44,996.23,1119.11,1105.15,1015.28,1007.4,1049.19,1052.28,1042.31,1004.41,943.86,942.07,906.66,906.66,887.11,899.68,891.8,897.33,870.55,853.05,843.62,830.46,814.85,812.0,820.73,802.88,821.53,815.89,812.85,797.89,826.72,846.42,879.63,876.14,890.65,912.45,945.56,938.58,934.89,929.0,942.47,982.36,975.28,957.53,956.13,916.58,877.73,866.76,882.72,817.79,788.76,755.05,737.1,731.11,726.62,719.09,744.03,769.76,791.96,774.85,804.92,802.43,796.29,794.35,805.77,790.96,814.9,785.97,774.45,758.0,754.95,752.0,758.8,733.15,727.35,709.9,716.05,718.2,704.8,689.9,664.0,668.0,689.9,664.0,690.0,701.85,696.0,684.2,667.55,669.0,693.9,675.85,680.4,657.9,667.5,679.85,676.9,643.3,669.7,673.5,679.65,687.85,723.0,737.7,745.9,754.7,791.95,793.35,794.9,792.9,791.85],"l":[664.55,661.61,697.88,692.45,673.12,658.08,645.57,622.21,627.69,626.84,623.86,608.71,609.21,617.88,621.66,620.17,586.8,592.77,593.42,589.78,557.46,523.03,526.52,524.58,537.98,538.88,552.82,544.95,528.66,538.23,525.28,493.74,471.33,514.52,555.11,560.2,564.48,568.96,566.62,574.94,568.96,544.95,514.07,446.47,460.42,488.91,476.41,468.34,448.86,447.42,473.27,473.37,461.02,458.63,450.31,428.39,404.03,413.0,435.66,449.31,451.65,429.59,421.96,419.62,410.21,403.48,407.02,419.42,457.33,457.73,465.4,465.9,454.39,452.4,461.27,488.71,506.6,505.65,499.12,438.45,480.79,472.28,483.58,509.04,510.18,508.49,515.76,522.19,515.66,513.22,494.24,493.55,488.37,477.21,478.2,488.51,473.87,462.11,462.26,450.31,485.87,497.13,505.6,560.94,563.48,567.77,567.92,561.19,564.98,566.57,540.47,551.73,561.59,563.88,580.32,596.11,589.34,590.08,605.38,600.74,599.75,598.05,595.91,594.91,580.47,595.26,588.29,574.99,556.21,561.44,562.89,571.9,585.1,577.13,583.81,581.47,591.78,613.2,619.67,619.92,624.75,620.77,614.24,616.23,605.43,594.37,596.81,599.25,604.38,597.06,591.08,589.68,580.97,582.81,567.92,550.03,549.54,577.18,567.87,579.72,598.65,601.84,591.78,583.91,587.79,643.68,682.59,678.5,732.65,747.24,758.65,775.59,783.26,782.06,771.75,760.19,750.88,773.64,808.06,832.97,827.49,842.14,845.82,827.89,829.88,848.26,843.83,844.72,867.76,880.73,870.75,847.91,827.86,810.91,803.43,804.52,815.45,809.46,804.92,808.01,803.93,822.53,830.06,854.89,852.8,861.03,868.81,868.76,907.76,878.73,897.68,913.39,928.7,946.31,918.93,919.63,929.6,980.87,993.69,989.45,995.58,977.58,979.97,955.53,955.63,1032.93,985.46,963.81,958.43,958.43,1019.57,1021.86,927.61,920.32,887.81,873.75,872.95,871.55,872.75,866.06,862.77,840.73,829.71,805.07,796.79,791.61,783.08,793.1,790.06,800.93,801.23,793.45,758.14,760.04,808.76,842.82,840.83,868.06,873.99,896.04,899.18,914.69,913.19,914.64,926.36,942.57,939.72,904.76,872.75,846.37,832.7,838.84,755.75,749.17,698.2,699.3,710.57,702.29,690.62,706.48,736.85,747.22,740.19,773.1,783.18,774.05,762.63,751.06,773.45,766.02,770.11,760.0,735.0,739.15,727.0,718.2,716.8,701.0,694.1,701.6,695.1,680.4,645.0,642.5,641.25,658.1,645.0,656.6,668.0,655.5,656.0,641.2,656.45,668.0,656.2,656.0,618.4,639.0,664.8,639.0,613.0,638.7,629.1,645.3,668.85,696.6,707.0,725.0,706.0,761.1,771.75,778.0,772.35,775.6],"c":[668.29,692.4,702.26,698.97,676.76,673.97,650.21,629.09,645.97,629.63,629.34,611.15,619.52,630.83,624.4,622.16,590.03,601.79,599.95,592.52,566.77,525.87,540.97,530.16,547.64,555.31,563.23,549.78,543.71,543.56,527.42,499.52,510.68,542.66,561.99,594.62,574.04,573.89,572.65,579.22,574.54,548.39,526.77,480.15,505.55,490.76,499.17,475.81,455.59,487.12,487.97,476.51,468.44,461.81,451.9,431.48,422.81,437.11,456.88,451.7,454.54,433.37,436.51,421.62,413.25,404.88,417.18,480.59,458.38,463.56,479.2,470.73,458.13,463.71,470.73,509.78,514.17,526.52,506.05,479.65,486.32,476.21,499.07,516.96,513.17,515.76,521.44,529.26,523.68,515.61,509.29,495.89,492.05,480.15,491.55,498.43,475.86,477.06,466.75,466.65,503.66,504.65,566.92,575.04,566.62,585.05,570.46,571.95,567.12,573.94,553.17,561.89,567.32,587.59,598.05,600.89,590.98,605.08,608.07,604.78,601.39,601.54,608.81,598.95,587.19,603.33,591.08,577.03,561.44,576.24,564.18,588.94,587.89,583.26,588.74,590.68,618.08,624.5,633.67,628.09,634.42,625.65,617.13,620.32,608.91,597.51,603.53,603.78,608.02,600.1,594.22,590.78,583.06,586.05,570.71,556.91,577.33,580.02,585.0,597.6,607.72,608.51,600.24,592.52,597.55,681.39,689.41,760.54,762.78,769.96,786.89,788.99,791.83,797.65,777.38,768.41,777.98,804.08,835.96,851.25,847.86,848.01,859.27,834.17,845.52,863.9,850.11,871.05,907.11,884.67,875.94,856.14,836.19,816.39,810.21,827.27,817.94,833.5,808.61,811.51,832.15,844.67,857.44,868.91,886.71,873.25,880.23,914.39,915.34,894.09,919.08,933.64,941.62,951.69,922.52,929.3,989.9,999.12,1009.1,1000.17,1001.62,985.86,992.34,963.61,976.68,1095.97,991.64,972.59,962.32,1038.62,1035.73,1026.05,932.99,928.7,894.59,882.92,879.33,882.22,875.24,883.42,868.11,844.32,841.98,808.11,805.52,801.48,809.86,797.14,799.74,809.66,814.25,797.89,760.84,816.74,843.27,847.41,873.5,879.33,895.19,921.97,930.75,924.21,916.93,935.14,966.9,946.21,954.44,908.75,875.99,858.93,843.87,875.99,794.0,754.35,703.33,703.38,724.73,704.28,703.04,732.66,766.77,781.58,769.56,790.96,796.84,777.54,782.68,771.31,778.29,770.41,774.95,762.6,738.25,745.7,731.25,727.0,720.35,705.5,700.55,708.65,700.15,684.75,664.7,646.0,663.55,676.9,650.95,684.6,670.6,689.8,658.5,656.25,665.1,680.5,659.65,659.5,625.6,660.25,666.6,642.05,614.8,660.3,667.4,676.05,680.6,718.35,722.55,730.65,751.95,785.9,783.25,786.5,775.4,783.3],"v":[2037150,6924717,12127400,3481123,2318205,1985726,2102883,1034056,1163760,889480,814579,984680,788558,623239,784865,633702,1214858,917335,989719,683107,1717952,1998008,1120198,896727,1988393,1056779,1253067,1153220,976210,601258,888825,1414115,2487330,1817448,6696272,2533892,3621258,1556821,801209,618580,596522,1113562,1467878,15781550,13260460,2269240,2623001,2046910,1675762,2449664,1175991,985321,946726,669798,1100642,1643897,1994683,1523974,1800504,1192605,1109371,891527,1035138,1203389,1453061,1142703,1492116,18455810,3011299,2054239,2579500,3709740,1764774,2345409,2168441,36806760,5012345,3615907,2328090,2329262,2279580,984368,1642766,1584282,895602,880181,1473087,1877412,1269299,1242677,2567447,1286223,1073123,992040,2058178,843388,935448,868870,622062,837099,1247244,666622,20091750,5999881,1948870,2464691,1391665,830098,649460,1655170,3167877,1170100,1423758,3224017,1973560,2190546,959429,1658927,1508086,747723,663656,550411,1875688,889115,908823,3234858,741935,806651,975577,991677,724451,3228194,601672,625076,839096,850361,23588780,2380197,3232708,1113021,1635986,747370,710922,1152122,822500,625557,587494,429197,642899,547552,496148,385542,614288,453871,571699,958251,703745,704281,752769,1325331,886149,837101,496255,534611,704755,34613970,17899990,16668460,17123970,4695170,3402843,2960402,1713377,2536791,1126396,1042106,2061033,8544737,4600302,2730654,2661994,946325,1156728,1132405,860845,1298103,1033705,995586,2156997,1205724,721333,1547789,1367371,1021886,1014656,869246,1102038,3198869,1268313,869978,993616,796768,1708833,1066254,1825643,1204567,727140,4481310,3188573,1799335,1463041,3985894,1183068,360404,982982,720216,6528014,1646101,1643393,1193321,863625,1079116,728234,1272507,1231051,27033470,13722310,7091433,3913425,14393770,2445936,1369869,6554047,3596257,3847627,2213927,2655245,1507766,1459409,1501812,1350940,1373255,1340422,1998595,2038877,1487452,1614195,962947,809430,976001,614196,573972,2850547,10043490,4553936,2020447,1773464,1498824,2377317,5938576,1952950,1156880,522197,1421909,3400290,1062052,902428,1538055,1635058,1916728,1156178,2305129,12507090,2859676,3928325,5026138,1801140,1215987,1905972,1511305,3204164,1631835,1071008,1414403,947930,657238,1009287,5121810,940137,5681063,1136085,760201,1035664,712574,1204711,1445496,842416,1016700,879976,726822,899276,1005342,1630290,1224850,1482002,1460754,1002752,1276386,1031080,1158252,1074284,1402605,573125,1274106,783411,946550,1338504,2485443,1167500,2149846,1619703,1531296,1627811,1728963,1890294,1957755,1898605,1581903,2308662,2673996,1580225,1185365,1058685,979657]}};
+
+function _setupCanvas(id) {
+  const c = document.getElementById(id);
+  if (!c) return null;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  c.width = w * dpr; c.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+
+function drawLineChart(tf) {
+  const d = CHART_DATA[tf];
+  if (!d || !d.c.length) return;
+  const s = _setupCanvas('cv-line');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const closes = d.c, n = closes.length;
+  const mn = Math.min(...closes), mx = Math.max(...closes);
+  const range = mx - mn || 1;
+  const pad = { t:18, b:24, l:55, r:12 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+
+  const ret = ((closes[n-1] - closes[0]) / closes[0] * 100);
+  const retEl = document.getElementById('tf-line-ret');
+  if (retEl) {
+    retEl.textContent = (ret >= 0 ? '+' : '') + ret.toFixed(2) + '%';
+    retEl.className = 'tf-ret ' + (ret >= 0 ? 'up' : 'dn');
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    const val = mx - (i / 4) * range;
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
+    ctx.fillText(val >= 1000 ? val.toFixed(0) : val.toFixed(2), pad.l - 6, y + 3);
+  }
+
+  const nLabels = Math.min(6, n);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < nLabels; i++) {
+    const idx = Math.round(i / (nLabels - 1) * (n - 1));
+    const x = pad.l + (idx / (n - 1)) * cw;
+    ctx.fillText(d.d[idx], x, h - 4);
+  }
+
+  const color = ret >= 0 ? '#00e5a0' : '#ff4d6d';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.8;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  closes.forEach((v, i) => {
+    const x = pad.l + (i / (n - 1 || 1)) * cw;
+    const y = pad.t + (1 - (v - mn) / range) * ch;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
+  grad.addColorStop(0, color + '22');
+  grad.addColorStop(1, color + '00');
+  ctx.lineTo(pad.l + cw, pad.t + ch);
+  ctx.lineTo(pad.l, pad.t + ch);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+function drawCandleChart(tf) {
+  const d = CHART_DATA[tf];
+  if (!d || !d.c.length) return;
+  const s = _setupCanvas('cv-candle');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const n = d.c.length;
+  const allVals = d.h.concat(d.l);
+  const mn = Math.min(...allVals), mx = Math.max(...allVals);
+  const range = mx - mn || 1;
+  const pad = { t:18, b:24, l:55, r:12 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+
+  const ret = ((d.c[n-1] - d.c[0]) / d.c[0] * 100);
+  const retEl = document.getElementById('tf-candle-ret');
+  if (retEl) {
+    retEl.textContent = (ret >= 0 ? '+' : '') + ret.toFixed(2) + '%';
+    retEl.className = 'tf-ret ' + (ret >= 0 ? 'up' : 'dn');
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    const val = mx - (i / 4) * range;
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
+    ctx.fillText(val >= 1000 ? val.toFixed(0) : val.toFixed(2), pad.l - 6, y + 3);
+  }
+
+  const nLabels = Math.min(6, n);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < nLabels; i++) {
+    const idx = Math.round(i / (nLabels - 1) * (n - 1));
+    const x = pad.l + (idx / (n - 1)) * cw;
+    ctx.fillText(d.d[idx], x, h - 4);
+  }
+
+  const barW = Math.max(1, Math.min(8, (cw / n) * 0.65));
+  for (let i = 0; i < n; i++) {
+    const x = pad.l + ((i + 0.5) / n) * cw;
+    const oY = pad.t + (1 - (d.o[i] - mn) / range) * ch;
+    const cY = pad.t + (1 - (d.c[i] - mn) / range) * ch;
+    const hY = pad.t + (1 - (d.h[i] - mn) / range) * ch;
+    const lY = pad.t + (1 - (d.l[i] - mn) / range) * ch;
+    const bull = d.c[i] >= d.o[i];
+    const clr = bull ? '#00e5a0' : '#ff4d6d';
+    ctx.strokeStyle = clr; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, hY); ctx.lineTo(x, lY); ctx.stroke();
+    ctx.fillStyle = bull ? clr + '88' : clr;
+    const top = Math.min(oY, cY), bh = Math.max(1, Math.abs(oY - cY));
+    ctx.fillRect(x - barW/2, top, barW, bh);
+  }
+
+  if (n >= 50) {
+    const ema50 = _calcEMA(d.c, 50);
+    _drawMA(ctx, ema50, n, mn, range, pad, cw, ch, '#f5a623', [5,3]);
+  }
+  if (n >= 200) {
+    const dma200 = _calcSMA(d.c, 200);
+    _drawMA(ctx, dma200, n, mn, range, pad, cw, ch, '#a855f7', []);
+  }
+}
+
+function _calcEMA(data, period) {
+  const result = new Array(data.length).fill(null);
+  if (data.length < period) return result;
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += data[i];
+  result[period-1] = sum / period;
+  const k = 2 / (period + 1);
+  for (let i = period; i < data.length; i++) result[i] = data[i] * k + result[i-1] * (1-k);
+  return result;
+}
+function _calcSMA(data, period) {
+  const result = new Array(data.length).fill(null);
+  if (data.length < period) return result;
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += data[i];
+  result[period-1] = sum / period;
+  for (let i = period; i < data.length; i++) { sum += data[i] - data[i-period]; result[i] = sum / period; }
+  return result;
+}
+function _drawMA(ctx, vals, n, mn, range, pad, cw, ch, color, dash) {
+  ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.setLineDash(dash);
+  ctx.beginPath();
+  let started = false;
+  vals.forEach((v, i) => {
+    if (v === null) return;
+    const x = pad.l + ((i + 0.5) / n) * cw;
+    const y = pad.t + (1 - (v - mn) / range) * ch;
+    if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function _bindTF(groupId, drawFn, defaultTf) {
+  const btns = document.querySelectorAll('#' + groupId + ' .tf-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      drawFn(btn.dataset.tf);
+    });
+  });
+  drawFn(defaultTf);
+}
+_bindTF('tf-line', drawLineChart, '1Y');
+_bindTF('tf-candle', drawCandleChart, '6M');
+</script>
+</body>
+</html>

@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE Sector Rotation Report · 2026-04-21</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090d; --bg2: #0d0e14; --bg3: #12131a; --bg4: #181922;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+    --green: #00e5a0; --green-dim: rgba(0,229,160,0.12);
+    --red: #ff4d6d; --red-dim: rgba(255,77,109,0.12);
+    --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
+    --blue: #3d9cf5; --blue-dim: rgba(61,156,245,0.12);
+    --purple: #9b7fff;
+    --text: #e8e9f0; --text2: #9899a8; --text3: #5c5d6e;
+    --mono: 'Fira Code', monospace; --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .page { max-width: 1280px; margin: 0 auto; padding: 32px 24px; }
+
+  /* Header */
+  .report-header { padding:28px 32px; background:linear-gradient(135deg,#0f1018,#131420 60%,#0d1020); border:1px solid var(--border2); border-radius:16px; position:relative; overflow:hidden; margin-bottom:24px; }
+  .report-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--blue),transparent); opacity:0.4; }
+  .rh-badge { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; font-weight:600; color:var(--blue); letter-spacing:2px; margin-bottom:8px; }
+  .rh-badge span { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(61,156,245,0.2); border-radius:4px; padding:1px 6px; font-size:9px; }
+  .rh-title { font-family:var(--mono); font-size:28px; font-weight:700; color:#fff; letter-spacing:-0.5px; margin-bottom:4px; }
+  .rh-sub { font-family:var(--mono); font-size:11px; color:var(--text2); }
+  .rh-right { position:absolute; right:32px; top:28px; text-align:right; }
+  .rh-nifty { font-family:var(--mono); font-size:28px; font-weight:700; color:#fff; }
+  .rh-nifty-label { font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:1px; }
+  .rh-date { font-family:var(--mono); font-size:9px; color:var(--text3); margin-top:6px; }
+
+  /* KPI strip */
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .kpi-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .kpi-label { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+  .kpi-value { font-family:var(--mono); font-size:24px; font-weight:700; }
+  .kpi-sub { font-size:10px; color:var(--text2); margin-top:2px; }
+
+  /* Section */
+  .section { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:24px; }
+  .section-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* Charts full-width stacked */
+  .chart-grid { display:grid; grid-template-columns:1fr; gap:20px; margin-bottom:24px; }
+  .chart-card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .chart-label { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .chart-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* Legend */
+  .legend { display:flex; flex-wrap:wrap; gap:10px 16px; padding:12px 16px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; margin-top:12px; }
+  .legend-item { display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:9px; color:var(--text2); }
+  .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .legend-q { font-size:8px; font-weight:600; }
+
+  /* Table */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
+  thead th { padding:10px 10px; text-align:right; color:var(--text3); font-weight:500; font-size:9px; letter-spacing:1px; text-transform:uppercase; border-bottom:2px solid var(--border2); white-space:nowrap; }
+  thead th:first-child { text-align:left; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background 0.2s; }
+  tbody tr:hover { background:rgba(255,255,255,0.02); }
+  tbody td { padding:10px 10px; text-align:right; white-space:nowrap; }
+  tbody td:first-child { text-align:left; }
+
+  /* Quadrant detail blocks */
+  .quadrant-block { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:20px 22px; margin-bottom:16px; }
+  .qb-title { font-family:var(--mono); font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .qb-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .qb-count { font-size:10px; font-weight:400; color:var(--text3); margin-left:auto; }
+  .qb-desc { font-size:12px; color:var(--text2); line-height:1.7; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+
+  .sector-detail-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+  .sector-detail-card:last-child { margin-bottom:0; }
+  .sdc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .sdc-name { font-family:var(--mono); font-size:12px; font-weight:700; color:#fff; }
+  .sdc-verdict { font-family:var(--mono); font-size:10px; font-weight:600; }
+  .sdc-rs { font-family:var(--mono); font-size:9px; color:var(--text3); margin-bottom:6px; }
+  .sdc-desc { font-size:11px; color:var(--text3); margin-bottom:8px; font-style:italic; }
+  .sdc-reasons { list-style:none; }
+  .sdc-reasons li { display:flex; align-items:flex-start; gap:6px; font-size:11px; color:var(--text2); padding:3px 0; line-height:1.5; }
+  .sdc-reasons li::before { content:'›'; color:var(--text3); font-weight:700; flex-shrink:0; }
+
+  /* Performance bars section */
+  .perf-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+  /* How to Read RRG */
+  .rrg-explainer { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+  .rrg-quad-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .rrg-quad-card h4 { font-family:var(--mono); font-size:11px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+  .rrg-quad-card p { font-size:11px; color:var(--text2); line-height:1.6; }
+
+  /* Leader blocks */
+  .leaders-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .leader-block { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .lb-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .lb-name { font-family:var(--mono); font-size:12px; font-weight:700; color:#fff; }
+  .lb-quad { font-family:var(--mono); font-size:9px; font-weight:600; }
+  .leader-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; }
+  .leader-table thead th { padding:6px 8px; text-align:right; color:var(--text3); font-weight:500; font-size:8px; letter-spacing:0.5px; text-transform:uppercase; border-bottom:1px solid var(--border); }
+  .leader-table thead th:first-child { text-align:left; }
+  .leader-table tbody td { padding:6px 8px; text-align:right; }
+  .leader-table tbody td:first-child { text-align:left; }
+  .leader-table tbody tr { border-bottom:1px solid var(--border); }
+
+  /* Footer */
+  .report-footer { text-align:center; padding:24px 0; font-family:var(--mono); font-size:9px; color:var(--text3); }
+
+  @media (max-width: 900px) {
+    .perf-grid, .rrg-explainer, .leaders-grid { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    table { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="report-header">
+    <div class="rh-badge">SECTOR ROTATION REPORT <span>NSE</span></div>
+    <div class="rh-title">NSE Sector Outlook</div>
+    <div class="rh-sub">Relative Rotation Analysis · All NSE Tradable Sectors · Benchmark: NIFTY 50</div>
+    <div class="rh-right">
+      <div class="rh-nifty-label">NIFTY 50</div>
+      <div class="rh-nifty">24,577</div>
+      <div class="rh-date">2026-04-21 · Auto-generated</div>
+    </div>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Leading Sectors</div>
+      <div class="kpi-value" style="color:var(--green)">11</div>
+      <div class="kpi-sub">Strong RS + Rising Momentum</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Improving Sectors</div>
+      <div class="kpi-value" style="color:var(--blue)">2</div>
+      <div class="kpi-sub">Weak RS + Rising Momentum</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Weakening Sectors</div>
+      <div class="kpi-value" style="color:var(--amber)">2</div>
+      <div class="kpi-sub">Strong RS + Falling Momentum</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Lagging Sectors</div>
+      <div class="kpi-value" style="color:var(--red)">1</div>
+      <div class="kpi-sub">Weak RS + Falling Momentum</div>
+    </div>
+  </div>
+
+  <!-- HOW TO READ RRG -->
+  <div class="section">
+    <div class="section-title">How to Read the Relative Rotation Graph</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7;">
+      The RRG (Relative Rotation Graph) plots each sector's <b style="color:#fff">relative strength</b> (RS-Ratio, X-axis) against its <b style="color:#fff">momentum</b> (RS-Momentum, Y-axis) compared to the NIFTY 50 benchmark. The center (100,100) represents parity with the benchmark. Sectors rotate clockwise through the four quadrants over time — this rotation reflects the natural cycle of sector leadership.
+    </p>
+    <div class="rrg-explainer">
+      <div class="rrg-quad-card">
+        <h4 style="color:var(--blue)"><span class="qb-dot" style="background:var(--blue);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Improving (Top-Left)</h4>
+        <p>RS-Ratio &lt; 100, RS-Momentum &gt; 100 — Sector still underperforms but momentum is turning up. Early rotation signal. Watch for breakout into Leading.</p>
+      </div>
+      <div class="rrg-quad-card">
+        <h4 style="color:var(--green)"><span class="qb-dot" style="background:var(--green);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Leading (Top-Right)</h4>
+        <p>RS-Ratio &gt; 100, RS-Momentum &gt; 100 — Sector is outperforming and acceleration is positive. The strongest position. Best sectors for momentum trades.</p>
+      </div>
+      <div class="rrg-quad-card">
+        <h4 style="color:var(--red)"><span class="qb-dot" style="background:var(--red);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Lagging (Bottom-Left)</h4>
+        <p>RS-Ratio &lt; 100, RS-Momentum &lt; 100 — Sector underperforms with declining momentum. Weakest position. Avoid until momentum turns. Watch for rotation into Improving.</p>
+      </div>
+      <div class="rrg-quad-card">
+        <h4 style="color:var(--amber)"><span class="qb-dot" style="background:var(--amber);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Weakening (Bottom-Right)</h4>
+        <p>RS-Ratio &gt; 100, RS-Momentum &lt; 100 — Sector still outperforms but momentum is fading. Leadership is ending. Consider booking profits.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RRG SCATTER & ROTATION TRAIL -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-label">RRG Scatter Plot — Current Positioning</div>
+      <svg viewBox="0 0 1200 660" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <rect x="600.0" y="80" width="520.0" height="250.0" fill="rgba(0,229,160,0.04)" />
+  <rect x="80" y="80" width="520.0" height="250.0" fill="rgba(61,156,245,0.04)" />
+  <rect x="80" y="330.0" width="520.0" height="250.0" fill="rgba(255,77,109,0.04)" />
+  <rect x="600.0" y="330.0" width="520.0" height="250.0" fill="rgba(245,166,35,0.04)" />
+  <text x="860.0" y="102" text-anchor="middle" font-family="Fira Code,monospace" font-size="11" fill="rgba(0,229,160,0.5)" font-weight="600">LEADING</text>
+  <text x="340.0" y="102" text-anchor="middle" font-family="Fira Code,monospace" font-size="11" fill="rgba(61,156,245,0.5)" font-weight="600">IMPROVING</text>
+  <text x="340.0" y="570.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="11" fill="rgba(255,77,109,0.5)" font-weight="600">LAGGING</text>
+  <text x="860.0" y="570.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="11" fill="rgba(245,166,35,0.5)" font-weight="600">WEAKENING</text>
+  <line x1="198.0" y1="80" x2="198.0" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="198.0" y="598" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">90</text>
+  <line x1="318.6" y1="80" x2="318.6" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="318.6" y="598" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">93</text>
+  <line x1="439.2" y1="80" x2="439.2" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="439.2" y="598" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">96</text>
+  <line x1="559.8" y1="80" x2="559.8" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="559.8" y="598" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">99</text>
+  <line x1="680.4" y1="80" x2="680.4" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="680.4" y="598" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">102</text>
+  <line x1="801.0" y1="80" x2="801.0" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="801.0" y="598" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">105</text>
+  <line x1="921.6" y1="80" x2="921.6" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="921.6" y="598" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">108</text>
+  <line x1="1042.2" y1="80" x2="1042.2" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="1042.2" y="598" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">111</text>
+  <line x1="80" y1="523.3" x2="1120" y2="523.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="72" y="526.3" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">90</text>
+  <line x1="80" y1="465.3" x2="1120" y2="465.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="72" y="468.3" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">93</text>
+  <line x1="80" y1="407.3" x2="1120" y2="407.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="72" y="410.3" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">96</text>
+  <line x1="80" y1="349.3" x2="1120" y2="349.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="72" y="352.3" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">99</text>
+  <line x1="80" y1="291.3" x2="1120" y2="291.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="72" y="294.3" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">102</text>
+  <line x1="80" y1="233.4" x2="1120" y2="233.4" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="72" y="236.4" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">105</text>
+  <line x1="80" y1="175.4" x2="1120" y2="175.4" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="72" y="178.4" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">108</text>
+  <line x1="80" y1="117.4" x2="1120" y2="117.4" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="72" y="120.4" text-anchor="end" font-family="Fira Code,monospace" font-size="9" fill="#5c5d6e">111</text>
+  <text x="600" y="650" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" fill="#9899a8" font-weight="600">RS-RATIO →</text>
+  <text x="14" y="330" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" fill="#9899a8" font-weight="600" transform="rotate(-90 14 330)">RS-MOMENTUM →</text>
+  <circle cx="627.6" cy="317.9" r="7" fill="#00e5a0" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="627.6" cy="317.9" r="7" fill="none" stroke="#00e5a0" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="639.6" y="307.9" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#00e5a0" font-weight="500">Bank</text>
+  <circle cx="544.6" cy="415.3" r="7" fill="#3d9cf5" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="544.6" cy="415.3" r="7" fill="none" stroke="#3d9cf5" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="556.6" y="405.3" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#3d9cf5" font-weight="500">IT</text>
+  <circle cx="586.7" cy="325.1" r="7" fill="#ff4d6d" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="586.7" cy="325.1" r="7" fill="none" stroke="#ff4d6d" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="598.7" y="315.1" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#ff4d6d" font-weight="500">Auto</text>
+  <circle cx="704.3" cy="275.6" r="7" fill="#f5a623" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="704.3" cy="275.6" r="7" fill="none" stroke="#f5a623" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="716.3" y="265.6" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#f5a623" font-weight="500">FMCG</text>
+  <circle cx="633.4" cy="356.5" r="7" fill="#9b7fff" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="633.4" cy="356.5" r="7" fill="none" stroke="#9b7fff" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="645.4" y="346.5" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#9b7fff" font-weight="500">Metal</text>
+  <circle cx="545.9" cy="312.6" r="7" fill="#e879f9" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="545.9" cy="312.6" r="7" fill="none" stroke="#e879f9" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="557.9" y="302.6" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#e879f9" font-weight="500">Pharma</text>
+  <circle cx="631.8" cy="311.4" r="7" fill="#22d3ee" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="631.8" cy="311.4" r="7" fill="none" stroke="#22d3ee" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="643.8" y="301.4" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#22d3ee" font-weight="500">PSU Bank</text>
+  <circle cx="700.6" cy="298.1" r="7" fill="#fb923c" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="700.6" cy="298.1" r="7" fill="none" stroke="#fb923c" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="712.6" y="288.1" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#fb923c" font-weight="500">Realty</text>
+  <circle cx="694.3" cy="282.3" r="7" fill="#a3e635" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="694.3" cy="282.3" r="7" fill="none" stroke="#a3e635" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="706.3" y="272.3" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#a3e635" font-weight="500">Media</text>
+  <circle cx="688.3" cy="280.2" r="7" fill="#f472b6" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="688.3" cy="280.2" r="7" fill="none" stroke="#f472b6" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="700.3" y="270.2" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#f472b6" font-weight="500">Energy</text>
+  <circle cx="606.6" cy="309.6" r="7" fill="#818cf8" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="606.6" cy="309.6" r="7" fill="none" stroke="#818cf8" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="618.6" y="299.6" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#818cf8" font-weight="500">Infra</text>
+  <circle cx="629.3" cy="315.9" r="7" fill="#34d399" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="629.3" cy="315.9" r="7" fill="none" stroke="#34d399" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="641.3" y="305.9" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#34d399" font-weight="500">Commodities</text>
+  <circle cx="686.6" cy="287.1" r="7" fill="#fbbf24" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="686.6" cy="287.1" r="7" fill="none" stroke="#fbbf24" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="698.6" y="277.1" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#fbbf24" font-weight="500">MNC</text>
+  <circle cx="639.2" cy="310.5" r="7" fill="#ef4444" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="639.2" cy="310.5" r="7" fill="none" stroke="#ef4444" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="651.2" y="300.5" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#ef4444" font-weight="500">PSE</text>
+  <circle cx="621.7" cy="326.6" r="7" fill="#06b6d4" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="621.7" cy="326.6" r="7" fill="none" stroke="#06b6d4" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="633.7" y="316.6" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#06b6d4" font-weight="500">Fin Services</text>
+  <circle cx="608.0" cy="335.7" r="7" fill="#8b5cf6" stroke="#08090d" stroke-width="2" opacity="0.9"/>
+  <circle cx="608.0" cy="335.7" r="7" fill="none" stroke="#8b5cf6" stroke-width="0.5" opacity="0.4">
+    <animate attributeName="r" from="7" to="16" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <text x="620.0" y="325.7" text-anchor="start" font-family="Fira Code,monospace" font-size="8" fill="#8b5cf6" font-weight="500">Services</text>
+</svg>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">Sector Rotation Trail — Weekly Movement</div>
+      <svg viewBox="0 0 1200 660" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <defs>
+    <marker id="trailArrow0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#00e5a0" opacity="0.5"/></marker>
+    <marker id="trailArrow1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#3d9cf5" opacity="0.5"/></marker>
+    <marker id="trailArrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#ff4d6d" opacity="0.5"/></marker>
+    <marker id="trailArrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#f5a623" opacity="0.5"/></marker>
+    <marker id="trailArrow4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#9b7fff" opacity="0.5"/></marker>
+    <marker id="trailArrow5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#e879f9" opacity="0.5"/></marker>
+    <marker id="trailArrow6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#22d3ee" opacity="0.5"/></marker>
+    <marker id="trailArrow7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#fb923c" opacity="0.5"/></marker>
+    <marker id="trailArrow8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#a3e635" opacity="0.5"/></marker>
+    <marker id="trailArrow9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#f472b6" opacity="0.5"/></marker>
+    <marker id="trailArrow10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#818cf8" opacity="0.5"/></marker>
+    <marker id="trailArrow11" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#34d399" opacity="0.5"/></marker>
+    <marker id="trailArrow12" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#fbbf24" opacity="0.5"/></marker>
+    <marker id="trailArrow13" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#ef4444" opacity="0.5"/></marker>
+    <marker id="trailArrow14" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#06b6d4" opacity="0.5"/></marker>
+    <marker id="trailArrow15" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#8b5cf6" opacity="0.5"/></marker>
+  </defs>
+  <rect x="600.0" y="80" width="520.0" height="250.0" fill="rgba(0,229,160,0.04)" />
+  <rect x="80" y="80" width="520.0" height="250.0" fill="rgba(61,156,245,0.04)" />
+  <rect x="80" y="330.0" width="520.0" height="250.0" fill="rgba(255,77,109,0.04)" />
+  <rect x="600.0" y="330.0" width="520.0" height="250.0" fill="rgba(245,166,35,0.04)" />
+  <text x="860.0" y="102" text-anchor="middle" font-family="Fira Code,monospace" font-size="11" fill="rgba(0,229,160,0.5)" font-weight="600">LEADING</text>
+  <text x="340.0" y="102" text-anchor="middle" font-family="Fira Code,monospace" font-size="11" fill="rgba(61,156,245,0.5)" font-weight="600">IMPROVING</text>
+  <text x="340.0" y="570.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="11" fill="rgba(255,77,109,0.5)" font-weight="600">LAGGING</text>
+  <text x="860.0" y="570.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="11" fill="rgba(245,166,35,0.5)" font-weight="600">WEAKENING</text>
+  <line x1="198.0" y1="80" x2="198.0" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="318.6" y1="80" x2="318.6" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="439.2" y1="80" x2="439.2" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="559.8" y1="80" x2="559.8" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="680.4" y1="80" x2="680.4" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="801.0" y1="80" x2="801.0" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="921.6" y1="80" x2="921.6" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="1042.2" y1="80" x2="1042.2" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="80" y1="523.3" x2="1120" y2="523.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="80" y1="465.3" x2="1120" y2="465.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="80" y1="407.3" x2="1120" y2="407.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="80" y1="349.3" x2="1120" y2="349.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="80" y1="291.3" x2="1120" y2="291.3" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="80" y1="233.4" x2="1120" y2="233.4" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="80" y1="175.4" x2="1120" y2="175.4" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <line x1="80" y1="117.4" x2="1120" y2="117.4" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+  <text x="600" y="650" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" fill="#9899a8" font-weight="600">RS-RATIO →</text>
+  <text x="14" y="330" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" fill="#9899a8" font-weight="600" transform="rotate(-90 14 330)">RS-MOMENTUM →</text>
+  <circle cx="626.5" cy="336.2" r="2.5" fill="#00e5a0" opacity="0.15"/>
+  <polyline points="626.5,336.2 638.8,309.3 530.6,388.0 541.2,324.3 642.0,282.3" fill="none" stroke="#00e5a0" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow0)"/>
+  <circle cx="642.0" cy="282.3" r="5" fill="#00e5a0" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="233.9" cy="547.4" r="2.5" fill="#3d9cf5" opacity="0.15"/>
+  <polyline points="233.9,547.4 443.7,273.6 644.6,169.9 753.1,278.7 572.4,397.3" fill="none" stroke="#3d9cf5" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow1)"/>
+  <circle cx="572.4" cy="397.3" r="5" fill="#3d9cf5" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="693.0" cy="251.5" r="2.5" fill="#ff4d6d" opacity="0.15"/>
+  <polyline points="693.0,251.5 650.2,332.2 476.5,402.6 590.2,311.2 638.1,300.8" fill="none" stroke="#ff4d6d" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow2)"/>
+  <circle cx="638.1" cy="300.8" r="5" fill="#ff4d6d" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="599.4" cy="328.3" r="2.5" fill="#f5a623" opacity="0.15"/>
+  <polyline points="599.4,328.3 630.7,304.1 610.7,347.9 588.9,345.3 615.2,312.8" fill="none" stroke="#f5a623" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow3)"/>
+  <circle cx="615.2" cy="312.8" r="5" fill="#f5a623" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="590.1" cy="410.4" r="2.5" fill="#9b7fff" opacity="0.15"/>
+  <polyline points="590.1,410.4 727.6,281.1 627.7,335.7 674.1,342.4 729.8,257.4" fill="none" stroke="#9b7fff" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow4)"/>
+  <circle cx="729.8" cy="257.4" r="5" fill="#9b7fff" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="642.5" cy="287.4" r="2.5" fill="#e879f9" opacity="0.15"/>
+  <polyline points="642.5,287.4 755.7,254.4 729.0,306.8 604.3,435.0 498.1,407.2" fill="none" stroke="#e879f9" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow5)"/>
+  <circle cx="498.1" cy="407.2" r="5" fill="#e879f9" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="702.0" cy="341.5" r="2.5" fill="#22d3ee" opacity="0.15"/>
+  <polyline points="702.0,341.5 752.3,260.9 493.4,484.5 527.4,326.2 632.6,298.0" fill="none" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow6)"/>
+  <circle cx="632.6" cy="298.0" r="5" fill="#22d3ee" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="706.9" cy="137.7" r="2.5" fill="#fb923c" opacity="0.15"/>
+  <polyline points="706.9,137.7 464.0,467.7 550.3,320.3 530.4,320.5 805.1,187.3" fill="none" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow7)"/>
+  <circle cx="805.1" cy="187.3" r="5" fill="#fb923c" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="745.4" cy="225.1" r="2.5" fill="#a3e635" opacity="0.15"/>
+  <polyline points="745.4,225.1 551.1,411.8 631.4,302.9 642.5,319.0 680.7,301.2" fill="none" stroke="#a3e635" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow8)"/>
+  <circle cx="680.7" cy="301.2" r="5" fill="#a3e635" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="647.8" cy="295.7" r="2.5" fill="#f472b6" opacity="0.15"/>
+  <polyline points="647.8,295.7 690.9,346.8 737.2,294.5 635.0,377.1 694.8,309.2" fill="none" stroke="#f472b6" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow9)"/>
+  <circle cx="694.8" cy="309.2" r="5" fill="#f472b6" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="679.5" cy="272.8" r="2.5" fill="#818cf8" opacity="0.15"/>
+  <polyline points="679.5,272.8 604.1,374.0 601.2,347.5 615.9,329.9 614.9,338.3" fill="none" stroke="#818cf8" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow10)"/>
+  <circle cx="614.9" cy="338.3" r="5" fill="#818cf8" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="623.6" cy="344.8" r="2.5" fill="#34d399" opacity="0.15"/>
+  <polyline points="623.6,344.8 664.5,331.1 659.9,314.9 631.8,351.2 655.1,314.8" fill="none" stroke="#34d399" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow11)"/>
+  <circle cx="655.1" cy="314.8" r="5" fill="#34d399" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="626.8" cy="332.3" r="2.5" fill="#fbbf24" opacity="0.15"/>
+  <polyline points="626.8,332.3 701.8,293.8 595.7,365.2 585.7,363.7 680.5,280.1" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow12)"/>
+  <circle cx="680.5" cy="280.1" r="5" fill="#fbbf24" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="613.3" cy="343.5" r="2.5" fill="#ef4444" opacity="0.15"/>
+  <polyline points="613.3,343.5 684.3,318.2 686.2,310.3 603.5,382.3 663.5,296.2" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow13)"/>
+  <circle cx="663.5" cy="296.2" r="5" fill="#ef4444" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="658.9" cy="308.6" r="2.5" fill="#06b6d4" opacity="0.15"/>
+  <polyline points="658.9,308.6 620.5,334.6 566.9,368.4 542.6,332.1 652.3,276.9" fill="none" stroke="#06b6d4" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow14)"/>
+  <circle cx="652.3" cy="276.9" r="5" fill="#06b6d4" stroke="#08090d" stroke-width="1.5"/>
+  <circle cx="578.2" cy="349.9" r="2.5" fill="#8b5cf6" opacity="0.15"/>
+  <polyline points="578.2,349.9 581.7,327.9 599.9,318.4 590.2,323.1 614.2,317.9" fill="none" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,4" opacity="0.35" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#trailArrow15)"/>
+  <circle cx="614.2" cy="317.9" r="5" fill="#8b5cf6" stroke="#08090d" stroke-width="1.5"/>
+  <text x="652.0" y="276.3" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#00e5a0" font-weight="500">Bank</text>
+  <text x="582.4" y="391.3" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#3d9cf5" font-weight="500">IT</text>
+  <text x="648.1" y="294.8" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#ff4d6d" font-weight="500">Auto</text>
+  <text x="625.2" y="307.8" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#f5a623" font-weight="500">FMCG</text>
+  <text x="739.8" y="251.4" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#9b7fff" font-weight="500">Metal</text>
+  <text x="508.1" y="401.2" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#e879f9" font-weight="500">Pharma</text>
+  <text x="642.6" y="281.8" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#22d3ee" font-weight="500">PSU Bank</text>
+  <text x="815.1" y="181.3" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#fb923c" font-weight="500">Realty</text>
+  <text x="690.7" y="307.8" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#a3e635" font-weight="500">Media</text>
+  <text x="704.8" y="320.8" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#f472b6" font-weight="500">Energy</text>
+  <text x="624.9" y="332.3" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#818cf8" font-weight="500">Infra</text>
+  <text x="665.1" y="345.3" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#34d399" font-weight="500">Commodities</text>
+  <text x="690.5" y="264.4" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#fbbf24" font-weight="500">MNC</text>
+  <text x="673.5" y="294.8" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#ef4444" font-weight="500">PSE</text>
+  <text x="662.3" y="251.4" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#06b6d4" font-weight="500">Fin Services</text>
+  <text x="624.2" y="319.3" text-anchor="start" font-family="Fira Code,monospace" font-size="8.5" fill="#8b5cf6" font-weight="500">Services</text>
+</svg>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="section" style="padding:14px 22px;">
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:#00e5a0;"></span>Bank <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#3d9cf5;"></span>IT <span class="legend-q" style="color:#ff4d6d">[Lagging]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#ff4d6d;"></span>Auto <span class="legend-q" style="color:#3d9cf5">[Improving]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#f5a623;"></span>FMCG <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#9b7fff;"></span>Metal <span class="legend-q" style="color:#f5a623">[Weakening]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#e879f9;"></span>Pharma <span class="legend-q" style="color:#3d9cf5">[Improving]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#22d3ee;"></span>PSU Bank <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#fb923c;"></span>Realty <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#a3e635;"></span>Media <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#f472b6;"></span>Energy <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#818cf8;"></span>Infra <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#34d399;"></span>Commodities <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#fbbf24;"></span>MNC <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#ef4444;"></span>PSE <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#06b6d4;"></span>Fin Services <span class="legend-q" style="color:#00e5a0">[Leading]</span></span>
+<span class="legend-item"><span class="legend-dot" style="background:#8b5cf6;"></span>Services <span class="legend-q" style="color:#f5a623">[Weakening]</span></span>
+
+    </div>
+  </div>
+
+  <!-- PERFORMANCE BARS -->
+  <div class="perf-grid" style="margin-bottom:24px;">
+    <div class="chart-card">
+      <div class="chart-label">1-Month Sector Performance</div>
+      <svg viewBox="0 0 720 532" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <line x1="410.0" y1="0" x2="410.0" y2="532" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="3,3"/>
+  <rect x="410.0" y="10.0" width="240.0" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="28.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Realty</text>
+  <text x="658.0" y="28.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+12.3%</text>
+  <rect x="410.0" y="42.0" width="201.7" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="60.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Media</text>
+  <text x="619.7" y="60.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+10.3%</text>
+  <rect x="410.0" y="74.0" width="201.3" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="92.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">IT</text>
+  <text x="619.3" y="92.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+10.3%</text>
+  <rect x="410.0" y="106.0" width="200.8" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="124.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Metal</text>
+  <text x="618.8" y="124.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+10.3%</text>
+  <rect x="410.0" y="138.0" width="182.0" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="156.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Energy</text>
+  <text x="600.0" y="156.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+9.3%</text>
+  <rect x="410.0" y="170.0" width="157.9" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="188.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">MNC</text>
+  <text x="575.9" y="188.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+8.1%</text>
+  <rect x="410.0" y="202.0" width="132.6" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="220.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Commodities</text>
+  <text x="550.6" y="220.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+6.8%</text>
+  <rect x="410.0" y="234.0" width="121.2" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="252.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">PSE</text>
+  <text x="539.2" y="252.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+6.2%</text>
+  <rect x="410.0" y="266.0" width="117.1" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="284.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Auto</text>
+  <text x="535.1" y="284.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+6.0%</text>
+  <rect x="410.0" y="298.0" width="110.1" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="316.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">FMCG</text>
+  <text x="528.1" y="316.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+5.6%</text>
+  <rect x="410.0" y="330.0" width="107.4" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="348.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Infra</text>
+  <text x="525.4" y="348.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+5.5%</text>
+  <rect x="410.0" y="362.0" width="94.1" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="380.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">PSU Bank</text>
+  <text x="512.1" y="380.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+4.8%</text>
+  <rect x="410.0" y="394.0" width="90.3" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="412.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Services</text>
+  <text x="508.3" y="412.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+4.6%</text>
+  <rect x="410.0" y="426.0" width="88.7" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="444.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Bank</text>
+  <text x="506.7" y="444.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+4.5%</text>
+  <rect x="410.0" y="458.0" width="85.4" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="476.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Fin Services</text>
+  <text x="503.4" y="476.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+4.4%</text>
+  <rect x="396.3" y="490.0" width="13.7" height="28" rx="4" fill="#ff4d6d" opacity="0.7"/>
+  <text x="162" y="508.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Pharma</text>
+  <text x="388.3" y="508.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#ff4d6d" font-weight="600">-0.7%</text>
+</svg>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">3-Month Sector Performance</div>
+      <svg viewBox="0 0 720 532" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <line x1="410.0" y1="0" x2="410.0" y2="532" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="3,3"/>
+  <rect x="410.0" y="10.0" width="201.6" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="28.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Energy</text>
+  <text x="619.6" y="28.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+14.3%</text>
+  <rect x="410.0" y="42.0" width="183.8" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="60.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Metal</text>
+  <text x="601.8" y="60.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+13.0%</text>
+  <rect x="410.0" y="74.0" width="112.8" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="92.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">PSE</text>
+  <text x="530.8" y="92.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+8.0%</text>
+  <rect x="410.0" y="106.0" width="95.7" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="124.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Commodities</text>
+  <text x="513.7" y="124.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+6.8%</text>
+  <rect x="410.0" y="138.0" width="64.8" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="156.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">MNC</text>
+  <text x="482.8" y="156.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+4.6%</text>
+  <rect x="410.0" y="170.0" width="46.3" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="188.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">PSU Bank</text>
+  <text x="464.3" y="188.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+3.3%</text>
+  <rect x="410.0" y="202.0" width="29.2" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="220.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Media</text>
+  <text x="447.2" y="220.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+2.1%</text>
+  <rect x="410.0" y="234.0" width="19.2" height="28" rx="4" fill="#00e5a0" opacity="0.7"/>
+  <text x="162" y="252.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Infra</text>
+  <text x="437.2" y="252.0" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#00e5a0" font-weight="600">+1.4%</text>
+  <rect x="402.3" y="266.0" width="7.7" height="28" rx="4" fill="#ff4d6d" opacity="0.7"/>
+  <text x="162" y="284.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Pharma</text>
+  <text x="394.3" y="284.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#ff4d6d" font-weight="600">-0.5%</text>
+  <rect x="372.4" y="298.0" width="37.6" height="28" rx="4" fill="#ff4d6d" opacity="0.7"/>
+  <text x="162" y="316.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Fin Services</text>
+  <text x="364.4" y="316.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#ff4d6d" font-weight="600">-2.7%</text>
+  <rect x="362.9" y="330.0" width="47.1" height="28" rx="4" fill="#ff4d6d" opacity="0.7"/>
+  <text x="162" y="348.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">FMCG</text>
+  <text x="354.9" y="348.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#ff4d6d" font-weight="600">-3.3%</text>
+  <rect x="357.8" y="362.0" width="52.2" height="28" rx="4" fill="#ff4d6d" opacity="0.7"/>
+  <text x="162" y="380.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Bank</text>
+  <text x="349.8" y="380.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#ff4d6d" font-weight="600">-3.7%</text>
+  <rect x="344.8" y="394.0" width="65.2" height="28" rx="4" fill="#ff4d6d" opacity="0.7"/>
+  <text x="162" y="412.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Auto</text>
+  <text x="336.8" y="412.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#ff4d6d" font-weight="600">-4.6%</text>
+  <rect x="330.5" y="426.0" width="79.5" height="28" rx="4" fill="#ff4d6d" opacity="0.7"/>
+  <text x="162" y="444.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Services</text>
+  <text x="322.5" y="444.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#ff4d6d" font-weight="600">-5.6%</text>
+  <rect x="312.7" y="458.0" width="97.3" height="28" rx="4" fill="#ff4d6d" opacity="0.7"/>
+  <text x="162" y="476.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Realty</text>
+  <text x="304.7" y="476.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#ff4d6d" font-weight="600">-6.9%</text>
+  <rect x="170.0" y="490.0" width="240.0" height="28" rx="4" fill="#ff4d6d" opacity="0.7"/>
+  <text x="162" y="508.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">IT</text>
+  <text x="162.0" y="508.0" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#ff4d6d" font-weight="600">-17.0%</text>
+</svg>
+    </div>
+  </div>
+
+  <!-- MARKET CAP INDICES -->
+  <div class="section">
+    <div class="section-title">Market Breadth — Cap-wise Index Performance</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left;">Index</th>
+            <th>Level</th>
+            <th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>6M</th><th>1Y</th>
+            <th>From High</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Nifty 50</td>
+          <td style="color:var(--text2)">24,577</td>
+          <td><span style="color:var(--green)">+0.9%</span></td>
+          <td><span style="color:var(--green)">+3.1%</span></td>
+          <td><span style="color:var(--green)">+4.2%</span></td>
+          <td><span style="color:var(--red)">-4.5%</span></td>
+          <td><span style="color:var(--red)">-2.6%</span></td>
+          <td><span style="color:var(--text3)">—</span></td>
+          <td style="color:var(--text2)">-6.7%</td>
+          <td style="color:var(--red)">Downtrend</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Nifty 100</td>
+          <td style="color:var(--text2)">25,464</td>
+          <td><span style="color:var(--green)">+0.8%</span></td>
+          <td><span style="color:var(--green)">+3.5%</span></td>
+          <td><span style="color:var(--green)">+5.1%</span></td>
+          <td><span style="color:var(--red)">-3.2%</span></td>
+          <td><span style="color:var(--red)">-1.8%</span></td>
+          <td><span style="color:var(--text3)">—</span></td>
+          <td style="color:var(--text2)">-5.4%</td>
+          <td style="color:var(--red)">Downtrend</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Nifty 200</td>
+          <td style="color:var(--text2)">13,971</td>
+          <td><span style="color:var(--green)">+0.8%</span></td>
+          <td><span style="color:var(--green)">+3.7%</span></td>
+          <td><span style="color:var(--green)">+5.8%</span></td>
+          <td><span style="color:var(--red)">-2.4%</span></td>
+          <td><span style="color:var(--red)">-1.0%</span></td>
+          <td><span style="color:var(--text3)">—</span></td>
+          <td style="color:var(--text2)">-4.8%</td>
+          <td style="color:var(--red)">Downtrend</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Nifty Midcap 100</td>
+          <td style="color:var(--text2)">70,824</td>
+          <td><span style="color:var(--green)">+0.7%</span></td>
+          <td><span style="color:var(--green)">+5.5%</span></td>
+          <td><span style="color:var(--green)">+8.9%</span></td>
+          <td><span style="color:var(--green)">+3.4%</span></td>
+          <td><span style="color:var(--green)">+3.1%</span></td>
+          <td><span style="color:var(--text3)">—</span></td>
+          <td style="color:var(--text2)">+0.0%</td>
+          <td style="color:var(--red)">Downtrend</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Nifty Midcap 150</td>
+          <td style="color:var(--text2)">59,791</td>
+          <td><span style="color:var(--red)">-0.2%</span></td>
+          <td><span style="color:var(--green)">+3.4%</span></td>
+          <td><span style="color:var(--green)">+9.5%</span></td>
+          <td><span style="color:var(--green)">+0.1%</span></td>
+          <td><span style="color:var(--green)">+2.3%</span></td>
+          <td><span style="color:var(--text3)">—</span></td>
+          <td style="color:var(--text2)">-2.7%</td>
+          <td style="color:var(--red)">Downtrend</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTOR TABLE -->
+  <div class="section">
+    <div class="section-title">Sector Outlook Summary</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left;">Sector</th>
+            <th>Quadrant</th>
+            <th>Trend</th>
+            <th>1D</th>
+            <th>1W</th>
+            <th>1M</th>
+            <th>3M</th>
+            <th>6M</th>
+            <th>From High</th>
+            <th>Vol (30d)</th>
+            <th>Outlook</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Realty</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+2.1%</span></td>
+          <td><span style="color:var(--green)">+5.5%</span></td>
+          <td><span style="color:var(--green)">+12.3%</span></td>
+          <td><span style="color:var(--red)">-6.9%</span></td>
+          <td><span style="color:var(--red)">-10.9%</span></td>
+          <td style="color:var(--text2)">-23.2%</td>
+          <td style="color:var(--text2)">39%</td>
+          <td style="color:var(--green);font-weight:600;">Moderately Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Media</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+1.0%</span></td>
+          <td><span style="color:var(--green)">+6.1%</span></td>
+          <td><span style="color:var(--green)">+10.3%</span></td>
+          <td><span style="color:var(--green)">+2.1%</span></td>
+          <td><span style="color:var(--red)">-7.6%</span></td>
+          <td style="color:var(--text2)">-18.6%</td>
+          <td style="color:var(--text2)">31%</td>
+          <td style="color:var(--green);font-weight:600;">Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Energy</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+0.4%</span></td>
+          <td><span style="color:var(--green)">+5.8%</span></td>
+          <td><span style="color:var(--green)">+9.3%</span></td>
+          <td><span style="color:var(--green)">+14.3%</span></td>
+          <td><span style="color:var(--green)">+11.1%</span></td>
+          <td style="color:var(--text2)">+0.0%</td>
+          <td style="color:var(--text2)">21%</td>
+          <td style="color:var(--green);font-weight:600;">Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">MNC</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+1.4%</span></td>
+          <td><span style="color:var(--green)">+5.9%</span></td>
+          <td><span style="color:var(--green)">+8.1%</span></td>
+          <td><span style="color:var(--green)">+4.6%</span></td>
+          <td><span style="color:var(--green)">+6.0%</span></td>
+          <td style="color:var(--text2)">-1.0%</td>
+          <td style="color:var(--text2)">27%</td>
+          <td style="color:var(--green);font-weight:600;">Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Commodities</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+0.1%</span></td>
+          <td><span style="color:var(--green)">+4.1%</span></td>
+          <td><span style="color:var(--green)">+6.8%</span></td>
+          <td><span style="color:var(--green)">+6.8%</span></td>
+          <td><span style="color:var(--green)">+10.9%</span></td>
+          <td style="color:var(--text2)">+0.0%</td>
+          <td style="color:var(--text2)">24%</td>
+          <td style="color:var(--green);font-weight:600;">Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">PSE</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--red)">-0.0%</span></td>
+          <td><span style="color:var(--green)">+4.6%</span></td>
+          <td><span style="color:var(--green)">+6.2%</span></td>
+          <td><span style="color:var(--green)">+8.0%</span></td>
+          <td><span style="color:var(--green)">+7.1%</span></td>
+          <td style="color:var(--text2)">-0.0%</td>
+          <td style="color:var(--text2)">22%</td>
+          <td style="color:var(--green);font-weight:600;">Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">FMCG</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+2.6%</span></td>
+          <td><span style="color:var(--green)">+6.8%</span></td>
+          <td><span style="color:var(--green)">+5.6%</span></td>
+          <td><span style="color:var(--red)">-3.3%</span></td>
+          <td><span style="color:var(--red)">-7.5%</span></td>
+          <td style="color:var(--text2)">-11.6%</td>
+          <td style="color:var(--text2)">23%</td>
+          <td style="color:var(--green);font-weight:600;">Moderately Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Infra</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+0.3%</span></td>
+          <td><span style="color:var(--green)">+3.4%</span></td>
+          <td><span style="color:var(--green)">+5.5%</span></td>
+          <td><span style="color:var(--green)">+1.4%</span></td>
+          <td><span style="color:var(--green)">+1.8%</span></td>
+          <td style="color:var(--text2)">-4.2%</td>
+          <td style="color:var(--text2)">25%</td>
+          <td style="color:var(--green);font-weight:600;">Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">PSU Bank</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+0.8%</span></td>
+          <td><span style="color:var(--green)">+3.4%</span></td>
+          <td><span style="color:var(--green)">+4.8%</span></td>
+          <td><span style="color:var(--green)">+3.3%</span></td>
+          <td><span style="color:var(--green)">+17.1%</span></td>
+          <td style="color:var(--text2)">-8.8%</td>
+          <td style="color:var(--text2)">39%</td>
+          <td style="color:var(--green);font-weight:600;">Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Bank</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+1.4%</span></td>
+          <td><span style="color:var(--green)">+3.2%</span></td>
+          <td><span style="color:var(--green)">+4.5%</span></td>
+          <td><span style="color:var(--red)">-3.7%</span></td>
+          <td><span style="color:var(--green)">+1.3%</span></td>
+          <td style="color:var(--text2)">-6.8%</td>
+          <td style="color:var(--text2)">35%</td>
+          <td style="color:var(--green);font-weight:600;">Moderately Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Fin Services</td>
+          <td><span style="color:#00e5a0;font-weight:600;">Leading</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+1.2%</span></td>
+          <td><span style="color:var(--green)">+3.1%</span></td>
+          <td><span style="color:var(--green)">+4.4%</span></td>
+          <td><span style="color:var(--red)">-2.7%</span></td>
+          <td><span style="color:var(--green)">+0.0%</span></td>
+          <td style="color:var(--text2)">-5.7%</td>
+          <td style="color:var(--text2)">34%</td>
+          <td style="color:var(--green);font-weight:600;">Moderately Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Auto</td>
+          <td><span style="color:#3d9cf5;font-weight:600;">Improving</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+0.4%</span></td>
+          <td><span style="color:var(--green)">+2.1%</span></td>
+          <td><span style="color:var(--green)">+6.0%</span></td>
+          <td><span style="color:var(--red)">-4.6%</span></td>
+          <td><span style="color:var(--red)">-0.4%</span></td>
+          <td style="color:var(--text2)">-7.9%</td>
+          <td style="color:var(--text2)">41%</td>
+          <td style="color:var(--green);font-weight:600;">Moderately Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Pharma</td>
+          <td><span style="color:#3d9cf5;font-weight:600;">Improving</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--red)">-0.1%</span></td>
+          <td><span style="color:var(--green)">+1.5%</span></td>
+          <td><span style="color:var(--red)">-0.7%</span></td>
+          <td><span style="color:var(--red)">-0.5%</span></td>
+          <td><span style="color:var(--green)">+1.0%</span></td>
+          <td style="color:var(--text2)">-3.9%</td>
+          <td style="color:var(--text2)">18%</td>
+          <td style="color:var(--amber);font-weight:600;">Neutral</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Metal</td>
+          <td><span style="color:#f5a623;font-weight:600;">Weakening</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+0.0%</span></td>
+          <td><span style="color:var(--green)">+4.1%</span></td>
+          <td><span style="color:var(--green)">+10.3%</span></td>
+          <td><span style="color:var(--green)">+13.0%</span></td>
+          <td><span style="color:var(--green)">+25.1%</span></td>
+          <td style="color:var(--text2)">-0.3%</td>
+          <td style="color:var(--text2)">32%</td>
+          <td style="color:var(--green);font-weight:600;">Moderately Bullish</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">Services</td>
+          <td><span style="color:#f5a623;font-weight:600;">Weakening</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+1.1%</span></td>
+          <td><span style="color:var(--green)">+3.1%</span></td>
+          <td><span style="color:var(--green)">+4.6%</span></td>
+          <td><span style="color:var(--red)">-5.6%</span></td>
+          <td><span style="color:var(--red)">-4.0%</span></td>
+          <td style="color:var(--text2)">-7.2%</td>
+          <td style="color:var(--text2)">27%</td>
+          <td style="color:var(--amber);font-weight:600;">Neutral</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;color:#fff;font-weight:600;">IT</td>
+          <td><span style="color:#ff4d6d;font-weight:600;">Lagging</span></td>
+          <td style="color:var(--red)">Downtrend</td>
+          <td><span style="color:var(--green)">+0.5%</span></td>
+          <td><span style="color:var(--green)">+3.5%</span></td>
+          <td><span style="color:var(--green)">+10.3%</span></td>
+          <td><span style="color:var(--red)">-17.0%</span></td>
+          <td><span style="color:var(--red)">-10.2%</span></td>
+          <td style="color:var(--text2)">-19.6%</td>
+          <td style="color:var(--text2)">24%</td>
+          <td style="color:var(--amber);font-weight:600;">Neutral</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTOR LEADERS -->
+  <div class="section">
+    <div class="section-title">Sector Leaders — Top 3 Stocks per Sector</div>
+    <div class="leaders-grid">
+      
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Realty</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">DLF LIMITED</td>
+                <td style="color:var(--text2)">₹608</td>
+                <td><span style="color:var(--green)">+6.9%</span></td>
+                <td><span style="color:var(--green)">+10.9%</span></td>
+                <td><span style="color:var(--red)">-1.9%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">GODREJ PROPERTIES LTD</td>
+                <td style="color:var(--text2)">₹1,805</td>
+                <td><span style="color:var(--green)">+5.8%</span></td>
+                <td><span style="color:var(--green)">+13.9%</span></td>
+                <td><span style="color:var(--red)">-7.4%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">OBEROI REALTY LIMITED</td>
+                <td style="color:var(--text2)">₹1,724</td>
+                <td><span style="color:var(--green)">+2.3%</span></td>
+                <td><span style="color:var(--green)">+18.2%</span></td>
+                <td><span style="color:var(--green)">+12.0%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Media</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">ZEE ENTERTAINMENT ENT LTD</td>
+                <td style="color:var(--text2)">₹87</td>
+                <td><span style="color:var(--green)">+8.6%</span></td>
+                <td><span style="color:var(--green)">+15.2%</span></td>
+                <td><span style="color:var(--red)">-14.7%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">SUN TV NETWORK LIMITED</td>
+                <td style="color:var(--text2)">₹645</td>
+                <td><span style="color:var(--green)">+4.4%</span></td>
+                <td><span style="color:var(--green)">+13.7%</span></td>
+                <td><span style="color:var(--red)">-0.1%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">PVR INOX LIMITED</td>
+                <td style="color:var(--text2)">₹973</td>
+                <td><span style="color:var(--green)">+4.1%</span></td>
+                <td><span style="color:var(--red)">-3.0%</span></td>
+                <td><span style="color:var(--green)">+11.9%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Energy</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">RELIANCE INDUSTRIES LTD</td>
+                <td style="color:var(--text2)">₹1,353</td>
+                <td><span style="color:var(--green)">+2.9%</span></td>
+                <td><span style="color:var(--red)">-3.2%</span></td>
+                <td><span style="color:var(--green)">+11.5%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">OIL AND NATURAL GAS CORP.</td>
+                <td style="color:var(--text2)">₹283</td>
+                <td><span style="color:var(--red)">-1.5%</span></td>
+                <td><span style="color:var(--green)">+6.9%</span></td>
+                <td><span style="color:var(--green)">+29.5%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">NTPC LTD</td>
+                <td style="color:var(--text2)">₹396</td>
+                <td><span style="color:var(--green)">+2.6%</span></td>
+                <td><span style="color:var(--green)">+3.4%</span></td>
+                <td><span style="color:var(--green)">+12.9%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">MNC</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">MARUTI SUZUKI INDIA LTD.</td>
+                <td style="color:var(--text2)">₹13,461</td>
+                <td><span style="color:var(--green)">+2.9%</span></td>
+                <td><span style="color:var(--green)">+3.8%</span></td>
+                <td><span style="color:var(--green)">+17.3%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">HINDUSTAN UNILEVER LTD.</td>
+                <td style="color:var(--text2)">₹2,311</td>
+                <td><span style="color:var(--green)">+8.6%</span></td>
+                <td><span style="color:var(--green)">+7.1%</span></td>
+                <td><span style="color:var(--red)">-0.5%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">SIEMENS LTD</td>
+                <td style="color:var(--text2)">₹3,722</td>
+                <td><span style="color:var(--green)">+11.3%</span></td>
+                <td><span style="color:var(--green)">+17.3%</span></td>
+                <td><span style="color:var(--green)">+37.0%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Commodities</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">OIL AND NATURAL GAS CORP.</td>
+                <td style="color:var(--text2)">₹283</td>
+                <td><span style="color:var(--red)">-1.5%</span></td>
+                <td><span style="color:var(--green)">+6.9%</span></td>
+                <td><span style="color:var(--green)">+29.5%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">COAL INDIA LTD</td>
+                <td style="color:var(--text2)">₹443</td>
+                <td><span style="color:var(--green)">+1.9%</span></td>
+                <td><span style="color:var(--red)">-4.1%</span></td>
+                <td><span style="color:var(--green)">+21.0%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">TATA STEEL LIMITED</td>
+                <td style="color:var(--text2)">₹212</td>
+                <td><span style="color:var(--green)">+2.7%</span></td>
+                <td><span style="color:var(--green)">+8.5%</span></td>
+                <td><span style="color:var(--green)">+62.6%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">PSE</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">NTPC LTD</td>
+                <td style="color:var(--text2)">₹396</td>
+                <td><span style="color:var(--green)">+2.6%</span></td>
+                <td><span style="color:var(--green)">+3.4%</span></td>
+                <td><span style="color:var(--green)">+12.9%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">COAL INDIA LTD</td>
+                <td style="color:var(--text2)">₹443</td>
+                <td><span style="color:var(--green)">+1.9%</span></td>
+                <td><span style="color:var(--red)">-4.1%</span></td>
+                <td><span style="color:var(--green)">+21.0%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">BHARAT ELECTRONICS LTD</td>
+                <td style="color:var(--text2)">₹452</td>
+                <td><span style="color:var(--green)">+2.3%</span></td>
+                <td><span style="color:var(--green)">+2.8%</span></td>
+                <td><span style="color:var(--green)">+59.5%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">FMCG</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">HINDUSTAN UNILEVER LTD.</td>
+                <td style="color:var(--text2)">₹2,311</td>
+                <td><span style="color:var(--green)">+8.6%</span></td>
+                <td><span style="color:var(--green)">+7.1%</span></td>
+                <td><span style="color:var(--red)">-0.5%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">ITC LTD</td>
+                <td style="color:var(--text2)">₹310</td>
+                <td><span style="color:var(--green)">+3.7%</span></td>
+                <td><span style="color:var(--green)">+1.6%</span></td>
+                <td><span style="color:var(--red)">-23.6%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">NESTLE INDIA LIMITED</td>
+                <td style="color:var(--text2)">₹1,380</td>
+                <td><span style="color:var(--green)">+12.5%</span></td>
+                <td><span style="color:var(--green)">+14.3%</span></td>
+                <td><span style="color:var(--green)">+18.0%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Infra</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">LARSEN & TOUBRO LTD.</td>
+                <td style="color:var(--text2)">₹4,075</td>
+                <td><span style="color:var(--green)">+3.1%</span></td>
+                <td><span style="color:var(--green)">+15.0%</span></td>
+                <td><span style="color:var(--green)">+32.0%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">ADANI PORT & SEZ LTD</td>
+                <td style="color:var(--text2)">₹1,594</td>
+                <td><span style="color:var(--green)">+8.8%</span></td>
+                <td><span style="color:var(--green)">+16.7%</span></td>
+                <td><span style="color:var(--green)">+37.6%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">ULTRATECH CEMENT LIMITED</td>
+                <td style="color:var(--text2)">₹12,039</td>
+                <td><span style="color:var(--green)">+4.7%</span></td>
+                <td><span style="color:var(--green)">+8.3%</span></td>
+                <td><span style="color:var(--green)">+5.3%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">PSU Bank</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">STATE BANK OF INDIA</td>
+                <td style="color:var(--text2)">₹1,112</td>
+                <td><span style="color:var(--green)">+4.5%</span></td>
+                <td><span style="color:var(--green)">+4.4%</span></td>
+                <td><span style="color:var(--green)">+50.5%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">PUNJAB NATIONAL BANK</td>
+                <td style="color:var(--text2)">₹114</td>
+                <td><span style="color:var(--green)">+3.1%</span></td>
+                <td><span style="color:var(--green)">+1.9%</span></td>
+                <td><span style="color:var(--green)">+22.2%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">BANK OF BARODA</td>
+                <td style="color:var(--text2)">₹284</td>
+                <td><span style="color:var(--green)">+3.0%</span></td>
+                <td><span style="color:var(--green)">+0.3%</span></td>
+                <td><span style="color:var(--green)">+26.4%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Bank</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">HDFC BANK LTD</td>
+                <td style="color:var(--text2)">₹812</td>
+                <td><span style="color:var(--green)">+2.1%</span></td>
+                <td><span style="color:var(--red)">-4.0%</span></td>
+                <td><span style="color:var(--red)">-8.9%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">ICICI BANK LTD.</td>
+                <td style="color:var(--text2)">₹1,388</td>
+                <td><span style="color:var(--green)">+2.8%</span></td>
+                <td><span style="color:var(--green)">+7.7%</span></td>
+                <td><span style="color:var(--green)">+6.7%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">STATE BANK OF INDIA</td>
+                <td style="color:var(--text2)">₹1,112</td>
+                <td><span style="color:var(--green)">+4.5%</span></td>
+                <td><span style="color:var(--green)">+4.4%</span></td>
+                <td><span style="color:var(--green)">+50.5%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Fin Services</span>
+            <span class="lb-quad" style="color:#00e5a0">Leading</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">HDFC BANK LTD</td>
+                <td style="color:var(--text2)">₹812</td>
+                <td><span style="color:var(--green)">+2.1%</span></td>
+                <td><span style="color:var(--red)">-4.0%</span></td>
+                <td><span style="color:var(--red)">-8.9%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">ICICI BANK LTD.</td>
+                <td style="color:var(--text2)">₹1,388</td>
+                <td><span style="color:var(--green)">+2.8%</span></td>
+                <td><span style="color:var(--green)">+7.7%</span></td>
+                <td><span style="color:var(--green)">+6.7%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">BAJAJ FINANCE LIMITED</td>
+                <td style="color:var(--text2)">₹939</td>
+                <td><span style="color:var(--green)">+4.4%</span></td>
+                <td><span style="color:var(--green)">+8.1%</span></td>
+                <td><span style="color:var(--green)">+5.9%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Auto</span>
+            <span class="lb-quad" style="color:#3d9cf5">Improving</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">MAHINDRA & MAHINDRA LTD</td>
+                <td style="color:var(--text2)">₹3,247</td>
+                <td><span style="color:var(--green)">+0.8%</span></td>
+                <td><span style="color:var(--green)">+3.8%</span></td>
+                <td><span style="color:var(--green)">+26.9%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">BAJAJ AUTO LIMITED</td>
+                <td style="color:var(--text2)">₹9,793</td>
+                <td><span style="color:var(--red)">-0.2%</span></td>
+                <td><span style="color:var(--green)">+7.5%</span></td>
+                <td><span style="color:var(--green)">+29.2%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">MARUTI SUZUKI INDIA LTD.</td>
+                <td style="color:var(--text2)">₹13,461</td>
+                <td><span style="color:var(--green)">+2.9%</span></td>
+                <td><span style="color:var(--green)">+3.8%</span></td>
+                <td><span style="color:var(--green)">+17.3%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Pharma</span>
+            <span class="lb-quad" style="color:#3d9cf5">Improving</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">SUN PHARMACEUTICAL IND L</td>
+                <td style="color:var(--text2)">₹1,665</td>
+                <td><span style="color:var(--green)">+0.8%</span></td>
+                <td><span style="color:var(--red)">-7.2%</span></td>
+                <td><span style="color:var(--red)">-0.4%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">DR. REDDY S LABORATORIES</td>
+                <td style="color:var(--text2)">₹1,221</td>
+                <td><span style="color:var(--red)">-1.2%</span></td>
+                <td><span style="color:var(--red)">-4.9%</span></td>
+                <td><span style="color:var(--green)">+10.7%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">CIPLA LTD</td>
+                <td style="color:var(--text2)">₹1,232</td>
+                <td><span style="color:var(--green)">+1.8%</span></td>
+                <td><span style="color:var(--red)">-3.9%</span></td>
+                <td><span style="color:var(--red)">-14.9%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Metal</span>
+            <span class="lb-quad" style="color:#f5a623">Weakening</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">TATA STEEL LIMITED</td>
+                <td style="color:var(--text2)">₹212</td>
+                <td><span style="color:var(--green)">+2.7%</span></td>
+                <td><span style="color:var(--green)">+8.5%</span></td>
+                <td><span style="color:var(--green)">+62.6%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">JSW STEEL LIMITED</td>
+                <td style="color:var(--text2)">₹1,280</td>
+                <td><span style="color:var(--green)">+6.3%</span></td>
+                <td><span style="color:var(--green)">+9.6%</span></td>
+                <td><span style="color:var(--green)">+29.6%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">HINDALCO  INDUSTRIES  LTD</td>
+                <td style="color:var(--text2)">₹1,022</td>
+                <td><span style="color:var(--green)">+4.4%</span></td>
+                <td><span style="color:var(--green)">+9.1%</span></td>
+                <td><span style="color:var(--green)">+71.4%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">Services</span>
+            <span class="lb-quad" style="color:#f5a623">Weakening</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">TATA CONSULTANCY SERV LT</td>
+                <td style="color:var(--text2)">₹2,610</td>
+                <td><span style="color:var(--green)">+5.6%</span></td>
+                <td><span style="color:var(--green)">+9.1%</span></td>
+                <td><span style="color:var(--red)">-16.4%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">HDFC BANK LTD</td>
+                <td style="color:var(--text2)">₹812</td>
+                <td><span style="color:var(--green)">+2.1%</span></td>
+                <td><span style="color:var(--red)">-4.0%</span></td>
+                <td><span style="color:var(--red)">-8.9%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">BHARTI AIRTEL LIMITED</td>
+                <td style="color:var(--text2)">₹1,855</td>
+                <td><span style="color:var(--red)">-0.8%</span></td>
+                <td><span style="color:var(--green)">+1.5%</span></td>
+                <td><span style="color:var(--green)">+6.5%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+        <div class="leader-block">
+          <div class="lb-header">
+            <span class="lb-name">IT</span>
+            <span class="lb-quad" style="color:#ff4d6d">Lagging</span>
+          </div>
+          <table class="leader-table">
+            <thead><tr>
+              <th style="text-align:left;">Stock</th>
+              <th>Price</th><th>1W</th><th>1M</th><th>1Y</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:left;color:#fff;">TATA CONSULTANCY SERV LT</td>
+                <td style="color:var(--text2)">₹2,610</td>
+                <td><span style="color:var(--green)">+5.6%</span></td>
+                <td><span style="color:var(--green)">+9.1%</span></td>
+                <td><span style="color:var(--red)">-16.4%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">INFOSYS LIMITED</td>
+                <td style="color:var(--text2)">₹1,313</td>
+                <td><span style="color:var(--green)">+2.9%</span></td>
+                <td><span style="color:var(--green)">+6.5%</span></td>
+                <td><span style="color:var(--red)">-4.1%</span></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;color:#fff;">HCL TECHNOLOGIES LTD</td>
+                <td style="color:var(--text2)">₹1,441</td>
+                <td><span style="color:var(--green)">+0.8%</span></td>
+                <td><span style="color:var(--green)">+9.1%</span></td>
+                <td><span style="color:var(--green)">+7.3%</span></td>
+              </tr></tbody>
+          </table>
+        </div>
+    </div>
+  </div>
+
+  <!-- QUADRANT DETAILED ANALYSIS -->
+  <div class="section">
+    <div class="section-title">Detailed Sector Analysis by Quadrant</div>
+    
+        <div class="quadrant-block" style="border-left:3px solid #00e5a0;">
+          <h3 class="qb-title" style="color:#00e5a0;">
+            <span class="qb-dot" style="background:#00e5a0;"></span>
+            Leading Quadrant
+            <span class="qb-count">11 sectors</span>
+          </h3>
+          <p class="qb-desc">These sectors have <b>strong relative strength AND rising momentum</b> vs Nifty 50. They are outperforming the benchmark and the outperformance is accelerating. These are the strongest sectors in the market — ideal for trend-following strategies. Sectors typically enter this quadrant from 'Improving' after sustained relative outperformance.</p>
+          
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Bank</span>
+                <span class="sdc-verdict" style="color:var(--green)">Moderately Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 100.69 | RS-Momentum: 100.63</div>
+              <div class="sdc-desc">Banking sector — SBI, HDFC Bank, ICICI Bank, Kotak, Axis etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Elevated 30-day annualized volatility of 35% — higher risk.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty FMCG</span>
+                <span class="sdc-verdict" style="color:var(--green)">Moderately Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 102.59 | RS-Momentum: 102.81</div>
+              <div class="sdc-desc">Fast Moving Consumer Goods — HUL, ITC, Nestlé, Dabur, Britannia etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+5.6%</b> shows near-term strength.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty PSU Bank</span>
+                <span class="sdc-verdict" style="color:var(--green)">Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 100.79 | RS-Momentum: 100.96</div>
+              <div class="sdc-desc">Public Sector Banks — SBI, PNB, Bank of Baroda, Canara Bank etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Positive returns across both 1M and 3M timeframes show sustained momentum.</li><li>Elevated 30-day annualized volatility of 39% — higher risk.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Realty</span>
+                <span class="sdc-verdict" style="color:var(--green)">Moderately Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 102.50 | RS-Momentum: 101.65</div>
+              <div class="sdc-desc">Real Estate — DLF, Godrej Properties, Oberoi Realty, Brigade etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+12.3%</b> shows near-term strength.</li><li>Significantly off 52-week high (-23.2%) — potential value zone or structural weakness.</li><li>Outperforming NIFTY 50 by <b>+8.1%</b> over the past month.</li><li>Elevated 30-day annualized volatility of 39% — higher risk.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Media</span>
+                <span class="sdc-verdict" style="color:var(--green)">Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 102.35 | RS-Momentum: 102.47</div>
+              <div class="sdc-desc">Media & Entertainment — Zee, Sun TV, PVR INOX, Saregama etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+10.3%</b> shows near-term strength.</li><li>Positive returns across both 1M and 3M timeframes show sustained momentum.</li><li>Outperforming NIFTY 50 by <b>+6.1%</b> over the past month.</li><li>Elevated 30-day annualized volatility of 31% — higher risk.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Energy</span>
+                <span class="sdc-verdict" style="color:var(--green)">Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 102.20 | RS-Momentum: 102.58</div>
+              <div class="sdc-desc">Energy — Reliance, ONGC, NTPC, Power Grid, BPCL, IOC etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+9.3%</b> shows near-term strength.</li><li>Positive returns across both 1M and 3M timeframes show sustained momentum.</li><li>Trading near 52-week high (+0.0% from peak) — strong relative positioning.</li><li>Outperforming NIFTY 50 by <b>+5.1%</b> over the past month.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Infra</span>
+                <span class="sdc-verdict" style="color:var(--green)">Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 100.16 | RS-Momentum: 101.06</div>
+              <div class="sdc-desc">Infrastructure — L&T, Adani Ports, UltraTech, Bharti Airtel etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+5.5%</b> shows near-term strength.</li><li>Positive returns across both 1M and 3M timeframes show sustained momentum.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Commodities</span>
+                <span class="sdc-verdict" style="color:var(--green)">Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 100.73 | RS-Momentum: 100.73</div>
+              <div class="sdc-desc">Commodities — ONGC, Coal India, Tata Steel, UPL, Hindalco etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+6.8%</b> shows near-term strength.</li><li>Positive returns across both 1M and 3M timeframes show sustained momentum.</li><li>Trading near 52-week high (+0.0% from peak) — strong relative positioning.</li><li>Outperforming NIFTY 50 by <b>+2.6%</b> over the past month.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty MNC</span>
+                <span class="sdc-verdict" style="color:var(--green)">Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 102.15 | RS-Momentum: 102.22</div>
+              <div class="sdc-desc">Multinational Corporations — Maruti, HUL, Siemens, ABB, Honeywell etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+8.1%</b> shows near-term strength.</li><li>Positive returns across both 1M and 3M timeframes show sustained momentum.</li><li>Trading near 52-week high (-1.0% from peak) — strong relative positioning.</li><li>Outperforming NIFTY 50 by <b>+3.9%</b> over the past month.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty PSE</span>
+                <span class="sdc-verdict" style="color:var(--green)">Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 100.98 | RS-Momentum: 101.01</div>
+              <div class="sdc-desc">Public Sector Enterprises — NTPC, Coal India, BEL, HAL, ONGC etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+6.2%</b> shows near-term strength.</li><li>Positive returns across both 1M and 3M timeframes show sustained momentum.</li><li>Trading near 52-week high (-0.0% from peak) — strong relative positioning.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Fin Services</span>
+                <span class="sdc-verdict" style="color:var(--green)">Moderately Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 100.54 | RS-Momentum: 100.18</div>
+              <div class="sdc-desc">Financial Services — Banks, NBFCs, Insurance, AMCs etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Leading</b> quadrant — both relative strength and momentum vs NIFTY 50 are above average.</li><li>Price is below key moving averages — bearish structure.</li><li>Elevated 30-day annualized volatility of 34% — higher risk.</li></ul>
+            </div>
+        </div>
+        <div class="quadrant-block" style="border-left:3px solid #3d9cf5;">
+          <h3 class="qb-title" style="color:#3d9cf5;">
+            <span class="qb-dot" style="background:#3d9cf5;"></span>
+            Improving Quadrant
+            <span class="qb-count">2 sectors</span>
+          </h3>
+          <p class="qb-desc">These sectors have <b>rising momentum but relative strength is still below average</b>. They were previously underperforming but are now gaining ground. This is where <b>early opportunities</b> emerge — sectors moving from Lagging to Improving are showing signs of a turnaround. If momentum sustains, they will rotate into the Leading quadrant.</p>
+          
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Auto</span>
+                <span class="sdc-verdict" style="color:var(--green)">Moderately Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 99.67 | RS-Momentum: 100.26</div>
+              <div class="sdc-desc">Automobile & ancillaries — M&M, Tata Motors, Maruti, Bajaj Auto etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Improving</b> quadrant — momentum is picking up though relative strength is still below NIFTY 50.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+6.0%</b> shows near-term strength.</li><li>Elevated 30-day annualized volatility of 41% — higher risk.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Pharma</span>
+                <span class="sdc-verdict" style="color:var(--amber)">Neutral</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 98.66 | RS-Momentum: 100.90</div>
+              <div class="sdc-desc">Pharmaceuticals — Sun Pharma, Dr. Reddy's, Cipla, Lupin, Divis Labs etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Improving</b> quadrant — momentum is picking up though relative strength is still below NIFTY 50.</li><li>Price is below key moving averages — bearish structure.</li><li>Negative returns across both 1M and 3M periods — persistent weakness.</li><li>Underperforming NIFTY 50 by <b>-4.9%</b> over the past month.</li></ul>
+            </div>
+        </div>
+        <div class="quadrant-block" style="border-left:3px solid #f5a623;">
+          <h3 class="qb-title" style="color:#f5a623;">
+            <span class="qb-dot" style="background:#f5a623;"></span>
+            Weakening Quadrant
+            <span class="qb-count">2 sectors</span>
+          </h3>
+          <p class="qb-desc">These sectors still have <b>above-average relative strength but momentum is declining</b>. They were previously leading but are starting to lose steam. This is a <b>caution zone</b> — while still relatively strong, the deceleration suggests the best of the move may be over. Without a momentum reversal, they will rotate into Lagging.</p>
+          
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Metal</span>
+                <span class="sdc-verdict" style="color:var(--green)">Moderately Bullish</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 100.83 | RS-Momentum: 98.63</div>
+              <div class="sdc-desc">Metals & Mining — Tata Steel, JSW Steel, Hindalco, Vedanta etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Weakening</b> quadrant — while relative strength is still above average, momentum is fading.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+10.3%</b> shows near-term strength.</li><li>Positive returns across both 1M and 3M timeframes show sustained momentum.</li><li>Trading near 52-week high (-0.3% from peak) — strong relative positioning.</li><li>Outperforming NIFTY 50 by <b>+6.1%</b> over the past month.</li><li>Elevated 30-day annualized volatility of 32% — higher risk.</li></ul>
+            </div>
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty Services</span>
+                <span class="sdc-verdict" style="color:var(--amber)">Neutral</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 100.20 | RS-Momentum: 99.71</div>
+              <div class="sdc-desc">Services Sector — IT, Financial Services, Telecom, Hospitality etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Weakening</b> quadrant — while relative strength is still above average, momentum is fading.</li><li>Price is below key moving averages — bearish structure.</li></ul>
+            </div>
+        </div>
+        <div class="quadrant-block" style="border-left:3px solid #ff4d6d;">
+          <h3 class="qb-title" style="color:#ff4d6d;">
+            <span class="qb-dot" style="background:#ff4d6d;"></span>
+            Lagging Quadrant
+            <span class="qb-count">1 sector</span>
+          </h3>
+          <p class="qb-desc">These sectors have <b>weak relative strength AND declining momentum</b>. They are underperforming the benchmark and the underperformance is worsening. These are the weakest sectors — best avoided for fresh longs. However, when momentum starts improving (rotation toward Improving), it can signal a bottoming process.</p>
+          
+            <div class="sector-detail-card">
+              <div class="sdc-header">
+                <span class="sdc-name">Nifty IT</span>
+                <span class="sdc-verdict" style="color:var(--amber)">Neutral</span>
+              </div>
+              <div class="sdc-rs">RS-Ratio: 98.62 | RS-Momentum: 95.59</div>
+              <div class="sdc-desc">Information Technology — TCS, Infosys, Wipro, HCL Tech, Tech Mahindra etc.</div>
+              <ul class="sdc-reasons"><li>Sector is in the <b>Lagging</b> quadrant — both relative strength and momentum are below NIFTY 50.</li><li>Price is below key moving averages — bearish structure.</li><li>Strong 1-month return of <b>+10.3%</b> shows near-term strength.</li><li>Outperforming NIFTY 50 by <b>+6.1%</b> over the past month.</li></ul>
+            </div>
+        </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="report-footer">
+    Generated on 2026-04-21 · Data via Yahoo Finance · Benchmark: NIFTY 50<br>
+    Relative Rotation Graph methodology based on Julius de Kempenaer's RRG framework<br>
+    Not investment advice · For informational purposes only
+  </div>
+
+</div>
+</body>
+</html>

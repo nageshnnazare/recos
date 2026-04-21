@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE F&amp;O Index Outlook · 2026-04-21 18:58 IST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#08090d; --bg2:#0d0e14; --bg3:#12131a; --bg4:#181922;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
+  --green:#00e5a0; --green-dim:rgba(0,229,160,0.12);
+  --red:#ff4d6d; --red-dim:rgba(255,77,109,0.12);
+  --amber:#f5a623; --blue:#3d9cf5; --blue-dim:rgba(61,156,245,0.12);
+  --text:#e8e9f0; --text2:#9899a8; --text3:#5c5d6e;
+  --mono:'Fira Code',monospace; --sans:'DM Sans',sans-serif;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:13px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+.page { max-width:1260px; margin:0 auto; padding:28px 22px 48px; }
+
+/* Header */
+.hdr { padding:24px 28px; background:linear-gradient(135deg,#0f1018,#131420 55%,#0d1020); border:1px solid var(--border2); border-radius:16px; position:relative; overflow:hidden; margin-bottom:20px; }
+.hdr::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--blue),transparent); opacity:.45; }
+.hdr-badge { font-family:var(--mono); font-size:10px; font-weight:600; color:var(--blue); letter-spacing:2px; }
+.hdr-badge span { background:var(--blue-dim); border:1px solid rgba(61,156,245,.2); border-radius:4px; padding:2px 8px; font-size:9px; margin-left:6px; }
+.hdr-title { font-family:var(--mono); font-size:24px; font-weight:700; color:#fff; margin-top:6px; }
+.hdr-sub { font-family:var(--mono); font-size:10px; color:var(--text2); margin-top:6px; max-width:900px; line-height:1.7; }
+
+/* Index tabs */
+.idx-tabs { display:flex; gap:6px; margin-bottom:16px; }
+.idx-tab { font-family:var(--mono); font-size:11px; padding:7px 18px; border:1px solid var(--border2); border-radius:8px; background:var(--bg2); color:var(--text2); cursor:pointer; transition:.15s; }
+.idx-tab:hover { background:var(--bg3); color:var(--text); }
+.idx-tab.active { background:var(--blue-dim); color:var(--blue); border-color:rgba(61,156,245,.3); }
+.idx-block { display:none; background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:20px; }
+.idx-block.active { display:block; }
+
+/* Sub-tabs */
+.sub-tabs { display:flex; gap:4px; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px; }
+.sub-tab { font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:6px 14px; border:1px solid transparent; border-radius:6px; background:none; color:var(--text3); cursor:pointer; transition:.15s; }
+.sub-tab:hover { color:var(--text2); background:var(--bg3); }
+.sub-tab.active { color:var(--blue); background:var(--blue-dim); border-color:rgba(61,156,245,.2); }
+.sub-panel { display:none; }
+.sub-panel.active { display:block; }
+
+/* KPI grid */
+.ic-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px; }
+.ic-label { font-family:var(--mono); font-size:15px; font-weight:700; color:#fff; }
+.ic-sub { font-size:11px; color:var(--text3); margin-top:2px; }
+.ic-badges { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
+.badge { font-family:var(--mono); font-size:9px; padding:3px 8px; border-radius:999px; border:1px solid var(--border2); color:var(--text2); white-space:nowrap; }
+.tone-up { color:var(--green); border-color:rgba(0,229,160,.35); background:var(--green-dim); }
+.tone-down { color:var(--red); border-color:rgba(255,77,109,.35); background:var(--red-dim); }
+.tone-n { color:var(--amber); border-color:rgba(245,166,35,.3); background:rgba(245,166,35,.1); }
+.kpi-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:12px; }
+@media(max-width:900px) { .kpi-grid { grid-template-columns:repeat(3,1fr); } }
+.kpi { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.kpi-l { font-family:var(--mono); font-size:8px; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.kpi-v { font-family:var(--mono); font-size:17px; font-weight:700; margin-top:2px; }
+.kpi-s { font-size:9px; color:var(--text3); margin-top:2px; }
+.note { font-size:11px; color:var(--amber); background:rgba(245,166,35,.08); border:1px solid rgba(245,166,35,.2); border-radius:8px; padding:10px 12px; margin:10px 0; line-height:1.55; }
+.sm-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:1.5px; text-transform:uppercase; }
+.reasons { margin-left:18px; color:var(--text2); font-size:12px; }
+.reasons li { margin-bottom:5px; }
+
+/* Option chain table */
+.chain-wrap { max-height:520px; overflow:auto; border:1px solid var(--border); border-radius:10px; }
+.chain-wrap::-webkit-scrollbar { width:5px; height:5px; }
+.chain-wrap::-webkit-scrollbar-track { background:var(--bg3); }
+.chain-wrap::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+.chain-tbl { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; white-space:nowrap; }
+.chain-tbl thead { position:sticky; top:0; z-index:2; }
+.chain-tbl th { padding:7px 8px; background:var(--bg4); color:var(--text3); font-weight:500; font-size:9px; letter-spacing:.5px; text-transform:uppercase; border-bottom:2px solid var(--border2); }
+.th-calls { text-align:center; color:var(--green); border-bottom:2px solid rgba(0,229,160,.25); background:rgba(0,229,160,.04); }
+.th-puts { text-align:center; color:var(--red); border-bottom:2px solid rgba(255,77,109,.25); background:rgba(255,77,109,.04); }
+.th-strike { text-align:center; background:var(--bg4); }
+.chain-tbl td { padding:5px 8px; text-align:right; border-bottom:1px solid var(--border); }
+.chain-tbl .strike-col { text-align:center; font-weight:700; color:#fff; background:var(--bg4); position:sticky; left:0; }
+.chain-tbl .atm-row { background:rgba(61,156,245,.06); }
+.chain-tbl .atm-row .strike-col { color:var(--blue); background:rgba(61,156,245,.12); }
+.pos { color:var(--green); }
+.neg { color:var(--red); }
+
+/* Strategy */
+.strat-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+.strat-name { font-family:var(--mono); font-size:16px; font-weight:700; color:#fff; margin-bottom:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.strat-bias { font-size:9px; }
+.strat-legs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.strat-leg { font-family:var(--mono); font-size:11px; padding:6px 12px; border-radius:8px; border:1px solid var(--border2); }
+.leg-buy { background:var(--green-dim); color:var(--green); border-color:rgba(0,229,160,.25); }
+.leg-sell { background:var(--red-dim); color:var(--red); border-color:rgba(255,77,109,.25); }
+.sl-action { font-weight:700; }
+.strat-meta { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
+@media(max-width:700px) { .strat-meta { grid-template-columns:repeat(2,1fr); } }
+.strat-lbl { display:block; font-family:var(--mono); font-size:8px; letter-spacing:1px; text-transform:uppercase; color:var(--text3); }
+.strat-val { font-family:var(--mono); font-size:14px; font-weight:700; }
+.strat-reason { font-size:12px; color:var(--text2); line-height:1.65; }
+
+/* P&L simulator */
+.pnl-sim { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px; }
+.pnl-sim canvas { width:100%; height:auto; display:block; border-radius:6px; }
+.pnl-legend { display:flex; flex-wrap:wrap; gap:14px; margin-top:8px; font-family:var(--mono); font-size:9px; color:var(--text3); }
+.pl-item { display:flex; align-items:center; gap:5px; }
+.pl-swatch { width:12px; height:3px; border-radius:2px; display:inline-block; }
+.pnl-controls { display:flex; align-items:center; gap:12px; margin-top:10px; font-family:var(--mono); font-size:11px; color:var(--text2); }
+.pnl-controls input[type=range] { flex:1; accent-color:var(--blue); height:6px; }
+.pnl-readout { font-weight:700; min-width:200px; }
+
+/* News */
+.news-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:18px 20px; margin-top:18px; }
+.news-item { padding:10px 0; border-bottom:1px solid var(--border); }
+.news-item:last-child { border-bottom:none; }
+.nw-link { color:var(--blue); text-decoration:none; font-size:13px; font-weight:600; }
+.nw-link:hover { text-decoration:underline; }
+.nw-meta { font-family:var(--mono); font-size:9px; color:var(--text3); margin-top:3px; }
+.report-footer { text-align:center; padding:24px 8px 8px; font-family:var(--mono); font-size:9px; color:var(--text3); line-height:1.8; }
+
+/* Live mode */
+.live-dot { display:inline-block; width:8px; height:8px; background:#ff4444; border-radius:50%; margin-right:4px; vertical-align:middle; animation:pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
+.live-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:14px; padding:10px 16px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; font-family:var(--mono); font-size:10px; color:var(--text2); }
+.live-bar .lb-status { display:flex; align-items:center; gap:6px; }
+.live-bar .lb-ts { color:var(--text3); }
+.live-bar select { background:var(--bg4); color:var(--text); border:1px solid var(--border2); border-radius:5px; padding:3px 8px; font-family:var(--mono); font-size:10px; }
+.live-bar button { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(61,156,245,.25); border-radius:5px; padding:3px 12px; font-family:var(--mono); font-size:10px; cursor:pointer; }
+.live-bar button:hover { background:rgba(61,156,245,.25); }
+.chain-tbl .flash-up { animation:flashG .6s; } .chain-tbl .flash-dn { animation:flashR .6s; }
+@keyframes flashG { 0%{ background:rgba(0,229,160,.25); } 100%{ background:transparent; } }
+@keyframes flashR { 0%{ background:rgba(255,77,109,.25); } 100%{ background:transparent; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="hdr">
+    <div class="hdr-badge">F&amp;O INDEX OUTLOOK <span>NSE INDIA</span> </div>
+    <div class="hdr-title">NIFTY 50 &amp; NIFTY BANK — Options positioning &amp; strategy</div>
+    <div class="hdr-sub">
+      Option chain via Groww · Cash breadth via NSE · Strategy recommended from OI + IV + breadth heuristics ·
+      Interactive P&amp;L plot is at-expiry payoff — not investment advice.
+    </div>
+  </div>
+
+  <div id="live-bar-slot"></div>
+  <div class="idx-tabs"><button class="idx-tab active" data-idx="nifty">NIFTY 50</button><button class="idx-tab" data-idx="banknifty">NIFTY BANK</button></div>
+  
+<div class="idx-block active" data-idx="nifty">
+  <!-- sub-tabs -->
+  <div class="sub-tabs">
+    <button class="sub-tab active" data-panel="analysis-nifty">Analysis</button>
+    <button class="sub-tab" data-panel="chain-nifty">Option chain</button>
+    <button class="sub-tab" data-panel="strategy-nifty">Strategy</button>
+  </div>
+
+  <!-- ANALYSIS panel -->
+  <div class="sub-panel active" id="analysis-nifty">
+    <div class="ic-head">
+      <div><div class="ic-label">NIFTY 50</div><div class="ic-sub">NIFTY · 2026-04-21</div></div>
+      <div class="ic-badges"><span class="badge" id="chain-badge-nifty">CHAIN OK</span><span class="badge tone-up" id="verdict-badge-nifty">Bias: upward drift (F&amp;O + breadth)</span></div>
+    </div>
+    <div class="kpi-grid" id="kpi-nifty">
+      <div class="kpi"><div class="kpi-l">Spot</div><div class="kpi-v" data-kpi="spot">24,576.60</div></div>
+      <div class="kpi"><div class="kpi-l">Index chg</div><div class="kpi-v" data-kpi="index_change_pct">+0.87%</div></div>
+      <div class="kpi"><div class="kpi-l">PCR (OI)</div><div class="kpi-v" data-kpi="pcr_oi">1.547</div></div>
+      <div class="kpi"><div class="kpi-l">Max pain</div><div class="kpi-v" data-kpi="max_pain">24,550</div><div class="kpi-s" data-kpi="max_pain_dist">Δ +0.11%</div></div>
+      <div class="kpi"><div class="kpi-l">Breadth A/D</div><div class="kpi-v" data-kpi="ad">35 / 15</div></div>
+      <div class="kpi"><div class="kpi-l">Confidence</div><div class="kpi-v" data-kpi="confidence">Medium</div></div>
+    </div>
+    <div id="notes-nifty"></div>
+    <div class="section-mini"><div class="sm-title">Reasoning</div><ol class="reasons" id="reasons-nifty"><li>Put–call ratio (OI) = 1.547. Low PCR suggests crowded calls (mean-reversion risk); high PCR indicates hedging/bearish positioning.</li><li>Max pain ≈ 24,550 vs spot ≈ 24,577 (+0.11%). Near expiry, price tends to gravitate toward max pain.</li><li>Session ΔOI: calls +305,364, puts +1,286,732. Fresh OI in the direction of the move implies trend conviction; against the move implies hedging.</li><li>ATM (24,600): CE OI 342,764 vs PE OI 147,818, CE IV 31.5% / PE IV 31.5%.</li><li>Cash index breadth: 35 up / 15 down (A/D ≈ 2.33).</li></ol></div>
+  </div>
+
+  <!-- OPTION CHAIN panel -->
+  <div class="sub-panel" id="chain-nifty">
+    <div class="sm-title" style="margin-bottom:8px">Full option chain · 2026-04-21 · Lot 65</div>
+    <div class="chain-wrap">
+      <table class="chain-tbl">
+        <thead><tr>
+          <th colspan="7" class="th-calls">CALLS</th>
+          <th class="th-strike">STRIKE</th>
+          <th colspan="7" class="th-puts">PUTS</th>
+        </tr><tr>
+          <th>OI</th><th>ΔOI</th><th>IV</th><th>LTP</th><th>Chg</th><th>Delta</th><th>Theta</th>
+          <th></th>
+          <th>Theta</th><th>Delta</th><th>Chg</th><th>LTP</th><th>IV</th><th>ΔOI</th><th>OI</th>
+        </tr></thead>
+        <tbody id="chain-tbody-nifty"><tr><td>14</td><td class="pos">0</td><td>0.0</td><td>1930.00</td><td class="pos">+219.40</td><td>0.0000</td><td>-7.35</td><td class="strike-col">22,650</td><td>-0.05</td><td>0.0000</td><td class="neg">-0.95</td><td>0.05</td><td>0.0</td><td class="neg">-792</td><td>3,590</td></tr><tr><td>419</td><td class="neg">-41</td><td>0.0</td><td>1875.00</td><td class="pos">+218.40</td><td>0.0000</td><td>-8.35</td><td class="strike-col">22,700</td><td>-0.05</td><td>0.0000</td><td class="neg">-0.95</td><td>0.05</td><td>0.0</td><td class="neg">-9,650</td><td>8,678</td></tr><tr><td>74</td><td class="neg">-3</td><td>0.0</td><td>1831.15</td><td class="pos">+231.15</td><td>0.0000</td><td>-8.50</td><td class="strike-col">22,750</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.00</td><td>0.05</td><td>0.0</td><td class="neg">-698</td><td>4,872</td></tr><tr><td>377</td><td class="neg">-138</td><td>0.0</td><td>1780.00</td><td class="pos">+209.00</td><td>0.0000</td><td>-7.35</td><td class="strike-col">22,800</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.10</td><td>0.05</td><td>0.0</td><td class="neg">-25,311</td><td>15,361</td></tr><tr><td>61</td><td class="neg">-9</td><td>0.0</td><td>1729.95</td><td class="pos">+191.00</td><td>0.0000</td><td>-7.65</td><td class="strike-col">22,850</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.10</td><td>0.05</td><td>0.0</td><td class="neg">-5,276</td><td>4,284</td></tr><tr><td>313</td><td class="neg">-135</td><td>0.0</td><td>1679.85</td><td class="pos">+253.35</td><td>0.0000</td><td>-7.20</td><td class="strike-col">22,900</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.05</td><td>0.05</td><td>0.0</td><td class="neg">-8,299</td><td>16,607</td></tr><tr><td>82</td><td class="neg">-16</td><td>0.0</td><td>1587.00</td><td class="pos">+236.80</td><td>0.0000</td><td>35.65</td><td class="strike-col">22,950</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.20</td><td>0.05</td><td>0.0</td><td class="neg">-3,192</td><td>5,146</td></tr><tr><td>3,704</td><td class="neg">-345</td><td>0.0</td><td>1579.85</td><td class="pos">+233.40</td><td>0.0000</td><td>-5.35</td><td class="strike-col">23,000</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.30</td><td>0.05</td><td>0.0</td><td class="neg">-35,127</td><td>77,808</td></tr><tr><td>63</td><td class="neg">-23</td><td>0.0</td><td>1530.70</td><td class="pos">+243.65</td><td>0.0000</td><td>-6.35</td><td class="strike-col">23,050</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.30</td><td>0.05</td><td>0.0</td><td class="neg">-803</td><td>7,690</td></tr><tr><td>484</td><td class="neg">-69</td><td>0.0</td><td>1477.00</td><td class="pos">+222.95</td><td>0.0000</td><td>-7.35</td><td class="strike-col">23,100</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.40</td><td>0.05</td><td>0.0</td><td class="neg">-5,577</td><td>20,976</td></tr><tr><td>92</td><td class="neg">-30</td><td>0.0</td><td>1426.00</td><td class="pos">+201.00</td><td>0.0000</td><td>-3.35</td><td class="strike-col">23,150</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.40</td><td>0.05</td><td>0.0</td><td class="neg">-2,420</td><td>9,220</td></tr><tr><td>712</td><td class="neg">-211</td><td>0.0</td><td>1377.05</td><td class="pos">+254.05</td><td>0.0000</td><td>-4.40</td><td class="strike-col">23,200</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.60</td><td>0.05</td><td>0.0</td><td class="neg">-15,315</td><td>48,967</td></tr><tr><td>155</td><td class="neg">-11</td><td>0.0</td><td>1331.00</td><td class="pos">+254.90</td><td>0.0000</td><td>-8.35</td><td class="strike-col">23,250</td><td>-0.05</td><td>0.0000</td><td class="neg">-1.90</td><td>0.05</td><td>0.0</td><td class="neg">-6,991</td><td>12,310</td></tr><tr><td>789</td><td class="neg">-349</td><td>0.0</td><td>1277.50</td><td class="pos">+239.55</td><td>0.0000</td><td>-7.25</td><td class="strike-col">23,300</td><td>-0.05</td><td>0.0000</td><td class="neg">-2.10</td><td>0.05</td><td>0.0</td><td class="neg">-21,542</td><td>47,316</td></tr><tr><td>232</td><td class="neg">-63</td><td>0.0</td><td>1230.35</td><td class="pos">+277.55</td><td>0.0000</td><td>-7.70</td><td class="strike-col">23,350</td><td>-0.05</td><td>0.0000</td><td class="neg">-2.40</td><td>0.05</td><td>0.0</td><td class="neg">-13,702</td><td>13,546</td></tr><tr><td>1,059</td><td class="neg">-271</td><td>0.0</td><td>1179.10</td><td class="pos">+233.85</td><td>0.0000</td><td>-6.75</td><td class="strike-col">23,400</td><td>-0.05</td><td>0.0000</td><td class="neg">-2.85</td><td>0.05</td><td>0.0</td><td class="neg">-17,033</td><td>48,185</td></tr><tr><td>387</td><td class="neg">-60</td><td>0.0</td><td>1130.05</td><td class="pos">+247.85</td><td>0.0000</td><td>-7.40</td><td class="strike-col">23,450</td><td>-0.05</td><td>0.0000</td><td class="neg">-3.50</td><td>0.05</td><td>0.0</td><td class="pos">9,795</td><td>38,093</td></tr><tr><td>3,536</td><td class="neg">-2,026</td><td>0.0</td><td>1078.95</td><td class="pos">+235.45</td><td>0.0000</td><td>-6.45</td><td class="strike-col">23,500</td><td>-0.05</td><td>0.0000</td><td class="neg">-4.35</td><td>0.05</td><td>0.0</td><td class="pos">18,201</td><td>154,980</td></tr><tr><td>717</td><td class="neg">-199</td><td>0.0</td><td>1029.45</td><td class="pos">+238.30</td><td>0.0000</td><td>-6.80</td><td class="strike-col">23,550</td><td>-0.05</td><td>0.0000</td><td class="neg">-5.15</td><td>0.05</td><td>0.0</td><td class="pos">14,933</td><td>35,658</td></tr><tr><td>2,157</td><td class="neg">-391</td><td>0.0</td><td>978.85</td><td class="pos">+242.05</td><td>0.0000</td><td>-6.15</td><td class="strike-col">23,600</td><td>-0.05</td><td>0.0000</td><td class="neg">-6.45</td><td>0.05</td><td>0.0</td><td class="pos">13,883</td><td>72,675</td></tr><tr><td>835</td><td class="neg">-159</td><td>0.0</td><td>929.95</td><td class="pos">+248.45</td><td>0.0000</td><td>-5.50</td><td class="strike-col">23,650</td><td>-0.05</td><td>0.0000</td><td class="neg">-7.85</td><td>0.05</td><td>0.0</td><td class="pos">16,970</td><td>42,673</td></tr><tr><td>3,121</td><td class="neg">-1,327</td><td>0.0</td><td>876.00</td><td class="pos">+236.90</td><td>0.0000</td><td>-5.85</td><td class="strike-col">23,700</td><td>-0.05</td><td>0.0000</td><td class="neg">-9.65</td><td>0.05</td><td>0.0</td><td class="pos">20,189</td><td>98,594</td></tr><tr><td>769</td><td class="neg">-827</td><td>0.0</td><td>828.00</td><td class="pos">+229.35</td><td>0.0000</td><td>-3.40</td><td class="strike-col">23,750</td><td>-0.05</td><td>0.0000</td><td class="neg">-12.15</td><td>0.05</td><td>0.0</td><td class="pos">9,472</td><td>47,112</td></tr><tr><td>3,089</td><td class="neg">-3,545</td><td>0.0</td><td>778.65</td><td class="pos">+229.20</td><td>0.0000</td><td>-5.35</td><td class="strike-col">23,800</td><td>-0.05</td><td>0.0000</td><td class="neg">-15.15</td><td>0.05</td><td>0.0</td><td class="pos">19,446</td><td>109,855</td></tr><tr><td>1,843</td><td class="neg">-1,642</td><td>0.0</td><td>728.00</td><td class="pos">+220.05</td><td>0.0000</td><td>-5.65</td><td class="strike-col">23,850</td><td>-0.05</td><td>0.0000</td><td class="neg">-18.55</td><td>0.05</td><td>0.0</td><td class="pos">730</td><td>27,068</td></tr><tr><td>4,132</td><td class="neg">-2,888</td><td>0.0</td><td>678.15</td><td class="pos">+233.35</td><td>0.0000</td><td>-3.30</td><td class="strike-col">23,900</td><td>-0.05</td><td>0.0000</td><td class="neg">-23.15</td><td>0.05</td><td>0.0</td><td class="pos">9,072</td><td>64,766</td></tr><tr><td>1,372</td><td class="neg">-561</td><td>0.0</td><td>628.25</td><td class="pos">+203.15</td><td>0.0000</td><td>-5.20</td><td class="strike-col">23,950</td><td>-0.05</td><td>0.0000</td><td class="neg">-29.20</td><td>0.05</td><td>0.0</td><td class="pos">12,702</td><td>40,155</td></tr><tr><td>6,127</td><td class="neg">-9,122</td><td>0.0</td><td>577.00</td><td class="pos">+207.75</td><td>0.0000</td><td>-4.90</td><td class="strike-col">24,000</td><td>-0.05</td><td>0.0000</td><td class="neg">-36.25</td><td>0.05</td><td>0.0</td><td class="pos">16,577</td><td>144,502</td></tr><tr><td>1,578</td><td class="neg">-493</td><td>0.0</td><td>527.95</td><td class="pos">+196.15</td><td>0.0000</td><td>-3.50</td><td class="strike-col">24,050</td><td>-0.05</td><td>0.0000</td><td class="neg">-44.85</td><td>0.05</td><td>0.0</td><td class="pos">30,058</td><td>58,511</td></tr><tr><td>3,967</td><td class="neg">-5,141</td><td>465.4</td><td>477.35</td><td class="pos">+185.85</td><td>0.9989</td><td>-5.05</td><td class="strike-col">24,100</td><td>-0.05</td><td>-0.0011</td><td class="neg">-53.95</td><td>0.05</td><td>465.4</td><td class="pos">5,529</td><td>83,228</td></tr><tr><td>2,157</td><td class="neg">-2,205</td><td>420.1</td><td>425.65</td><td class="pos">+170.65</td><td>0.9988</td><td>-3.40</td><td class="strike-col">24,150</td><td>-0.05</td><td>-0.0012</td><td class="neg">-66.65</td><td>0.05</td><td>420.1</td><td class="pos">28,063</td><td>66,398</td></tr><tr><td>10,601</td><td class="neg">-13,495</td><td>374.4</td><td>376.05</td><td class="pos">+158.80</td><td>0.9986</td><td>-3.70</td><td class="strike-col">24,200</td><td>-0.05</td><td>-0.0014</td><td class="neg">-80.35</td><td>0.05</td><td>374.4</td><td class="pos">32,778</td><td>117,133</td></tr><tr><td>5,930</td><td class="neg">-4,601</td><td>328.4</td><td>327.15</td><td class="pos">+140.10</td><td>0.9984</td><td>-3.65</td><td class="strike-col">24,250</td><td>-0.05</td><td>-0.0016</td><td class="neg">-96.20</td><td>0.05</td><td>328.4</td><td class="pos">58,765</td><td>97,832</td></tr><tr><td>18,373</td><td class="neg">-32,449</td><td>282.0</td><td>275.75</td><td class="pos">+125.45</td><td>0.9982</td><td>-3.60</td><td class="strike-col">24,300</td><td>-0.05</td><td>-0.0018</td><td class="neg">-117.10</td><td>0.05</td><td>282.0</td><td class="pos">60,974</td><td>149,074</td></tr><tr><td>12,770</td><td class="neg">-19,218</td><td>235.0</td><td>226.05</td><td class="pos">+101.65</td><td>0.9979</td><td>-3.55</td><td class="strike-col">24,350</td><td>-0.05</td><td>-0.0021</td><td class="neg">-138.15</td><td>0.05</td><td>235.0</td><td class="pos">58,471</td><td>90,453</td></tr><tr><td>24,979</td><td class="neg">-56,069</td><td>187.3</td><td>176.10</td><td class="pos">+70.15</td><td>0.9974</td><td>-4.15</td><td class="strike-col">24,400</td><td>-0.05</td><td>-0.0026</td><td class="neg">-160.15</td><td>0.05</td><td>187.3</td><td class="pos">149,221</td><td>193,672</td></tr><tr><td>35,010</td><td class="neg">-13,135</td><td>138.6</td><td>126.20</td><td class="pos">+40.30</td><td>0.9965</td><td>-3.65</td><td class="strike-col">24,450</td><td>-0.05</td><td>-0.0035</td><td class="neg">-185.65</td><td>0.05</td><td>138.6</td><td class="pos">159,291</td><td>173,234</td></tr><tr><td>81,542</td><td class="neg">-28,191</td><td>88.2</td><td>76.40</td><td class="pos">+11.25</td><td>0.9947</td><td>-3.80</td><td class="strike-col">24,500</td><td>-0.05</td><td>-0.0053</td><td class="neg">-220.40</td><td>0.05</td><td>88.2</td><td class="pos">280,408</td><td>307,026</td></tr><tr class="atm-row"><td>131,799</td><td class="pos">97,080</td><td>34.6</td><td>26.60</td><td class="neg">-24.40</td><td>0.9877</td><td>-3.75</td><td class="strike-col">24,550</td><td>-0.05</td><td>-0.0123</td><td class="neg">-253.15</td><td>0.05</td><td>34.6</td><td class="pos">402,399</td><td>404,911</td></tr><tr class="atm-row"><td>342,764</td><td class="pos">251,446</td><td>31.5</td><td>0.05</td><td class="neg">-38.35</td><td>0.0134</td><td>-0.05</td><td class="strike-col">24,600</td><td>4.00</td><td>-0.9866</td><td class="neg">-269.05</td><td>23.35</td><td>31.5</td><td class="pos">143,596</td><td>147,818</td></tr><tr><td>141,626</td><td class="pos">103,825</td><td>85.2</td><td>0.05</td><td class="neg">-29.55</td><td>0.0054</td><td>-0.05</td><td class="strike-col">24,650</td><td>4.30</td><td>-0.9946</td><td class="neg">-257.80</td><td>73.10</td><td>85.2</td><td class="pos">19,070</td><td>19,948</td></tr><tr><td>141,327</td><td class="pos">76,417</td><td>135.2</td><td>0.05</td><td class="neg">-22.05</td><td>0.0036</td><td>-0.05</td><td class="strike-col">24,700</td><td>4.30</td><td>-0.9964</td><td class="neg">-255.10</td><td>123.00</td><td>135.2</td><td class="pos">8,202</td><td>12,069</td></tr><tr><td>91,718</td><td class="pos">56,330</td><td>183.4</td><td>0.05</td><td class="neg">-16.65</td><td>0.0027</td><td>-0.05</td><td class="strike-col">24,750</td><td>4.50</td><td>-0.9973</td><td class="neg">-244.55</td><td>172.90</td><td>183.4</td><td class="pos">2,646</td><td>3,262</td></tr><tr><td>154,224</td><td class="pos">47,144</td><td>230.3</td><td>0.05</td><td class="neg">-12.60</td><td>0.0022</td><td>-0.05</td><td class="strike-col">24,800</td><td>4.60</td><td>-0.9978</td><td class="neg">-244.65</td><td>223.00</td><td>230.3</td><td class="pos">3,356</td><td>4,764</td></tr><tr><td>56,192</td><td class="pos">3,710</td><td>276.4</td><td>0.05</td><td class="neg">-9.55</td><td>0.0018</td><td>-0.05</td><td class="strike-col">24,850</td><td>4.80</td><td>-0.9982</td><td class="neg">-234.65</td><td>273.10</td><td>276.4</td><td class="pos">715</td><td>1,104</td></tr><tr><td>80,150</td><td class="pos">11,581</td><td>321.7</td><td>0.05</td><td class="neg">-7.40</td><td>0.0016</td><td>-0.05</td><td class="strike-col">24,900</td><td>4.85</td><td>-0.9984</td><td class="neg">-229.60</td><td>322.40</td><td>321.7</td><td class="pos">767</td><td>1,239</td></tr><tr><td>43,635</td><td class="pos">6,182</td><td>366.3</td><td>0.05</td><td class="neg">-5.90</td><td>0.0014</td><td>-0.05</td><td class="strike-col">24,950</td><td>5.25</td><td>-0.9986</td><td class="neg">-230.40</td><td>372.55</td><td>366.3</td><td class="pos">341</td><td>485</td></tr><tr><td>149,883</td><td class="neg">-25,382</td><td>410.5</td><td>0.05</td><td class="neg">-4.85</td><td>0.0013</td><td>-0.05</td><td class="strike-col">25,000</td><td>4.85</td><td>-0.9987</td><td class="neg">-234.60</td><td>422.30</td><td>410.5</td><td class="neg">-1,266</td><td>1,603</td></tr><tr><td>47,433</td><td class="neg">-21,310</td><td>454.1</td><td>0.05</td><td class="neg">-3.90</td><td>0.0012</td><td>-0.05</td><td class="strike-col">25,050</td><td>4.75</td><td>-0.9988</td><td class="neg">-240.30</td><td>472.70</td><td>454.1</td><td class="pos">209</td><td>270</td></tr><tr><td>77,451</td><td class="neg">-11,678</td><td>497.4</td><td>0.05</td><td class="neg">-2.90</td><td>0.0011</td><td>-0.05</td><td class="strike-col">25,100</td><td>5.30</td><td>-0.9989</td><td class="neg">-222.50</td><td>522.10</td><td>497.4</td><td class="pos">170</td><td>255</td></tr><tr><td>24,958</td><td class="neg">-2,360</td><td>0.0</td><td>0.05</td><td class="neg">-2.30</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,150</td><td>2.60</td><td>0.0000</td><td class="neg">-250.80</td><td>572.60</td><td>0.0</td><td class="pos">165</td><td>202</td></tr><tr><td>64,492</td><td class="neg">-30,958</td><td>0.0</td><td>0.05</td><td class="neg">-1.75</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,200</td><td>5.45</td><td>0.0000</td><td class="neg">-240.40</td><td>621.90</td><td>0.0</td><td class="pos">30</td><td>195</td></tr><tr><td>23,084</td><td class="neg">-10,320</td><td>0.0</td><td>0.05</td><td class="neg">-1.35</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,250</td><td>4.50</td><td>0.0000</td><td class="neg">-250.60</td><td>672.85</td><td>0.0</td><td class="pos">102</td><td>120</td></tr><tr><td>47,164</td><td class="neg">-23,089</td><td>0.0</td><td>0.05</td><td class="neg">-1.05</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,300</td><td>5.70</td><td>0.0000</td><td class="neg">-246.95</td><td>721.65</td><td>0.0</td><td class="pos">39</td><td>130</td></tr><tr><td>23,254</td><td class="pos">8,433</td><td>0.0</td><td>0.05</td><td class="neg">-0.95</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,350</td><td>1.70</td><td>0.0000</td><td class="neg">-259.80</td><td>775.65</td><td>0.0</td><td class="pos">51</td><td>96</td></tr><tr><td>44,519</td><td class="neg">-3,479</td><td>0.0</td><td>0.05</td><td class="neg">-0.75</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,400</td><td>3.80</td><td>0.0000</td><td class="neg">-226.75</td><td>823.55</td><td>0.0</td><td class="neg">-6</td><td>50</td></tr><tr><td>10,667</td><td class="neg">-2,756</td><td>0.0</td><td>0.05</td><td class="neg">-0.70</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,450</td><td>-10.85</td><td>0.0000</td><td class="neg">-258.60</td><td>888.20</td><td>0.0</td><td class="pos">8</td><td>20</td></tr><tr><td>56,576</td><td class="neg">-29,479</td><td>0.0</td><td>0.05</td><td class="neg">-0.70</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,500</td><td>4.85</td><td>0.0000</td><td class="neg">-227.15</td><td>925.25</td><td>0.0</td><td class="neg">-922</td><td>369</td></tr><tr><td>13,605</td><td class="pos">6,526</td><td>0.0</td><td>0.05</td><td class="neg">-0.70</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,550</td><td>-3.50</td><td>0.0000</td><td class="neg">-199.10</td><td>980.85</td><td>0.0</td><td class="pos">0</td><td>25</td></tr><tr><td>16,144</td><td class="neg">-2,084</td><td>0.0</td><td>0.05</td><td class="neg">-0.60</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,600</td><td>2.35</td><td>0.0000</td><td class="neg">-274.50</td><td>1025.00</td><td>0.0</td><td class="neg">-1</td><td>22</td></tr><tr><td>7,775</td><td class="pos">3,385</td><td>0.0</td><td>0.05</td><td class="neg">-0.65</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,650</td><td>-4.75</td><td>0.0000</td><td class="neg">-168.35</td><td>1082.10</td><td>0.0</td><td class="pos">1</td><td>9</td></tr><tr><td>17,211</td><td class="pos">2,822</td><td>0.0</td><td>0.05</td><td class="neg">-0.50</td><td>0.0000</td><td>-0.10</td><td class="strike-col">25,700</td><td>2.25</td><td>0.0000</td><td class="neg">-190.15</td><td>1125.10</td><td>0.0</td><td class="neg">-3</td><td>4</td></tr><tr><td>4,012</td><td class="pos">1,681</td><td>0.0</td><td>0.05</td><td class="neg">-0.50</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,750</td><td>-52.35</td><td>0.0000</td><td class="neg">-119.85</td><td>1229.70</td><td>0.0</td><td class="pos">0</td><td>2</td></tr><tr><td>9,803</td><td class="pos">662</td><td>0.0</td><td>0.05</td><td class="neg">-0.45</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,800</td><td>-2.25</td><td>0.0000</td><td class="neg">-130.40</td><td>1229.60</td><td>0.0</td><td class="neg">-4</td><td>12</td></tr><tr><td>2,402</td><td class="pos">250</td><td>0.0</td><td>0.05</td><td class="neg">-0.50</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,850</td><td>-203.70</td><td>0.0000</td><td class="neg">-307.45</td><td>1481.05</td><td>0.0</td><td class="pos">0</td><td>1</td></tr><tr><td>3,469</td><td class="neg">-1,341</td><td>0.0</td><td>0.05</td><td class="neg">-0.45</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,900</td><td>7.35</td><td>0.0000</td><td class="neg">-158.80</td><td>1320.00</td><td>0.0</td><td class="neg">-2</td><td>4</td></tr><tr><td>2,381</td><td class="pos">658</td><td>0.0</td><td>0.05</td><td class="neg">-0.40</td><td>0.0000</td><td>-0.05</td><td class="strike-col">25,950</td><td>-203.70</td><td>0.0000</td><td class="neg">-306.15</td><td>1581.05</td><td>0.0</td><td class="pos">0</td><td>1</td></tr><tr><td>32,373</td><td class="neg">-5,995</td><td>0.0</td><td>0.05</td><td class="neg">-0.45</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,000</td><td>3.35</td><td>0.0000</td><td class="neg">-264.60</td><td>1424.00</td><td>0.0</td><td class="neg">-479</td><td>174</td></tr><tr><td>3,185</td><td class="pos">1,011</td><td>0.0</td><td>0.05</td><td class="neg">-0.40</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,050</td><td>-122.65</td><td>0.0000</td><td class="neg">-704.50</td><td>1600.00</td><td>0.0</td><td class="pos">0</td><td>0</td></tr><tr><td>3,941</td><td class="neg">-1,696</td><td>0.0</td><td>0.05</td><td class="neg">-0.40</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,100</td><td>1.15</td><td>0.0000</td><td class="neg">-197.30</td><td>1526.20</td><td>0.0</td><td class="neg">-7</td><td>16</td></tr><tr><td>3,231</td><td class="pos">418</td><td>0.0</td><td>0.05</td><td class="neg">-0.40</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,150</td><td>-203.65</td><td>0.0000</td><td class="neg">-620.80</td><td>1781.00</td><td>0.0</td><td class="pos">0</td><td>0</td></tr><tr><td>1,605</td><td class="neg">-48</td><td>0.0</td><td>0.05</td><td class="neg">-0.35</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,200</td><td>-203.65</td><td>0.0000</td><td class="neg">-619.60</td><td>1831.00</td><td>0.0</td><td class="pos">0</td><td>0</td></tr><tr><td>3,312</td><td class="pos">1,621</td><td>0.0</td><td>0.05</td><td class="neg">-0.35</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,250</td><td>-203.65</td><td>0.0000</td><td class="neg">-618.45</td><td>1881.00</td><td>0.0</td><td class="pos">0</td><td>0</td></tr><tr><td>2,536</td><td class="neg">-209</td><td>0.0</td><td>0.05</td><td class="neg">-0.25</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,300</td><td>-203.65</td><td>0.0000</td><td class="neg">-617.40</td><td>1931.00</td><td>0.0</td><td class="pos">0</td><td>0</td></tr><tr><td>1,055</td><td class="pos">454</td><td>0.0</td><td>0.05</td><td class="neg">-0.30</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,350</td><td>-203.65</td><td>0.0000</td><td class="neg">-616.40</td><td>1981.00</td><td>0.0</td><td class="pos">0</td><td>0</td></tr><tr><td>3,712</td><td class="pos">148</td><td>0.0</td><td>0.05</td><td class="neg">-0.20</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,400</td><td>-203.65</td><td>0.0000</td><td class="neg">-615.50</td><td>2031.00</td><td>0.0</td><td class="pos">0</td><td>0</td></tr><tr><td>2,103</td><td class="pos">872</td><td>0.0</td><td>0.05</td><td class="neg">-0.30</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,450</td><td>-221.80</td><td>0.0000</td><td class="pos">+0.00</td><td>2099.15</td><td>0.0</td><td class="pos">0</td><td>1</td></tr><tr><td>10,462</td><td class="neg">-5,273</td><td>0.0</td><td>0.05</td><td class="neg">-0.20</td><td>0.0000</td><td>-0.05</td><td class="strike-col">26,500</td><td>-72.65</td><td>0.0000</td><td class="neg">-100.00</td><td>2000.00</td><td>0.0</td><td class="pos">0</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STRATEGY panel -->
+  <div class="sub-panel" id="strategy-nifty">
+    
+<div class="strat-card">
+  <div class="sm-title" style="margin-bottom:10px">Recommended strategy</div>
+  <div class="strat-name">Bull Put Spread <span class="strat-bias badge tone-up">Bullish (IV-friendly)</span></div>
+  <div class="strat-legs"><div class="strat-leg leg-sell"><span class="sl-action">SELL</span> <span class="sl-strike">24,600 PE</span> <span class="sl-prem">@ 23.35</span></div><div class="strat-leg leg-buy"><span class="sl-action">BUY</span> <span class="sl-strike">24,500 PE</span> <span class="sl-prem">@ 0.05</span></div></div>
+  <div class="strat-meta">
+    <div><span class="strat-lbl">Lot size</span><span class="strat-val">65</span></div>
+    <div><span class="strat-lbl">Max profit</span><span class="strat-val pos">₹1,514</span></div>
+    <div><span class="strat-lbl">Max loss</span><span class="strat-val neg">₹-4,986</span></div>
+    <div><span class="strat-lbl">Breakeven(s)</span><span class="strat-val">24,579</span></div>
+  </div>
+  <div class="strat-reason">Sell 24,600 PE @ 23.35, Buy 24,500 PE @ 0.05. Net credit strategy benefiting from time decay and bullish bias. High IV inflates the credit received.</div>
+  <div class="sm-title" style="margin-top:14px; margin-bottom:6px">P&amp;L at expiry — interactive simulator</div>
+  <div class="pnl-sim">
+    <canvas id="pnl-canvas-nifty" width="680" height="350"></canvas>
+    <div class="pnl-legend">
+      <span class="pl-item"><span class="pl-swatch" style="background:#3d9cf5"></span>P&amp;L curve</span>
+      <span class="pl-item"><span class="pl-swatch" style="background:#f5a623"></span>Breakeven</span>
+      <span class="pl-item"><span class="pl-swatch" style="background:#00e5a0"></span>Buy / Max profit</span>
+      <span class="pl-item"><span class="pl-swatch" style="background:#ff4d6d"></span>Sell / Max loss</span>
+      <span class="pl-item"><span class="pl-swatch" style="background:rgba(255,255,255,0.3)"></span>Spot price</span>
+    </div>
+    <div class="pnl-controls">
+      <label>Simulated index price:</label>
+      <input type="range" id="pnl-slider-nifty" min="0" max="1" step="0.001" value="0.5">
+      <span id="pnl-readout-nifty" class="pnl-readout"></span>
+    </div>
+  </div>
+</div>
+  </div>
+</div>
+<div class="idx-block" data-idx="banknifty">
+  <!-- sub-tabs -->
+  <div class="sub-tabs">
+    <button class="sub-tab active" data-panel="analysis-banknifty">Analysis</button>
+    <button class="sub-tab" data-panel="chain-banknifty">Option chain</button>
+    <button class="sub-tab" data-panel="strategy-banknifty">Strategy</button>
+  </div>
+
+  <!-- ANALYSIS panel -->
+  <div class="sub-panel active" id="analysis-banknifty">
+    <div class="ic-head">
+      <div><div class="ic-label">NIFTY BANK</div><div class="ic-sub">BANKNIFTY · 2026-04-28</div></div>
+      <div class="ic-badges"><span class="badge" id="chain-badge-banknifty">CHAIN OK</span><span class="badge tone-up" id="verdict-badge-banknifty">Bias: upward drift (F&amp;O + breadth)</span></div>
+    </div>
+    <div class="kpi-grid" id="kpi-banknifty">
+      <div class="kpi"><div class="kpi-l">Spot</div><div class="kpi-v" data-kpi="spot">57,371.45</div></div>
+      <div class="kpi"><div class="kpi-l">Index chg</div><div class="kpi-v" data-kpi="index_change_pct">+1.39%</div></div>
+      <div class="kpi"><div class="kpi-l">PCR (OI)</div><div class="kpi-v" data-kpi="pcr_oi">1.119</div></div>
+      <div class="kpi"><div class="kpi-l">Max pain</div><div class="kpi-v" data-kpi="max_pain">56,300</div><div class="kpi-s" data-kpi="max_pain_dist">Δ +1.90%</div></div>
+      <div class="kpi"><div class="kpi-l">Breadth A/D</div><div class="kpi-v" data-kpi="ad">13 / 1</div></div>
+      <div class="kpi"><div class="kpi-l">Confidence</div><div class="kpi-v" data-kpi="confidence">Medium</div></div>
+    </div>
+    <div id="notes-banknifty"></div>
+    <div class="section-mini"><div class="sm-title">Reasoning</div><ol class="reasons" id="reasons-banknifty"><li>Put–call ratio (OI) = 1.119. Low PCR suggests crowded calls (mean-reversion risk); high PCR indicates hedging/bearish positioning.</li><li>Max pain ≈ 56,300 vs spot ≈ 57,371 (+1.90%). Near expiry, price tends to gravitate toward max pain.</li><li>Session ΔOI: calls -4,820, puts +49,099. Fresh OI in the direction of the move implies trend conviction; against the move implies hedging.</li><li>ATM (57,400): CE OI 4,998 vs PE OI 3,760, CE IV 21.0% / PE IV 21.0%.</li><li>Cash index breadth: 13 up / 1 down (A/D ≈ 13.00).</li></ol></div>
+  </div>
+
+  <!-- OPTION CHAIN panel -->
+  <div class="sub-panel" id="chain-banknifty">
+    <div class="sm-title" style="margin-bottom:8px">Full option chain · 2026-04-28 · Lot 30</div>
+    <div class="chain-wrap">
+      <table class="chain-tbl">
+        <thead><tr>
+          <th colspan="7" class="th-calls">CALLS</th>
+          <th class="th-strike">STRIKE</th>
+          <th colspan="7" class="th-puts">PUTS</th>
+        </tr><tr>
+          <th>OI</th><th>ΔOI</th><th>IV</th><th>LTP</th><th>Chg</th><th>Delta</th><th>Theta</th>
+          <th></th>
+          <th>Theta</th><th>Delta</th><th>Chg</th><th>LTP</th><th>IV</th><th>ΔOI</th><th>OI</th>
+        </tr></thead>
+        <tbody id="chain-tbody-banknifty"><tr><td>639</td><td class="neg">-14</td><td>32.1</td><td>4565.95</td><td class="pos">+663.40</td><td>0.9706</td><td>-12.20</td><td class="strike-col">52,800</td><td>-12.20</td><td>-0.0294</td><td class="neg">-45.50</td><td>29.35</td><td>32.1</td><td class="neg">-106</td><td>1,109</td></tr><tr><td>718</td><td class="neg">-3</td><td>32.1</td><td>4118.95</td><td class="pos">+322.80</td><td>0.9679</td><td>-13.10</td><td class="strike-col">52,900</td><td>-13.10</td><td>-0.0321</td><td class="neg">-50.85</td><td>32.40</td><td>32.1</td><td class="neg">-327</td><td>748</td></tr><tr><td>10,377</td><td class="neg">-90</td><td>27.6</td><td>4383.30</td><td class="pos">+767.30</td><td>0.9819</td><td>-6.97</td><td class="strike-col">53,000</td><td>-6.97</td><td>-0.0181</td><td class="neg">-55.90</td><td>30.80</td><td>27.6</td><td class="pos">1,356</td><td>25,908</td></tr><tr><td>536</td><td class="neg">-2</td><td>31.3</td><td>4250.00</td><td class="pos">+721.15</td><td>0.9645</td><td>-13.91</td><td class="strike-col">53,100</td><td>-13.91</td><td>-0.0355</td><td class="neg">-54.70</td><td>35.50</td><td>31.3</td><td class="neg">-209</td><td>680</td></tr><tr><td>455</td><td class="neg">-3</td><td>29.1</td><td>4195.00</td><td class="pos">+725.00</td><td>0.9709</td><td>-10.96</td><td class="strike-col">53,200</td><td>-10.96</td><td>-0.0291</td><td class="neg">-62.25</td><td>37.80</td><td>29.1</td><td class="neg">-131</td><td>781</td></tr><tr><td>493</td><td class="pos">0</td><td>30.8</td><td>3976.00</td><td class="pos">+176.00</td><td>0.9600</td><td>-15.07</td><td class="strike-col">53,300</td><td>-15.07</td><td>-0.0400</td><td class="neg">-64.95</td><td>40.05</td><td>30.8</td><td class="pos">130</td><td>1,121</td></tr><tr><td>363</td><td class="neg">-9</td><td>30.7</td><td>3925.00</td><td class="pos">+625.00</td><td>0.9566</td><td>-16.05</td><td class="strike-col">53,400</td><td>-16.05</td><td>-0.0434</td><td class="neg">-70.65</td><td>43.85</td><td>30.7</td><td class="neg">-1,088</td><td>907</td></tr><tr><td>1,795</td><td class="neg">-304</td><td>30.3</td><td>3930.00</td><td class="pos">+755.25</td><td>0.9541</td><td>-16.60</td><td class="strike-col">53,500</td><td>-16.60</td><td>-0.0459</td><td class="neg">-73.05</td><td>46.25</td><td>30.3</td><td class="pos">1,739</td><td>12,885</td></tr><tr><td>308</td><td class="neg">-1</td><td>29.9</td><td>3840.00</td><td class="pos">+770.00</td><td>0.9523</td><td>-16.86</td><td class="strike-col">53,600</td><td>-16.86</td><td>-0.0477</td><td class="neg">-81.80</td><td>47.60</td><td>29.9</td><td class="neg">-22</td><td>1,055</td></tr><tr><td>480</td><td class="neg">-18</td><td>29.7</td><td>3724.70</td><td class="pos">+756.00</td><td>0.9486</td><td>-17.78</td><td class="strike-col">53,700</td><td>-17.78</td><td>-0.0514</td><td class="neg">-86.35</td><td>51.60</td><td>29.7</td><td class="neg">-171</td><td>922</td></tr><tr><td>437</td><td class="neg">-20</td><td>26.3</td><td>3600.00</td><td class="pos">+696.00</td><td>0.9629</td><td>-12.10</td><td class="strike-col">53,800</td><td>-12.10</td><td>-0.0371</td><td class="neg">-94.10</td><td>54.60</td><td>26.3</td><td class="pos">237</td><td>1,278</td></tr><tr><td>438</td><td class="neg">-4</td><td>22.9</td><td>3485.00</td><td class="pos">+675.50</td><td>0.9764</td><td>-7.25</td><td class="strike-col">53,900</td><td>-7.25</td><td>-0.0236</td><td class="neg">-92.45</td><td>58.15</td><td>22.9</td><td class="neg">-268</td><td>1,119</td></tr><tr><td>11,627</td><td class="neg">-332</td><td>29.0</td><td>3439.80</td><td class="pos">+682.85</td><td>0.9369</td><td>-20.41</td><td class="strike-col">54,000</td><td>-20.41</td><td>-0.0631</td><td class="neg">-101.25</td><td>64.00</td><td>29.0</td><td class="pos">542</td><td>28,104</td></tr><tr><td>447</td><td class="neg">-11</td><td>24.4</td><td>3300.00</td><td class="pos">+688.50</td><td>0.9604</td><td>-11.85</td><td class="strike-col">54,100</td><td>-11.85</td><td>-0.0396</td><td class="neg">-111.30</td><td>68.00</td><td>24.4</td><td class="neg">-82</td><td>1,070</td></tr><tr><td>502</td><td class="neg">-8</td><td>23.8</td><td>3200.00</td><td class="pos">+590.00</td><td>0.9595</td><td>-11.76</td><td class="strike-col">54,200</td><td>-11.76</td><td>-0.0405</td><td class="neg">-114.15</td><td>74.45</td><td>23.8</td><td class="pos">239</td><td>1,459</td></tr><tr><td>569</td><td class="neg">-60</td><td>23.8</td><td>3105.00</td><td class="pos">+642.70</td><td>0.9540</td><td>-13.05</td><td class="strike-col">54,300</td><td>-13.05</td><td>-0.0460</td><td class="neg">-127.60</td><td>77.25</td><td>23.8</td><td class="neg">-52</td><td>1,489</td></tr><tr><td>647</td><td class="neg">-29</td><td>21.8</td><td>2994.80</td><td class="pos">+636.65</td><td>0.9626</td><td>-10.08</td><td class="strike-col">54,400</td><td>-10.08</td><td>-0.0374</td><td class="neg">-130.30</td><td>84.10</td><td>21.8</td><td class="pos">153</td><td>2,315</td></tr><tr><td>5,878</td><td class="neg">-181</td><td>27.4</td><td>2955.00</td><td class="pos">+691.40</td><td>0.9149</td><td>-24.28</td><td class="strike-col">54,500</td><td>-24.28</td><td>-0.0851</td><td class="neg">-136.35</td><td>90.10</td><td>27.4</td><td class="pos">1,329</td><td>13,289</td></tr><tr><td>979</td><td class="neg">-13</td><td>27.5</td><td>2866.35</td><td class="pos">+625.65</td><td>0.9064</td><td>-26.15</td><td class="strike-col">54,600</td><td>-26.15</td><td>-0.0936</td><td class="neg">-140.15</td><td>97.00</td><td>27.5</td><td class="pos">919</td><td>3,062</td></tr><tr><td>857</td><td class="neg">-55</td><td>21.0</td><td>2703.00</td><td class="pos">+617.05</td><td>0.9511</td><td>-12.08</td><td class="strike-col">54,700</td><td>-12.08</td><td>-0.0489</td><td class="neg">-160.70</td><td>103.20</td><td>21.0</td><td class="pos">1,447</td><td>4,213</td></tr><tr><td>821</td><td class="neg">-75</td><td>23.9</td><td>2638.60</td><td class="pos">+642.10</td><td>0.9198</td><td>-20.22</td><td class="strike-col">54,800</td><td>-20.22</td><td>-0.0802</td><td class="neg">-165.50</td><td>111.10</td><td>23.9</td><td class="pos">297</td><td>2,652</td></tr><tr><td>894</td><td class="neg">-23</td><td>25.2</td><td>2564.85</td><td class="pos">+639.75</td><td>0.8999</td><td>-25.14</td><td class="strike-col">54,900</td><td>-25.14</td><td>-0.1001</td><td class="neg">-169.95</td><td>118.95</td><td>25.2</td><td class="neg">-90</td><td>1,879</td></tr><tr><td>14,660</td><td class="neg">-1,387</td><td>26.0</td><td>2488.00</td><td class="pos">+591.55</td><td>0.8834</td><td>-28.93</td><td class="strike-col">55,000</td><td>-28.93</td><td>-0.1166</td><td class="neg">-183.40</td><td>125.10</td><td>26.0</td><td class="pos">3,095</td><td>31,270</td></tr><tr><td>696</td><td class="neg">-39</td><td>26.2</td><td>2405.00</td><td class="pos">+589.85</td><td>0.8710</td><td>-31.35</td><td class="strike-col">55,100</td><td>-31.35</td><td>-0.1290</td><td class="neg">-187.80</td><td>138.50</td><td>26.2</td><td class="pos">207</td><td>1,960</td></tr><tr><td>783</td><td class="neg">-36</td><td>25.9</td><td>2313.65</td><td class="pos">+591.35</td><td>0.8630</td><td>-32.27</td><td class="strike-col">55,200</td><td>-32.27</td><td>-0.1370</td><td class="neg">-206.45</td><td>147.00</td><td>25.9</td><td class="neg">-86</td><td>2,357</td></tr><tr><td>684</td><td class="neg">-95</td><td>25.7</td><td>2226.75</td><td class="pos">+547.25</td><td>0.8535</td><td>-33.50</td><td class="strike-col">55,300</td><td>-33.50</td><td>-0.1465</td><td class="neg">-214.70</td><td>156.15</td><td>25.7</td><td class="pos">9</td><td>2,009</td></tr><tr><td>827</td><td class="neg">-90</td><td>25.1</td><td>2130.40</td><td class="pos">+564.05</td><td>0.8467</td><td>-33.78</td><td class="strike-col">55,400</td><td>-33.78</td><td>-0.1533</td><td class="neg">-224.00</td><td>166.70</td><td>25.1</td><td class="pos">486</td><td>2,940</td></tr><tr><td>4,445</td><td class="neg">-1,071</td><td>25.3</td><td>2050.00</td><td class="pos">+546.90</td><td>0.8330</td><td>-35.89</td><td class="strike-col">55,500</td><td>-35.89</td><td>-0.1670</td><td class="neg">-238.30</td><td>180.75</td><td>25.3</td><td class="neg">-454</td><td>13,387</td></tr><tr><td>1,968</td><td class="neg">-174</td><td>24.9</td><td>1960.00</td><td class="pos">+582.60</td><td>0.8233</td><td>-36.66</td><td class="strike-col">55,600</td><td>-36.66</td><td>-0.1767</td><td class="neg">-250.95</td><td>192.40</td><td>24.9</td><td class="pos">250</td><td>2,948</td></tr><tr><td>2,350</td><td class="neg">-91</td><td>24.7</td><td>1876.40</td><td class="pos">+543.90</td><td>0.8111</td><td>-37.93</td><td class="strike-col">55,700</td><td>-37.93</td><td>-0.1889</td><td class="neg">-252.95</td><td>206.55</td><td>24.7</td><td class="pos">121</td><td>5,471</td></tr><tr><td>1,342</td><td class="neg">-177</td><td>24.1</td><td>1782.20</td><td class="pos">+511.60</td><td>0.8023</td><td>-38.04</td><td class="strike-col">55,800</td><td>-38.04</td><td>-0.1977</td><td class="neg">-280.45</td><td>222.10</td><td>24.1</td><td class="pos">631</td><td>3,369</td></tr><tr><td>1,504</td><td class="neg">-107</td><td>24.3</td><td>1715.15</td><td class="pos">+500.15</td><td>0.7851</td><td>-40.28</td><td class="strike-col">55,900</td><td>-40.28</td><td>-0.2149</td><td class="neg">-290.85</td><td>239.50</td><td>24.3</td><td class="pos">574</td><td>2,848</td></tr><tr><td>10,806</td><td class="neg">-1,820</td><td>24.1</td><td>1628.55</td><td class="pos">+483.20</td><td>0.7712</td><td>-41.37</td><td class="strike-col">56,000</td><td>-41.37</td><td>-0.2288</td><td class="neg">-311.40</td><td>257.50</td><td>24.1</td><td class="neg">-224</td><td>18,793</td></tr><tr><td>1,478</td><td class="neg">-123</td><td>23.7</td><td>1544.55</td><td class="pos">+465.80</td><td>0.7574</td><td>-42.18</td><td class="strike-col">56,100</td><td>-42.18</td><td>-0.2426</td><td class="neg">-322.10</td><td>274.45</td><td>23.7</td><td class="pos">819</td><td>3,160</td></tr><tr><td>1,375</td><td class="neg">-250</td><td>23.5</td><td>1464.10</td><td class="pos">+458.70</td><td>0.7418</td><td>-43.22</td><td class="strike-col">56,200</td><td>-43.22</td><td>-0.2582</td><td class="neg">-339.00</td><td>295.80</td><td>23.5</td><td class="pos">460</td><td>2,991</td></tr><tr><td>1,526</td><td class="neg">-319</td><td>23.2</td><td>1382.40</td><td class="pos">+416.10</td><td>0.7267</td><td>-43.80</td><td class="strike-col">56,300</td><td>-43.80</td><td>-0.2733</td><td class="neg">-360.25</td><td>317.65</td><td>23.2</td><td class="neg">-244</td><td>3,036</td></tr><tr><td>1,622</td><td class="neg">-620</td><td>23.1</td><td>1317.20</td><td class="pos">+407.05</td><td>0.7085</td><td>-45.05</td><td class="strike-col">56,400</td><td>-45.05</td><td>-0.2915</td><td class="neg">-374.80</td><td>341.20</td><td>23.1</td><td class="neg">-1,241</td><td>3,078</td></tr><tr><td>13,842</td><td class="neg">-4,601</td><td>22.7</td><td>1231.00</td><td class="pos">+390.20</td><td>0.6918</td><td>-45.47</td><td class="strike-col">56,500</td><td>-45.47</td><td>-0.3082</td><td class="neg">-394.05</td><td>365.25</td><td>22.7</td><td class="pos">854</td><td>18,832</td></tr><tr><td>2,405</td><td class="neg">-2,326</td><td>22.7</td><td>1165.25</td><td class="pos">+365.60</td><td>0.6720</td><td>-46.60</td><td class="strike-col">56,600</td><td>-46.60</td><td>-0.3280</td><td class="neg">-395.35</td><td>394.00</td><td>22.7</td><td class="neg">-481</td><td>3,843</td></tr><tr><td>2,365</td><td class="neg">-1,869</td><td>22.3</td><td>1086.05</td><td class="pos">+334.25</td><td>0.6538</td><td>-46.75</td><td class="strike-col">56,700</td><td>-46.75</td><td>-0.3462</td><td class="neg">-417.60</td><td>421.75</td><td>22.3</td><td class="pos">182</td><td>3,931</td></tr><tr><td>4,228</td><td class="neg">-1,302</td><td>22.2</td><td>1018.55</td><td class="pos">+330.25</td><td>0.6333</td><td>-47.40</td><td class="strike-col">56,800</td><td>-47.40</td><td>-0.3667</td><td class="neg">-439.50</td><td>453.00</td><td>22.2</td><td class="pos">1,715</td><td>5,739</td></tr><tr><td>1,830</td><td class="neg">-1,328</td><td>22.0</td><td>953.00</td><td class="pos">+310.25</td><td>0.6121</td><td>-47.91</td><td class="strike-col">56,900</td><td>-47.91</td><td>-0.3879</td><td class="neg">-454.95</td><td>485.00</td><td>22.0</td><td class="pos">2,381</td><td>4,431</td></tr><tr><td>21,940</td><td class="neg">-4,043</td><td>21.7</td><td>885.20</td><td class="pos">+289.00</td><td>0.5910</td><td>-47.84</td><td class="strike-col">57,000</td><td>-47.84</td><td>-0.4090</td><td class="neg">-481.70</td><td>514.80</td><td>21.7</td><td class="pos">7,550</td><td>27,299</td></tr><tr class="atm-row"><td>2,459</td><td class="neg">-659</td><td>21.6</td><td>825.20</td><td class="pos">+277.70</td><td>0.5683</td><td>-48.29</td><td class="strike-col">57,100</td><td>-48.29</td><td>-0.4317</td><td class="neg">-497.50</td><td>558.00</td><td>21.6</td><td class="pos">2,490</td><td>3,297</td></tr><tr class="atm-row"><td>6,159</td><td class="pos">2,943</td><td>21.4</td><td>763.60</td><td class="pos">+253.05</td><td>0.5455</td><td>-48.18</td><td class="strike-col">57,200</td><td>-48.18</td><td>-0.4545</td><td class="neg">-512.40</td><td>595.25</td><td>21.4</td><td class="pos">4,915</td><td>5,792</td></tr><tr class="atm-row"><td>6,016</td><td class="pos">3,188</td><td>21.3</td><td>708.75</td><td class="pos">+239.45</td><td>0.5221</td><td>-48.23</td><td class="strike-col">57,300</td><td>-48.23</td><td>-0.4779</td><td class="neg">-560.25</td><td>640.00</td><td>21.3</td><td class="pos">3,351</td><td>5,519</td></tr><tr class="atm-row"><td>4,998</td><td class="pos">2,316</td><td>21.0</td><td>650.45</td><td class="pos">+221.55</td><td>0.4983</td><td>-47.70</td><td class="strike-col">57,400</td><td>-47.70</td><td>-0.5017</td><td class="neg">-580.70</td><td>682.35</td><td>21.0</td><td class="pos">3,416</td><td>3,760</td></tr><tr class="atm-row"><td>15,422</td><td class="pos">1,955</td><td>20.9</td><td>598.00</td><td class="pos">+202.45</td><td>0.4741</td><td>-47.17</td><td class="strike-col">57,500</td><td>-47.17</td><td>-0.5259</td><td class="neg">-556.90</td><td>728.30</td><td>20.9</td><td class="pos">5,230</td><td>9,952</td></tr><tr class="atm-row"><td>3,444</td><td class="pos">596</td><td>20.5</td><td>548.00</td><td class="pos">+182.00</td><td>0.4492</td><td>-46.14</td><td class="strike-col">57,600</td><td>-46.14</td><td>-0.5508</td><td class="neg">-617.10</td><td>772.80</td><td>20.5</td><td class="pos">410</td><td>747</td></tr><tr><td>2,481</td><td class="pos">196</td><td>20.6</td><td>500.00</td><td class="pos">+164.00</td><td>0.4253</td><td>-45.78</td><td class="strike-col">57,700</td><td>-45.78</td><td>-0.5747</td><td class="neg">-612.50</td><td>830.00</td><td>20.6</td><td class="pos">179</td><td>291</td></tr><tr><td>3,805</td><td class="pos">327</td><td>20.3</td><td>453.25</td><td class="pos">+150.90</td><td>0.4004</td><td>-44.67</td><td class="strike-col">57,800</td><td>-44.67</td><td>-0.5996</td><td class="neg">-678.50</td><td>878.95</td><td>20.3</td><td class="pos">89</td><td>246</td></tr><tr><td>1,584</td><td class="neg">-143</td><td>20.3</td><td>415.00</td><td class="pos">+138.30</td><td>0.3768</td><td>-43.87</td><td class="strike-col">57,900</td><td>-43.87</td><td>-0.6232</td><td class="neg">-598.35</td><td>938.70</td><td>20.3</td><td class="pos">134</td><td>206</td></tr><tr><td>20,816</td><td class="neg">-879</td><td>20.1</td><td>372.95</td><td class="pos">+123.00</td><td>0.3520</td><td>-42.40</td><td class="strike-col">58,000</td><td>-42.40</td><td>-0.6480</td><td class="neg">-667.70</td><td>1010.95</td><td>20.1</td><td class="pos">12</td><td>6,787</td></tr><tr><td>1,924</td><td class="pos">528</td><td>20.1</td><td>340.00</td><td class="pos">+111.45</td><td>0.3294</td><td>-41.35</td><td class="strike-col">58,100</td><td>-41.35</td><td>-0.6706</td><td class="neg">-703.10</td><td>1061.75</td><td>20.1</td><td class="pos">68</td><td>137</td></tr><tr><td>1,628</td><td class="neg">-417</td><td>20.0</td><td>306.30</td><td class="pos">+95.35</td><td>0.3063</td><td>-39.90</td><td class="strike-col">58,200</td><td>-39.90</td><td>-0.6937</td><td class="neg">-737.60</td><td>1124.90</td><td>20.0</td><td class="pos">31</td><td>110</td></tr><tr><td>1,404</td><td class="neg">-320</td><td>19.9</td><td>274.45</td><td class="pos">+87.20</td><td>0.2837</td><td>-38.28</td><td class="strike-col">58,300</td><td>-38.28</td><td>-0.7163</td><td class="neg">-616.20</td><td>1190.40</td><td>19.9</td><td class="neg">-10</td><td>95</td></tr><tr><td>2,389</td><td class="neg">-108</td><td>19.7</td><td>243.10</td><td class="pos">+72.50</td><td>0.2609</td><td>-36.36</td><td class="strike-col">58,400</td><td>-36.36</td><td>-0.7391</td><td class="neg">-1179.65</td><td>1268.55</td><td>19.7</td><td class="neg">-7</td><td>72</td></tr><tr><td>13,190</td><td class="pos">1,526</td><td>19.5</td><td>218.00</td><td class="pos">+65.05</td><td>0.2384</td><td>-34.30</td><td class="strike-col">58,500</td><td>-34.30</td><td>-0.7616</td><td class="neg">-721.05</td><td>1345.00</td><td>19.5</td><td class="neg">-75</td><td>924</td></tr><tr><td>2,362</td><td class="neg">-432</td><td>19.6</td><td>193.65</td><td class="pos">+53.90</td><td>0.2203</td><td>-32.95</td><td class="strike-col">58,600</td><td>-32.95</td><td>-0.7797</td><td class="neg">-586.55</td><td>1462.30</td><td>19.6</td><td class="pos">1</td><td>62</td></tr><tr><td>2,987</td><td class="pos">231</td><td>19.5</td><td>172.55</td><td class="pos">+46.25</td><td>0.2016</td><td>-31.23</td><td class="strike-col">58,700</td><td>-31.23</td><td>-0.7984</td><td class="neg">-290.35</td><td>1543.70</td><td>19.5</td><td class="neg">-4</td><td>32</td></tr><tr><td>3,345</td><td class="neg">-166</td><td>19.5</td><td>153.85</td><td class="pos">+39.35</td><td>0.1843</td><td>-29.55</td><td class="strike-col">58,800</td><td>-29.55</td><td>-0.8157</td><td class="neg">-775.60</td><td>1547.70</td><td>19.5</td><td class="neg">-3</td><td>316</td></tr><tr><td>2,281</td><td class="neg">-56</td><td>19.5</td><td>136.05</td><td class="pos">+33.55</td><td>0.1674</td><td>-27.74</td><td class="strike-col">58,900</td><td>-27.74</td><td>-0.8326</td><td class="neg">-478.30</td><td>1661.70</td><td>19.5</td><td class="neg">-2</td><td>77</td></tr><tr><td>28,379</td><td class="neg">-564</td><td>19.1</td><td>119.30</td><td class="pos">+27.30</td><td>0.1473</td><td>-25.01</td><td class="strike-col">59,000</td><td>-25.01</td><td>-0.8527</td><td class="neg">-790.25</td><td>1745.00</td><td>19.1</td><td class="pos">14</td><td>7,702</td></tr><tr><td>2,548</td><td class="pos">68</td><td>19.5</td><td>107.85</td><td class="pos">+23.15</td><td>0.1385</td><td>-24.54</td><td class="strike-col">59,100</td><td>-24.54</td><td>-0.8615</td><td class="neg">-502.35</td><td>1904.90</td><td>19.5</td><td class="pos">1</td><td>15</td></tr><tr><td>1,985</td><td class="neg">-1,305</td><td>19.5</td><td>94.70</td><td class="pos">+18.25</td><td>0.1248</td><td>-22.79</td><td class="strike-col">59,200</td><td>-22.79</td><td>-0.8752</td><td class="neg">-563.25</td><td>1965.00</td><td>19.5</td><td class="pos">6</td><td>27</td></tr><tr><td>2,507</td><td class="pos">1,147</td><td>19.6</td><td>84.75</td><td class="pos">+16.40</td><td>0.1135</td><td>-21.41</td><td class="strike-col">59,300</td><td>-21.41</td><td>-0.8865</td><td class="neg">-722.20</td><td>2057.80</td><td>19.6</td><td class="neg">-1</td><td>49</td></tr><tr><td>1,530</td><td class="pos">237</td><td>19.7</td><td>75.20</td><td class="pos">+11.60</td><td>0.1025</td><td>-19.96</td><td class="strike-col">59,400</td><td>-19.96</td><td>-0.8975</td><td class="pos">+26.05</td><td>2796.05</td><td>19.7</td><td class="pos">0</td><td>33</td></tr><tr><td>13,712</td><td class="pos">833</td><td>17.7</td><td>66.45</td><td class="pos">+10.45</td><td>0.0699</td><td>-13.51</td><td class="strike-col">59,500</td><td>-13.51</td><td>-0.9301</td><td class="neg">-850.65</td><td>2174.30</td><td>17.7</td><td class="neg">-104</td><td>1,230</td></tr><tr><td>1,673</td><td class="neg">-110</td><td>19.6</td><td>57.55</td><td class="pos">+5.95</td><td>0.0820</td><td>-16.91</td><td class="strike-col">59,600</td><td>-16.91</td><td>-0.9180</td><td class="neg">-198.45</td><td>2369.55</td><td>19.6</td><td class="pos">1</td><td>147</td></tr><tr><td>3,825</td><td class="pos">2,282</td><td>19.7</td><td>51.15</td><td class="pos">+4.75</td><td>0.0740</td><td>-15.70</td><td class="strike-col">59,700</td><td>-15.70</td><td>-0.9260</td><td class="neg">-43.50</td><td>3079.00</td><td>19.7</td><td class="pos">0</td><td>44</td></tr><tr><td>1,985</td><td class="pos">404</td><td>19.8</td><td>45.10</td><td class="pos">+3.40</td><td>0.0663</td><td>-14.47</td><td class="strike-col">59,800</td><td>-14.47</td><td>-0.9337</td><td class="neg">-744.00</td><td>2501.00</td><td>19.8</td><td class="neg">-3</td><td>77</td></tr><tr><td>2,095</td><td class="neg">-133</td><td>20.1</td><td>42.20</td><td class="pos">+4.55</td><td>0.0618</td><td>-13.93</td><td class="strike-col">59,900</td><td>-13.93</td><td>-0.9382</td><td class="neg">-273.10</td><td>3270.30</td><td>20.1</td><td class="pos">0</td><td>51</td></tr><tr><td>44,926</td><td class="neg">-789</td><td>20.0</td><td>36.00</td><td class="pos">+1.05</td><td>0.0541</td><td>-12.50</td><td class="strike-col">60,000</td><td>-12.50</td><td>-0.9459</td><td class="neg">-807.95</td><td>2672.30</td><td>20.0</td><td class="neg">-846</td><td>9,647</td></tr><tr><td>2,278</td><td class="neg">-23</td><td>20.4</td><td>34.10</td><td class="pos">+3.20</td><td>0.0509</td><td>-12.11</td><td class="strike-col">60,100</td><td>-12.11</td><td>-0.9491</td><td class="pos">+0.00</td><td>3642.50</td><td>20.4</td><td class="pos">0</td><td>12</td></tr><tr><td>4,510</td><td class="pos">2,870</td><td>20.4</td><td>29.90</td><td class="pos">+0.50</td><td>0.0453</td><td>-11.06</td><td class="strike-col">60,200</td><td>-11.06</td><td>-0.9547</td><td class="neg">-464.05</td><td>2781.95</td><td>20.4</td><td class="neg">-1</td><td>79</td></tr><tr><td>1,292</td><td class="pos">560</td><td>20.7</td><td>27.85</td><td class="pos">+2.40</td><td>0.0421</td><td>-10.57</td><td class="strike-col">60,300</td><td>-10.57</td><td>-0.9579</td><td class="neg">-195.20</td><td>3657.80</td><td>20.7</td><td class="pos">0</td><td>20</td></tr><tr><td>761</td><td class="pos">86</td><td>20.7</td><td>24.20</td><td class="pos">+1.10</td><td>0.0373</td><td>-9.57</td><td class="strike-col">60,400</td><td>-9.57</td><td>-0.9627</td><td class="neg">-847.85</td><td>3190.00</td><td>20.7</td><td class="pos">0</td><td>44</td></tr><tr><td>7,605</td><td class="pos">1,557</td><td>20.9</td><td>22.05</td><td class="pos">+0.40</td><td>0.0341</td><td>-8.98</td><td class="strike-col">60,500</td><td>-8.98</td><td>-0.9659</td><td class="neg">-740.50</td><td>3154.35</td><td>20.9</td><td class="neg">-12</td><td>545</td></tr><tr><td>527</td><td class="neg">-48</td><td>21.1</td><td>19.90</td><td class="neg">-0.35</td><td>0.0309</td><td>-8.35</td><td class="strike-col">60,600</td><td>-8.35</td><td>-0.9691</td><td class="neg">-373.40</td><td>3951.60</td><td>21.1</td><td class="pos">0</td><td>54</td></tr><tr><td>463</td><td class="pos">30</td><td>20.9</td><td>16.20</td><td class="neg">-2.20</td><td>0.0260</td><td>-7.17</td><td class="strike-col">60,700</td><td>-7.17</td><td>-0.9740</td><td class="neg">-850.00</td><td>4050.00</td><td>20.9</td><td class="pos">0</td><td>42</td></tr><tr><td>457</td><td class="pos">175</td><td>21.1</td><td>14.85</td><td class="neg">-1.65</td><td>0.0239</td><td>-6.74</td><td class="strike-col">60,800</td><td>-6.74</td><td>-0.9761</td><td class="neg">-128.95</td><td>3575.25</td><td>21.1</td><td class="pos">0</td><td>30</td></tr><tr><td>516</td><td class="pos">43</td><td>21.8</td><td>15.80</td><td class="pos">+0.10</td><td>0.0245</td><td>-7.12</td><td class="strike-col">60,900</td><td>-7.12</td><td>-0.9755</td><td class="pos">+407.30</td><td>4247.30</td><td>21.8</td><td class="pos">0</td><td>14</td></tr><tr><td>26,138</td><td class="neg">-2,774</td><td>21.1</td><td>14.45</td><td class="pos">+0.85</td><td>0.0184</td><td>-5.42</td><td class="strike-col">61,000</td><td>-5.42</td><td>-0.9816</td><td class="neg">-779.10</td><td>3642.35</td><td>21.1</td><td class="neg">-562</td><td>4,487</td></tr><tr><td>707</td><td class="pos">134</td><td>22.0</td><td>12.45</td><td class="neg">-0.75</td><td>0.0197</td><td>-5.97</td><td class="strike-col">61,100</td><td>-5.97</td><td>-0.9803</td><td class="neg">-1220.50</td><td>3800.00</td><td>22.0</td><td class="neg">-1</td><td>45</td></tr><tr><td>583</td><td class="pos">36</td><td>22.5</td><td>12.50</td><td class="pos">+0.95</td><td>0.0194</td><td>-6.02</td><td class="strike-col">61,200</td><td>-6.02</td><td>-0.9806</td><td class="neg">-582.10</td><td>4544.35</td><td>22.5</td><td class="pos">0</td><td>48</td></tr><tr><td>1,116</td><td class="pos">77</td><td>22.2</td><td>9.85</td><td class="neg">-1.65</td><td>0.0159</td><td>-5.00</td><td class="strike-col">61,300</td><td>-5.00</td><td>-0.9841</td><td class="neg">-746.00</td><td>4046.00</td><td>22.2</td><td class="pos">0</td><td>50</td></tr><tr><td>1,236</td><td class="pos">909</td><td>22.2</td><td>8.55</td><td class="neg">-1.95</td><td>0.0140</td><td>-4.49</td><td class="strike-col">61,400</td><td>-4.49</td><td>-0.9860</td><td class="neg">-1149.05</td><td>4742.90</td><td>22.2</td><td class="pos">0</td><td>20</td></tr><tr><td>8,098</td><td class="neg">-447</td><td>22.5</td><td>8.20</td><td class="neg">-0.85</td><td>0.0133</td><td>-4.36</td><td class="strike-col">61,500</td><td>-4.36</td><td>-0.9867</td><td class="neg">-805.30</td><td>4160.30</td><td>22.5</td><td class="neg">-553</td><td>746</td></tr><tr><td>417</td><td class="pos">26</td><td>23.0</td><td>8.25</td><td class="neg">-0.80</td><td>0.0131</td><td>-4.40</td><td class="strike-col">61,600</td><td>-4.40</td><td>-0.9869</td><td class="neg">-5486.00</td><td>4941.75</td><td>23.0</td><td class="pos">0</td><td>14</td></tr><tr><td>845</td><td class="pos">364</td><td>22.8</td><td>6.65</td><td class="neg">-1.90</td><td>0.0109</td><td>-3.71</td><td class="strike-col">61,700</td><td>-3.71</td><td>-0.9891</td><td class="neg">-237.75</td><td>5041.25</td><td>22.8</td><td class="pos">0</td><td>8</td></tr><tr><td>463</td><td class="pos">1</td><td>23.5</td><td>7.35</td><td class="neg">-0.60</td><td>0.0116</td><td>-4.04</td><td class="strike-col">61,800</td><td>-4.04</td><td>-0.9884</td><td class="neg">-459.20</td><td>5140.80</td><td>23.5</td><td class="pos">0</td><td>25</td></tr><tr><td>426</td><td class="pos">71</td><td>23.6</td><td>6.50</td><td class="neg">-1.15</td><td>0.0103</td><td>-3.67</td><td class="strike-col">61,900</td><td>-3.67</td><td>-0.9897</td><td class="neg">-671.05</td><td>5240.45</td><td>23.6</td><td class="pos">0</td><td>13</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STRATEGY panel -->
+  <div class="sub-panel" id="strategy-banknifty">
+    
+<div class="strat-card">
+  <div class="sm-title" style="margin-bottom:10px">Recommended strategy</div>
+  <div class="strat-name">Bull Call Spread <span class="strat-bias badge tone-up">Bullish</span></div>
+  <div class="strat-legs"><div class="strat-leg leg-buy"><span class="sl-action">BUY</span> <span class="sl-strike">57,400 CE</span> <span class="sl-prem">@ 650.45</span></div><div class="strat-leg leg-sell"><span class="sl-action">SELL</span> <span class="sl-strike">58,400 CE</span> <span class="sl-prem">@ 243.10</span></div></div>
+  <div class="strat-meta">
+    <div><span class="strat-lbl">Lot size</span><span class="strat-val">30</span></div>
+    <div><span class="strat-lbl">Max profit</span><span class="strat-val pos">₹17,780</span></div>
+    <div><span class="strat-lbl">Max loss</span><span class="strat-val neg">₹-12,220</span></div>
+    <div><span class="strat-lbl">Breakeven(s)</span><span class="strat-val">57,808</span></div>
+  </div>
+  <div class="strat-reason">Buy 57,400 CE @ 650.45, Sell 58,400 CE @ 243.10. Net debit strategy that profits from a moderate upside move. Capped risk and reward.</div>
+  <div class="sm-title" style="margin-top:14px; margin-bottom:6px">P&amp;L at expiry — interactive simulator</div>
+  <div class="pnl-sim">
+    <canvas id="pnl-canvas-banknifty" width="680" height="350"></canvas>
+    <div class="pnl-legend">
+      <span class="pl-item"><span class="pl-swatch" style="background:#3d9cf5"></span>P&amp;L curve</span>
+      <span class="pl-item"><span class="pl-swatch" style="background:#f5a623"></span>Breakeven</span>
+      <span class="pl-item"><span class="pl-swatch" style="background:#00e5a0"></span>Buy / Max profit</span>
+      <span class="pl-item"><span class="pl-swatch" style="background:#ff4d6d"></span>Sell / Max loss</span>
+      <span class="pl-item"><span class="pl-swatch" style="background:rgba(255,255,255,0.3)"></span>Spot price</span>
+    </div>
+    <div class="pnl-controls">
+      <label>Simulated index price:</label>
+      <input type="range" id="pnl-slider-banknifty" min="0" max="1" step="0.001" value="0.5">
+      <span id="pnl-readout-banknifty" class="pnl-readout"></span>
+    </div>
+  </div>
+</div>
+  </div>
+</div>
+
+  <div class="news-wrap">
+    <div class="sm-title" style="margin-bottom:10px">Market headlines</div>
+    <div class="news-item"><a class="nw-link" href="https://news.google.com/rss/articles/CBMi_AFBVV95cUxOaDhYbncyX0Z0Y2Frb3lqbG9CQUZzOUhWS0hkYmZkZGJ2UXJSVjFBVkowSVNTRmlHMkFONG9qc0VlUk1HUGpacGJ1Vms2WGlZTWdYTlVGdGNjRjBYQUltbHBoTjZSYjBhWmxkU2NQWWV0ZmZQYnlHVjNkUXlzMlhIX1FIN183NkRJTVdKa0Y3NUt3NENkV19SYS0tS0NGbmQtQmtrYkh1Y0hKckJkal83V2lycHd3dVlfM0x4SHVRVUNIU1dMYlAtRzVMd05aSW1Zcm14WVBQZzg4RlBlMUxGT1d2d2dKc01EQ2I4UEhGT0RkQS1EcmwtRWhyT1rSAYICQVVfeXFMT3ludkd6b0dVRUNhRjV4blZmWmJReTFQUUZ2SUlIUGxnMDZJZ3ViZlJ1SVpiQjRnb3AyVHY3eE8wamxoX2I0Z3pfMWR4VG1Mdk42NGs0UEtIYkRRdkpBVkN6VTZrdkZOdDdYbExCMm1iNDJVZDhuUk8zLVJBLXN3TzZpYmFKSkpsdTZJSWxqRUZual9XbGRrWlJ2UFBqazVQTFNnSXl4OHhCNnBJX1Q2d0Z4dURXX0paODJ5bkJkWUFKZ084Z0prTXVDUU1SZGJqNTVDcHVkZlFqS3R2LWthLU5QV3NleWhaaGlyc3RwOGd0VUhsQWNJdFp0VkJOMDFTZTBn?oc=5" target="_blank" rel="noopener">Nifty 50 Trading Strategy: Analysts recommend Bull Call Spread options strategy for 28 April expiry - Mint</a><div class="nw-meta">Google News · Tue, 21 Apr 2026 06:47:30 GMT</div></div><div class="news-item"><a class="nw-link" href="https://news.google.com/rss/articles/CBMi6wFBVV95cUxOZUo4R2tlT25fMm9YMkl2czYyWGRWd1NrOXVoREQ4WTRGX2p2b3V2VUJFMk9vc1VLV0dCekx6Sk9abTlxT1YxOXU1Yk81ZzM5cWpFZGtlaXF1dndzRHVhaklFc2J4TmhGbDJFZnJqSjEtZmdxVExKUEtybGpmQ1FsdlRBY2xGbHdYVDhwanc2MzNEalZYNzhMeGxleXJqbVBFUDRrRC1uOExtVEtoT2dxbldicG03RDJub0RXajZoZll1YVRTMXozeklLNjcxNVRqVFo0dHJhOXlkWFN0S1B3MkxZX3FCbXkzZm5Z?oc=5" target="_blank" rel="noopener">What is Bank Nifty? An Updated Guide to Index Weights, Volatility, and Institutional Trading Strategy - Upstox</a><div class="nw-meta">Google News · Fri, 17 Apr 2026 04:58:08 GMT</div></div><div class="news-item"><a class="nw-link" href="https://news.google.com/rss/articles/CBMiqgFBVV95cUxOaFhXdkhFLWdEdU05WTlZbkpUSE9rYnZpaXZMM3JLQ21pN3FFTzQwU3FGU0hjQmRBQ3plcm8zVW45aEdBMG9CcnpXb0NyTEZFX2Rrc0psUVJkX2xBNTN6S1lfTGJEWEEyVThqVDFnUHZiMFZRSDl5eFJFS0ZoOUVZRll4VDloMWdTWHFjOWJOdld6V2J3TDUtZ0lsV0RTVDk0clBRSmhnS053QQ?oc=5" target="_blank" rel="noopener">What Is Option Chain? | IIFL Capital - India Infoline</a><div class="nw-meta">Google News · Fri, 17 Apr 2026 07:00:00 GMT</div></div><div class="news-item"><a class="nw-link" href="https://news.google.com/rss/articles/CBMiV0FVX3lxTE1MbDhrd01qWkVHejFJaHhvNHhRQ21SRVVxUnNPWlkxRXZzQnp6WTZSRnNSTHhTeEdYVUxmT2RJX2l4c1U3ZjVtcWtLNU1WUjZ2Y3V3TktiVQ?oc=5" target="_blank" rel="noopener">April 2026 F&amp;O Monthly Expiry - Groww</a><div class="nw-meta">Google News · Wed, 08 Apr 2026 07:00:00 GMT</div></div><div class="news-item"><a class="nw-link" href="https://news.google.com/rss/articles/CBMi-AFBVV95cUxNNGI2RF9rVEhaU0xNbThmcnR1T2VOM2pfY2JlUHpjUDVCV1NNZ1czTU50Ql93Y1RqWkJ4WWFXMGFyNHpaS3V1a0t0QWpiMmhLQTE2c1VxNmRaU0NQWEZQcXFFWkdZbTU0Z0VhRjh4MHNuWkI1VXZwY2RBX2toV0w5dnpjTG53Y2dkLWtJRkR1NVZpZGVTLTJnNjF1Sk9yeG9POVV3dTJEMnlxY1hxbldELW15QzgxMi1pR3RPQlEyVVpGT3FzUkdWeXZJX19Uem5WX0FqZ0xSTzVIOU1QR19yWWItMjFFZjYtdzE1N2s4aVZTVHpOczFQbtIB_gFBVV95cUxQUExqTWpvYUUzaUdHYzRWSDBmVVJoem9Dcm9zMU5Nc3dzcVNQLW1qR0pCbnNCdFBpalBEMWxXcWFrSEk1Qkx1NHRLNWNzVkR5SGVzZF9Dc29sTTE5OTR2SWxMTUJkTVF5NVpNeVBrUENTX3JLeV9CeEd3ZW10Mk5jT2dBZUdnQlc4RHdYWDF4bENyUXdMb3d4SHR6VzNyUzFnMHIzcnJQam1xbkdpVk1ldmZ1Nkt6bnNsSmlNOHR5VERXWWFadzFfdmR4S1ZsRFozVzU4MVJpaFFRaFVCM0h1LVdneEJ5Ym1lR3doRTdWSWRXVG1wM0FqUW1pR3JZdw?oc=5" target="_blank" rel="noopener">Nifty 50, Sensex prediction today: Check how Indian stock market is expected to trade on 21 April - Mint</a><div class="nw-meta">Google News · Tue, 21 Apr 2026 01:48:15 GMT</div></div><div class="news-item"><a class="nw-link" href="https://news.google.com/rss/articles/CBMiiAFBVV95cUxQU09kLTF5VWZPSFJKMENuYktqNlQtUkN1LV9KSnIwbGdvc3BMYmJtRC1oTnprTDFJMFhxbS1FMHVSeE9jT2IzN0pvZXlQOWdvUmNnN3B0SWtYalpKVFdvVnZVcXNsS3lhU1VCMmR1MWdGU0J3NWpLeVV5V05aUHlTeXEyTE9QYzBn?oc=5" target="_blank" rel="noopener">India’s NSE to launch same-day options on NIFTY Index - Futures &amp; Options World (FOW)</a><div class="nw-meta">Google News · Tue, 30 Sep 2025 07:00:00 GMT</div></div><div class="news-item"><a class="nw-link" href="https://news.google.com/rss/articles/CBMivgFBVV95cUxPV2FPUXpiLXhnTXFUb3J4S29EbUQyRDliWDdzNzBtenBZLTFYMTB4T0hyaGh1WlU2RlY1TDFhTmJLb1JHQ28zU1YwV083UjA1MVkxZlpqWHlTazMtZmlhMHdtcTNrUE14Q1hFb1AyNS1PYXdHWnpoWjVnaHZzTGswRzJROW5wWTl5dVA5eWpmaWJVbEpKaTd2dTJramNqWFNDUzBFLW9rWmxYUUVYMGdxdk9Xd3UwYnJwSmNFaVhn?oc=5" target="_blank" rel="noopener">Nifty Bank Outlook: Index Under Pressure; Key Support At 58,300 Crucial For Recovery - Samco</a><div class="nw-meta">Google News · Thu, 05 Mar 2026 08:00:00 GMT</div></div><div class="news-item"><a class="nw-link" href="https://news.google.com/rss/articles/CBMi7wFBVV95cUxQbl9wQTdlTVJOS21ETl9HVFJyYjNIVHJyYjZvYTRDaU1QQk5ETkxFSDI0SHQ5SnhkUDVyMkpGQ2lEU3pjaHJWQWZUTm0yLUY4b3VDd1J4SEJDZ29uMHVwVG8waW1Lekl4THV4YnA1UVFDcTJ2djFkeXRrVzFldGx5TU9hMlNPNm9nd3M0N1FiaUY0M0JGTkNYY3k2M0FGSElQWGw4RzVlREE2TlFuQV9ObXg4ek9aNnZkeHEtTmtTUEc0TlhLcTQ0MV9lYVE3a3lfd0tRWkF2WWhRYm1BYmgtZmItRGhaZUF3RjFObnhYVdIB9AFBVV95cUxQVkpJRGxDbzVOY2toRWdXNWlHS0xsdnd5X0hjdUdySW4zOGRNNUxDZTc5UXUySHNnbjlOYXhNZjNLNVBQSHEzSFdoMkxwYXJKeUlWdkg1cVNjcGZqb3BBc1RrNGtENVR3UktFMGZ0dGFiTUM4QXNXWmtIdnpVZW1GRGcxRW12T2FQLTVNdGlPc2xrN1N4cUxkclpIdnd5eEtxTE15YzZ1VzZFZUdEaWpSN0haMTZKendMVThCZGJuUGhZY0pkSmg4aEdVazZFVWZ1aWJSUk05Qk9wTXc4LWdPZ2RpY2w5dkJJeVUzenlQVjJLVV9t?oc=5" target="_blank" rel="noopener">Reminder for F&amp;O traders: Lot sizes of Nifty, Bank Nifty, two other NSE indices change from tomorrow - Moneycontrol.com</a><div class="nw-meta">Google News · Tue, 30 Dec 2025 08:00:00 GMT</div></div>
+  </div>
+  <div class="report-footer">Generated 2026-04-21 18:58 IST · IST<br>Option chain from Groww SSR · Cash breadth from NSE equity-stockIndices API · For educational use only.</div>
+</div>
+
+<script>
+(function() {
+  /* Track slider state per slug so we can re-draw on tab reveal */
+  const sliderState = {};
+
+  function tryDrawSlug(slug) {
+    const canvas = document.getElementById('pnl-canvas-'+slug);
+    if(!canvas || canvas.clientWidth === 0) return;
+    const pct = sliderState[slug] !== undefined ? sliderState[slug] : 0.5;
+    drawPnl(slug, pct);
+  }
+
+  /* Index tab switching – redraw any visible canvas after switch */
+  document.querySelectorAll('.idx-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.idx-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.idx-block').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const block = document.querySelector('.idx-block[data-idx="'+btn.dataset.idx+'"]');
+      if(block) {
+        block.classList.add('active');
+        requestAnimationFrame(() => tryDrawSlug(btn.dataset.idx));
+      }
+    });
+  });
+
+  /* Sub-tab switching – draw canvas when Strategy panel becomes visible */
+  document.querySelectorAll('.sub-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const parent = btn.closest('.idx-block');
+      parent.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+      parent.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const panel = parent.querySelector('#'+btn.dataset.panel);
+      if(panel) {
+        panel.classList.add('active');
+        const slug = parent.dataset.idx;
+        if(panel.id && panel.id.startsWith('strategy-')) {
+          requestAnimationFrame(() => tryDrawSlug(slug));
+        }
+      }
+    });
+  });
+
+  /* P&L simulator */
+  const strategies = {"nifty": {"legs":[{"kind":"PE","strike":24600.0,"action":"SELL","premium":23.35,"lots":1},{"kind":"PE","strike":24500.0,"action":"BUY","premium":0.05,"lots":1}],"lot_size":65,"spot":24576.6},"banknifty": {"legs":[{"kind":"CE","strike":57400.0,"action":"BUY","premium":650.45,"lots":1},{"kind":"CE","strike":58400.0,"action":"SELL","premium":243.1,"lots":1}],"lot_size":30,"spot":57371.45}};
+  const green='#00e5a0', red='#ff4d6d', blue='#3d9cf5', text2='#9899a8', bg3='#12131a', border='rgba(255,255,255,0.07)';
+
+  function pnlAt(strat, price) {
+    let total = 0;
+    strat.legs.forEach(l => {
+      const intr = l.kind==='CE' ? Math.max(0,price-l.strike) : Math.max(0,l.strike-price);
+      total += (l.action==='BUY' ? (intr-l.premium) : (l.premium-intr)) * l.lots * strat.lot_size;
+    });
+    return total;
+  }
+
+  function drawPnl(slug, simPct) {
+    const strat = strategies[slug];
+    if(!strat) return;
+    const canvas = document.getElementById('pnl-canvas-'+slug);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio||1;
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    canvas.width = W*dpr; canvas.height = H*dpr;
+    ctx.scale(dpr,dpr);
+
+    const strikes = strat.legs.map(l=>l.strike);
+    const spread = Math.max(...strikes) - Math.min(...strikes);
+    const pad = Math.max(spread*1.5, strat.spot*0.04);
+    const lo = Math.min(...strikes, strat.spot) - pad;
+    const hi = Math.max(...strikes, strat.spot) + pad;
+    const simPrice = lo + (hi-lo)*simPct;
+
+    const N = 400;
+    let pts = [], minP=Infinity, maxP=-Infinity;
+    for(let i=0;i<=N;i++) {
+      const px = lo + (hi-lo)*i/N;
+      const py = pnlAt(strat, px);
+      pts.push({x:px,y:py});
+      if(py<minP) minP=py; if(py>maxP) maxP=py;
+    }
+    const pPad = Math.max(Math.abs(maxP), Math.abs(minP)) * 0.15 || 100;
+    const yLo = minP - pPad, yHi = maxP + pPad;
+
+    const mL=58, mR=20, mT=18, mB=44;
+    const cW=W-mL-mR, cH=H-mT-mB;
+    const toX = v => mL + (v-lo)/(hi-lo)*cW;
+    const toY = v => mT + (1 - (v-yLo)/(yHi-yLo))*cH;
+
+    // Background
+    ctx.fillStyle=bg3; ctx.fillRect(0,0,W,H);
+
+    // Grid lines
+    ctx.strokeStyle=border; ctx.lineWidth=1;
+    for(let i=0;i<=5;i++) {
+      const y = mT + cH*i/5;
+      ctx.beginPath(); ctx.moveTo(mL,y); ctx.lineTo(W-mR,y); ctx.stroke();
+    }
+
+    // Zero line
+    const zeroY = toY(0);
+    if(zeroY >= mT && zeroY <= mT+cH) {
+      ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1.5;
+      ctx.setLineDash([6,4]); ctx.beginPath(); ctx.moveTo(mL,zeroY); ctx.lineTo(W-mR,zeroY); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // Fill profit/loss areas
+    ctx.save(); ctx.beginPath(); ctx.rect(mL,mT,cW,cH); ctx.clip();
+    // Profit fill
+    ctx.beginPath(); ctx.moveTo(toX(pts[0].x), Math.min(toY(pts[0].y), zeroY));
+    pts.forEach(p => { const py=toY(p.y); ctx.lineTo(toX(p.x), Math.min(py, zeroY)); });
+    ctx.lineTo(toX(pts[pts.length-1].x), zeroY); ctx.lineTo(toX(pts[0].x), zeroY); ctx.closePath();
+    ctx.fillStyle='rgba(0,229,160,0.08)'; ctx.fill();
+    // Loss fill
+    ctx.beginPath(); ctx.moveTo(toX(pts[0].x), Math.max(toY(pts[0].y), zeroY));
+    pts.forEach(p => { const py=toY(p.y); ctx.lineTo(toX(p.x), Math.max(py, zeroY)); });
+    ctx.lineTo(toX(pts[pts.length-1].x), zeroY); ctx.lineTo(toX(pts[0].x), zeroY); ctx.closePath();
+    ctx.fillStyle='rgba(255,77,109,0.08)'; ctx.fill();
+    ctx.restore();
+
+    // ── Breakeven vertical lines (profit/loss boundary) ──
+    const beLines = [];
+    for(let i=1;i<pts.length;i++) {
+      if(pts[i-1].y * pts[i].y < 0) {
+        const ratio = Math.abs(pts[i-1].y) / (Math.abs(pts[i-1].y)+Math.abs(pts[i].y));
+        beLines.push(pts[i-1].x + (pts[i].x - pts[i-1].x)*ratio);
+      }
+    }
+    beLines.forEach(be => {
+      const bx = toX(be);
+      ctx.strokeStyle='#f5a623'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+      ctx.beginPath(); ctx.moveTo(bx, mT); ctx.lineTo(bx, mT+cH); ctx.stroke(); ctx.setLineDash([]);
+      // diamond marker at zero crossing
+      ctx.fillStyle='#f5a623';
+      ctx.beginPath(); ctx.moveTo(bx, zeroY-6); ctx.lineTo(bx+5, zeroY); ctx.lineTo(bx, zeroY+6); ctx.lineTo(bx-5, zeroY); ctx.closePath(); ctx.fill();
+      // label
+      ctx.font='700 9px "Fira Code"'; ctx.textAlign='center';
+      ctx.fillStyle='#08090d';
+      ctx.fillText('BE', bx, zeroY+3);
+      ctx.fillStyle='#f5a623';
+      ctx.fillText(Math.round(be).toLocaleString(), bx, mT+cH+24);
+    });
+
+    // ── Max profit / max loss horizontal boundary lines ──
+    const mpY = toY(maxP), mlY = toY(minP);
+    // Max profit line
+    if(mpY >= mT && mpY <= mT+cH) {
+      ctx.strokeStyle='rgba(0,229,160,0.45)'; ctx.lineWidth=1; ctx.setLineDash([3,5]);
+      ctx.beginPath(); ctx.moveTo(mL, mpY); ctx.lineTo(W-mR, mpY); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle=green; ctx.font='600 9px "Fira Code"'; ctx.textAlign='left';
+      ctx.fillText('MAX PROFIT +'+(Math.round(maxP)).toLocaleString(), mL+4, mpY-4);
+    }
+    // Max loss line
+    if(mlY >= mT && mlY <= mT+cH) {
+      ctx.strokeStyle='rgba(255,77,109,0.45)'; ctx.lineWidth=1; ctx.setLineDash([3,5]);
+      ctx.beginPath(); ctx.moveTo(mL, mlY); ctx.lineTo(W-mR, mlY); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle=red; ctx.font='600 9px "Fira Code"'; ctx.textAlign='left';
+      ctx.fillText('MAX LOSS '+(Math.round(minP)).toLocaleString(), mL+4, mlY+12);
+    }
+
+    // ── Profit / Loss zone labels ──
+    // Place "PROFIT" / "LOSS" labels in the largest profit and loss regions
+    if(beLines.length > 0) {
+      // find widest profit zone
+      const edges = [lo, ...beLines, hi];
+      let bestProfit = null, bestLoss = null;
+      for(let j=0; j<edges.length-1; j++) {
+        const mid = (edges[j]+edges[j+1])/2;
+        const pnlMid = pnlAt(strat, mid);
+        const width = edges[j+1]-edges[j];
+        if(pnlMid > 0 && (!bestProfit || width > bestProfit.w)) bestProfit = {mid, w:width};
+        if(pnlMid < 0 && (!bestLoss || width > bestLoss.w)) bestLoss = {mid, w:width};
+      }
+      ctx.font='700 11px "Fira Code"'; ctx.globalAlpha=0.18;
+      if(bestProfit) { ctx.fillStyle=green; ctx.textAlign='center'; ctx.fillText('PROFIT', toX(bestProfit.mid), zeroY-14); }
+      if(bestLoss) { ctx.fillStyle=red; ctx.textAlign='center'; ctx.fillText('LOSS', toX(bestLoss.mid), zeroY+18); }
+      ctx.globalAlpha=1;
+    }
+
+    // ── P&L curve (drawn on top) ──
+    ctx.beginPath(); ctx.moveTo(toX(pts[0].x), toY(pts[0].y));
+    for(let i=1;i<pts.length;i++) ctx.lineTo(toX(pts[i].x), toY(pts[i].y));
+    ctx.strokeStyle=blue; ctx.lineWidth=2.5; ctx.stroke();
+
+    // ── Strike markers ──
+    strat.legs.forEach(l => {
+      const sx = toX(l.strike);
+      ctx.strokeStyle = l.action==='BUY' ? green : red;
+      ctx.lineWidth=1; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(sx,mT); ctx.lineTo(sx,mT+cH); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = l.action==='BUY' ? green : red;
+      ctx.font='600 9px "Fira Code"'; ctx.textAlign='center';
+      ctx.fillText(l.action+' '+l.strike.toLocaleString()+' '+l.kind, sx, mT+cH+12);
+    });
+
+    // ── Spot marker ──
+    const spotX = toX(strat.spot);
+    ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1; ctx.setLineDash([2,4]);
+    ctx.beginPath(); ctx.moveTo(spotX,mT); ctx.lineTo(spotX,mT+cH); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=text2; ctx.font='600 9px "Fira Code"'; ctx.textAlign='center';
+    ctx.fillText('SPOT '+strat.spot.toLocaleString(), spotX, mT-5);
+
+    // ── Simulation crosshair ──
+    const simX = toX(simPrice), simPnl = pnlAt(strat, simPrice), simY = toY(simPnl);
+    ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(simX,mT); ctx.lineTo(simX,mT+cH); ctx.stroke();
+    // horizontal guide from dot to Y-axis
+    ctx.beginPath(); ctx.moveTo(mL, simY); ctx.lineTo(simX, simY); ctx.stroke();
+    ctx.setLineDash([]);
+    // dot
+    ctx.beginPath(); ctx.arc(simX, simY, 6, 0, Math.PI*2);
+    ctx.fillStyle = simPnl>=0 ? green : red; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    // P&L value next to dot
+    ctx.fillStyle = simPnl>=0 ? green : red;
+    ctx.font='700 10px "Fira Code"'; ctx.textAlign='left';
+    ctx.fillText((simPnl>=0?'+':'')+Math.round(simPnl).toLocaleString(), simX+10, simY+4);
+
+    // ── Y-axis labels ──
+    ctx.fillStyle=text2; ctx.font='10px "Fira Code"'; ctx.textAlign='right';
+    for(let i=0;i<=5;i++) {
+      const val = yHi - (yHi-yLo)*i/5;
+      ctx.fillText((val>=0?'+':'')+Math.round(val).toLocaleString(), mL-6, mT+cH*i/5+4);
+    }
+
+    // ── Readout ──
+    const readout = document.getElementById('pnl-readout-'+slug);
+    if(readout) {
+      const clr = simPnl>=0 ? green : red;
+      const zone = simPnl > 0 ? '<span style="color:'+green+'"> PROFIT</span>' : (simPnl < 0 ? '<span style="color:'+red+'"> LOSS</span>' : ' BREAKEVEN');
+      readout.innerHTML = 'Index: <span style="color:#fff">'+simPrice.toFixed(0)+'</span> · P&L: <span style="color:'+clr+'">'+(simPnl>=0?'+':'')+Math.round(simPnl).toLocaleString()+'</span>'+zone;
+    }
+  }
+
+  Object.keys(strategies).forEach(slug => {
+    const slider = document.getElementById('pnl-slider-'+slug);
+    if(!slider) return;
+    sliderState[slug] = 0.5;
+    slider.addEventListener('input', () => {
+      sliderState[slug] = parseFloat(slider.value);
+      drawPnl(slug, sliderState[slug]);
+    });
+    window.addEventListener('resize', () => tryDrawSlug(slug));
+    /* Draw immediately only if canvas is currently visible (first index, strategy tab open) */
+    requestAnimationFrame(() => tryDrawSlug(slug));
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNDK · Risk Score Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090d; --bg2: #0d0e14; --bg3: #12131a; --bg4: #181922;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+    --green: #00e5a0; --green-dim: rgba(0,229,160,0.12);
+    --red: #ff4d6d; --red-dim: rgba(255,77,109,0.12);
+    --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
+    --blue: #3d9cf5; --blue-dim: rgba(61,156,245,0.12);
+    --purple: #9b7fff;
+    --text: #e8e9f0; --text2: #9899a8; --text3: #5c5d6e;
+    --mono: 'Fira Code', monospace; --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .page { max-width: 1120px; margin: 0 auto; padding: 32px 24px; }
+  .stock-header { display:flex; align-items:flex-start; justify-content:space-between; padding:28px 32px; background:linear-gradient(135deg,#0f1018,#131420 60%,#0d1020); border:1px solid var(--border2); border-radius:16px; position:relative; overflow:hidden; margin-bottom:20px; }
+  .stock-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--green),transparent); opacity:0.4; }
+  .sh-ticker { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--green); letter-spacing:2px; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+  .badge { border-radius:4px; padding:1px 6px; font-size:9px; font-weight:600; }
+  .badge-us { background:var(--green-dim); color:var(--green); border:1px solid rgba(0,229,160,0.2); }
+  .badge-sector { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(61,156,245,0.2); }
+  .badge-earnings { background:rgba(245,166,35,0.1); color:#f5a623; border:1px solid rgba(245,166,35,0.25); }
+  .badge-imminent { background:rgba(245,166,35,0.25); color:#ffcc00; border:1px solid rgba(255,204,0,0.4); animation: pulse-amber 1.5s ease-in-out infinite; }
+  .badge-exdiv { background:rgba(61,156,245,0.1); color:#3d9cf5; border:1px solid rgba(61,156,245,0.25); }
+  @keyframes pulse-amber { 0%,100% { box-shadow:0 0 4px rgba(255,204,0,0.2); } 50% { box-shadow:0 0 12px rgba(255,204,0,0.5); } }
+  .sh-actions { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 2px 0; }
+  .sh-actions .badge { font-size:10px; padding:2px 8px; border-radius:4px; font-weight:600; letter-spacing:0.3px; }
+  .sh-name { font-family:var(--mono); font-size:26px; font-weight:700; color:#fff; letter-spacing:-0.5px; margin-bottom:8px; }
+  .sh-meta { display:flex; gap:16px; flex-wrap:wrap; font-family:var(--mono); font-size:10px; color:var(--text2); }
+  .sh-right { text-align:right; }
+  .sh-price { font-family:var(--mono); font-size:36px; font-weight:700; color:#fff; letter-spacing:-1px; }
+  .sh-change { font-family:var(--mono); font-size:13px; font-weight:600; margin-top:4px; }
+  .sh-volume { font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:8px; }
+  .sh-timestamp { font-family:var(--mono); font-size:9px; color:var(--text3); margin-top:4px; }
+  .sh-ranges { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+  .sh-range { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9px; }
+  .sh-range-label { color:var(--text3); width:32px; text-align:right; letter-spacing:0.5px; flex-shrink:0; }
+  .sh-range-val { color:var(--text3); width:42px; text-align:right; flex-shrink:0; }
+  .sh-range-track { flex:1; height:4px; background:var(--border); border-radius:2px; position:relative; min-width:80px; }
+  .sh-range-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--green),var(--green)); }
+  .sh-range-dot { position:absolute; top:50%; width:10px; height:10px; border-radius:50%; background:var(--green); border:2px solid var(--bg); transform:translate(-50%,-50%); box-shadow:0 0 6px rgba(0,229,160,0.5); }
+  .gauge-kpi-row { display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }
+  .gauge-card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; }
+  .gauge-title { font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+  .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .kpi-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; transition:border-color 0.3s; }
+  .kpi-card:hover { border-color:var(--border2); }
+  .kpi-label { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:4px; }
+  .kpi-value { font-family:var(--mono); font-size:18px; font-weight:700; color:#fff; }
+  .kpi-sub { font-size:10px; color:var(--text2); margin-top:2px; }
+  .section { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:20px; }
+  .section-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  .card-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+  .metric-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:16px; position:relative; transition:transform 0.2s,box-shadow 0.2s; }
+  .metric-card:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+  .metric-card.beat { border-color:rgba(0,229,160,0.25); background:linear-gradient(145deg,var(--bg3),rgba(0,229,160,0.04)); }
+  .metric-card.beat::before { content:'✓ BEAT'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--green); background:var(--green-dim); border:1px solid rgba(0,229,160,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card.miss { border-color:rgba(255,77,109,0.25); background:linear-gradient(145deg,var(--bg3),rgba(255,77,109,0.04)); }
+  .metric-card.miss::before { content:'✕ MISS'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--red); background:var(--red-dim); border:1px solid rgba(255,77,109,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card.caution { border-color:rgba(245,166,35,0.25); background:linear-gradient(145deg,var(--bg3),rgba(245,166,35,0.04)); }
+  .metric-card.caution::before { content:'⚠ CAUTION'; position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:8px; color:var(--amber); background:var(--amber-dim); border:1px solid rgba(245,166,35,0.2); border-radius:3px; padding:1px 5px; }
+  .metric-card[data-tip] { cursor:pointer; }
+  .metric-card[data-tip]::after { content:attr(data-tip); position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:#1e1f2e; color:var(--text); border:1px solid var(--border2); border-radius:8px; padding:8px 12px; font-family:var(--mono); font-size:10px; line-height:1.5; white-space:normal; width:max-content; max-width:260px; z-index:50; pointer-events:none; opacity:0; transition:opacity 0.15s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+  .metric-card[data-tip]:hover::after { opacity:1; }
+  .mc-label { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+  .mc-value { font-family:var(--mono); font-size:22px; font-weight:700; color:#fff; }
+  .mc-bench { font-size:10px; color:var(--text2); margin-top:4px; }
+  .breakdown-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .breakdown-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .bc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .bc-title { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); }
+  .bc-score { font-family:var(--mono); font-size:28px; font-weight:700; }
+  .bc-max { font-family:var(--mono); font-size:12px; color:var(--text3); }
+  .bc-bar-track { height:4px; background:var(--bg4); border-radius:2px; overflow:hidden; margin-bottom:12px; }
+  .bc-bar-fill { height:100%; border-radius:2px; }
+  .bc-items { list-style:none; } .bc-items li { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text2); padding:3px 0; font-family:var(--mono); }
+  .bc-items li::before { content:'›'; color:var(--text3); }
+  .returns-strip { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
+  .page-break { border:none; border-top:2px dashed var(--border2); margin:36px 0; position:relative; }
+  .page-break::after { content:'PAGE 2'; position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:var(--bg); padding:0 12px; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:2px; }
+  table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
+  thead th { padding:10px 12px; text-align:right; color:var(--text3); font-weight:500; font-size:9px; letter-spacing:1px; text-transform:uppercase; border-bottom:2px solid var(--border2); }
+  thead th:first-child { text-align:left; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background 0.2s; } tbody tr:hover { background:rgba(255,255,255,0.02); }
+  tbody td { padding:10px 12px; text-align:right; } tbody td:first-child { text-align:left; color:var(--text2); }
+  .tg { color:var(--green)!important; } .tr { color:var(--red)!important; } .ta { color:var(--amber)!important; }
+  .dual-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .col-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .col-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:12px; }
+  .col-item { display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; color:var(--text2); line-height:1.5; }
+  .col-item:last-child { border-bottom:none; }
+  .col-icon { font-size:14px; min-width:20px; text-align:center; }
+  .news-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .news-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px; transition:border-color 0.3s; }
+  .news-card:hover { border-color:var(--border2); }
+  .news-title { font-family:var(--mono); font-size:11px; color:#fff; line-height:1.5; margin-bottom:6px; }
+  .news-meta { font-family:var(--mono); font-size:9px; color:var(--text3); }
+  .verdict-card { background:linear-gradient(135deg,#0d0e18,#10111e); border:1px solid var(--border2); border-radius:16px; padding:28px; position:relative; overflow:hidden; margin-bottom:20px; }
+  .verdict-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--red),var(--amber),var(--green)); }
+  .verdict-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+  .verdict-rec { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--text3); }
+  .verdict-rating { font-family:var(--mono); font-size:32px; font-weight:700; }
+  .verdict-score { font-family:var(--mono); font-size:14px; }
+  .rating-bar-track { width:100%; height:6px; background:linear-gradient(90deg,var(--red) 0%,var(--amber) 50%,var(--green) 100%); border-radius:3px; position:relative; margin-bottom:24px; }
+  .rating-needle { position:absolute; top:-4px; width:14px; height:14px; background:#fff; border-radius:50%; transform:translateX(-50%); box-shadow:0 0 8px rgba(255,255,255,0.4); }
+  .verdict-text { font-size:13px; color:var(--text2); line-height:1.7; border-left:3px solid var(--amber); padding-left:16px; }
+  .verdict-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .vtag { font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 10px; border-radius:4px; border:1px solid; }
+  .vtag.green { color:var(--green); border-color:rgba(0,229,160,0.3); background:var(--green-dim); }
+  .vtag.red { color:var(--red); border-color:rgba(255,77,109,0.3); background:var(--red-dim); }
+  .vtag.amber { color:var(--amber); border-color:rgba(245,166,35,0.3); background:var(--amber-dim); }
+  .vtag.blue { color:var(--blue); border-color:rgba(61,156,245,0.3); background:var(--blue-dim); }
+  .copy-btn { position:fixed; bottom:24px; right:24px; background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:10px 16px; font-family:var(--mono); font-size:10px; color:var(--text2); cursor:pointer; display:flex; align-items:center; gap:6px; z-index:100; letter-spacing:1px; transition:all 0.3s; }
+  .copy-btn:hover { background:var(--bg4); color:#fff; border-color:var(--green); box-shadow:0 0 20px rgba(0,229,160,0.15); }
+  .footer { text-align:center; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:1px; padding:24px 0; border-top:1px solid var(--border); margin-top:8px; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .section, .stock-header, .gauge-kpi-row, .breakdown-grid, .verdict-card { animation: fadeIn 0.6s ease both; }
+  @media (max-width: 768px) { .stock-header { flex-direction:column; gap:16px; } .gauge-kpi-row { grid-template-columns:1fr; } .card-grid { grid-template-columns:1fr 1fr; } .breakdown-grid { grid-template-columns:1fr; } .dual-col { grid-template-columns:1fr; } .kpi-strip { grid-template-columns:repeat(2,1fr); } .returns-strip { grid-template-columns:repeat(3,1fr); } .news-grid { grid-template-columns:1fr; } }
+  .tf-btns { display:flex; gap:2px; }
+  .tf-btn { background:var(--bg4); border:1px solid var(--border); color:var(--text3); font-family:var(--mono); font-size:9px; padding:3px 9px; border-radius:4px; cursor:pointer; transition:all .15s; }
+  .tf-btn:hover { color:var(--text); border-color:var(--border2); }
+  .tf-btn.active { color:#fff; background:var(--bg3); border-color:var(--border2); }
+  .tf-ret { font-family:var(--mono); font-size:12px; font-weight:600; }
+  .tf-ret.up { color:var(--green); }
+  .tf-ret.dn { color:var(--red); }
+  @media print { .copy-btn { display:none; } .page { padding:16px; } .page-break { page-break-before:always; border:none; margin:0; } }
+</style>
+</head>
+<body>
+<div id="report-content">
+<div class="page">
+
+  <div class="stock-header">
+    <div>
+      <div class="sh-ticker"><span>SNDK</span><span class="badge badge-us">US</span><span class="badge badge-sector">Technology</span></div>
+      <div class="sh-name">Sandisk Corporation</div>
+      <div class="sh-meta"><span>📊 Computer Hardware</span></div>
+      
+      <div class="sh-ranges">
+        <div class="sh-range">
+          <span class="sh-range-label">Day</span>
+          <span class="sh-range-val">$900</span>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:24.8%"></div><div class="sh-range-dot" style="left:24.8%"></div></div>
+          <span class="sh-range-val">$951</span>
+        </div>
+        <div class="sh-range">
+          <span class="sh-range-label">52W</span>
+          <span class="sh-range-val">$29</span>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:94.4%"></div><div class="sh-range-dot" style="left:94.4%"></div></div>
+          <span class="sh-range-val">$965</span>
+        </div>
+      </div>
+    </div>
+    <div class="sh-right">
+      <div class="sh-price">$913.02</div>
+      <div class="sh-change" style="color:#ff4d6d">▼ $7.97 (-0.87%)</div>
+      <div class="sh-volume">Vol: 10,662,813 · Avg: 19,820,460</div>
+      <div class="sh-timestamp">As of April 21, 2026 · 13:28 ET</div>
+    </div>
+  </div>
+
+  <div class="gauge-kpi-row">
+    <div class="gauge-card">
+      <div class="gauge-title">COMPOSITE RISK SCORE</div>
+      <svg viewBox="0 0 260 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:260px;">
+  <defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff4d6d"/><stop offset="50%" stop-color="#f5a623"/><stop offset="100%" stop-color="#00e5a0"/>
+    </linearGradient>
+  </defs>
+  <path d="M 59.3 200.7 A 100 100 0 0 1 58.2 60.4" fill="none" stroke="#ff4d6d22" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 58.2 60.4 A 100 100 0 0 1 198.5 57.1" fill="none" stroke="#f5a62322" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 198.5 57.1 A 100 100 0 0 1 200.7 200.7" fill="none" stroke="#00e5a022" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 59.3 200.7 A 100 100 0 0 1 183.6 45.6" fill="none" stroke="url(#arcGrad)" stroke-width="8" stroke-linecap="round" filter="url(#glow)"/>
+  <line x1="55.0" y1="205.0" x2="50.8" y2="209.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="29.2" y1="162.8" x2="23.5" y2="164.6" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="25.3" y1="113.4" x2="19.4" y2="112.5" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="44.2" y1="67.7" x2="39.4" y2="64.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="81.9" y1="35.6" x2="79.2" y2="30.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="130.0" y1="24.0" x2="130.0" y2="18.0" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="178.1" y1="35.6" x2="180.8" y2="30.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="215.8" y1="67.7" x2="220.6" y2="64.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="234.7" y1="113.4" x2="240.6" y2="112.5" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="230.8" y1="162.8" x2="236.5" y2="164.6" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="205.0" y1="205.0" x2="209.2" y2="209.2" stroke="#5c5d6e" stroke-width="1"/>
+  <line x1="130" y1="130" x2="170.2" y2="66.7" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)"/>
+  <circle cx="130" cy="130" r="6" fill="#f5a623" filter="url(#glow)"/>
+  <circle cx="130" cy="130" r="3" fill="#08090d"/>
+  <text x="130" y="165" text-anchor="middle" font-family="'Fira Code',monospace" font-size="32" font-weight="700" fill="#fff">62</text>
+  <text x="130" y="182" text-anchor="middle" font-family="'Fira Code',monospace" font-size="9" fill="#f5a623" letter-spacing="2">MODERATE</text>
+</svg>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:8px;letter-spacing:1px;">
+        VAL:17/25 · FIN:6/25 · GRO:21/25 · TECH:18/25
+      </div>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card"><div class="kpi-label">📈 P/E RATIO</div><div class="kpi-value">8.0x</div><div class="kpi-sub">Trailing</div></div>
+      <div class="kpi-card"><div class="kpi-label">📖 P/B RATIO</div><div class="kpi-value">13.2x</div><div class="kpi-sub">Price to Book</div></div>
+      <div class="kpi-card"><div class="kpi-label">💰 EPS</div><div class="kpi-value">$-7.49</div><div class="kpi-sub">TTM</div></div>
+      <div class="kpi-card"><div class="kpi-label">🏛 MARKET CAP</div><div class="kpi-value">$134.8B</div><div class="kpi-sub">Large Cap</div></div>
+      <div class="kpi-card"><div class="kpi-label">📊 ROE</div><div class="kpi-value">-9.4%</div><div class="kpi-sub">Return on Equity</div></div>
+      <div class="kpi-card"><div class="kpi-label">📈 REV GROWTH</div><div class="kpi-value">61.2%</div><div class="kpi-sub">YoY</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>📈 Price Movement</span>
+      <div class="tf-btns" id="tf-line">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn" data-tf="6M">6M</button><button class="tf-btn active" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-line-ret"></span>
+    </div>
+    <canvas id="cv-line" style="width:100%;height:280px;display:block;"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>🕯 Candlestick Chart</span>
+      <div class="tf-btns" id="tf-candle">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn active" data-tf="6M">6M</button><button class="tf-btn" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-candle-ret"></span>
+    </div>
+    <canvas id="cv-candle" style="width:100%;height:280px;display:block;"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets</div>
+    <svg viewBox="0 0 480 90" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
+  <rect x="87.1" y="25" width="271.4" height="30" rx="4" fill="rgba(0,229,160,0.08)" stroke="rgba(0,229,160,0.2)" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="222.9" y="20" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#00e5a0">FAIR VALUE ZONE</text>
+  <line x1="158.0" y1="22" x2="158.0" y2="58" stroke="#00e5a0" stroke-width="2"/>
+  <text x="158.0" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#00e5a0">$913</text>
+  <text x="158.0" y="82" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">FAIR VALUE</text>
+  <text x="87.1" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$600</text>
+  <text x="358.6" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$1,800</text>
+  <line x1="157.9" y1="22" x2="157.9" y2="58" stroke="#00e5a0" stroke-width="3"/>
+  <polygon points="157.9,20 152.9,12 162.9,12" fill="#00e5a0"/>
+  <text x="157.9" y="8" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="#00e5a0">$913 CMP</text>
+</svg>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💎 Valuation & Financial Metrics</div>
+    <div class="card-grid">
+      <div class="metric-card beat" data-tip="P/E at 8.0 is below 20 — attractive"><div class="mc-label">P/E RATIO</div><div class="mc-value">8.0x</div><div class="mc-bench">Trailing twelve months</div></div>
+      <div class="metric-card miss" data-tip="P/B at 13.2 exceeds 10 — elevated"><div class="mc-label">P/B RATIO</div><div class="mc-value">13.2x</div><div class="mc-bench">Price to Book value</div></div>
+      <div class="metric-card miss" data-tip="ROE % at -9.4 is below 8 — weak"><div class="mc-label">ROE</div><div class="mc-value">-9.4%</div><div class="mc-bench">Return on Equity</div></div>
+      <div class="metric-card miss" data-tip="Profit Margin % at -11.7 is below 0 — weak"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">-11.7%</div><div class="mc-bench">Net profit margin</div></div>
+      <div class="metric-card beat" data-tip="OPM % at 35.5 exceeds 15 — strong"><div class="mc-label">OPM</div><div class="mc-value">35.5%</div><div class="mc-bench">Operating profit margin</div></div>
+      <div class="metric-card beat" data-tip="Analyst target $913.05 vs CMP $913.02 — upside"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">$913.05</div><div class="mc-bench">Range: $600.00 - $1,800.00</div></div>
+      <div class="metric-card caution" data-tip="PEG: Data unavailable"><div class="mc-label">PEG RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Price/Earnings to Growth</div></div>
+      <div class="metric-card miss" data-tip="EV/EBITDA at 94.0 exceeds 20 — elevated"><div class="mc-label">EV/EBITDA</div><div class="mc-value">94.0x</div><div class="mc-bench">Enterprise value ratio</div></div>
+      <div class="metric-card beat" data-tip="Current Ratio at 3.1 exceeds 1.5 — strong"><div class="mc-label">CURRENT RATIO</div><div class="mc-value">3.11</div><div class="mc-bench">Liquidity measure</div></div>
+      <div class="metric-card caution" data-tip="Dividend Yield: Data unavailable"><div class="mc-label">DIVIDEND YIELD</div><div class="mc-value">N/A</div><div class="mc-bench">Annual yield</div></div>
+      <div class="metric-card caution" data-tip="ROA % at 5.9 is between 5 and 10 — moderate"><div class="mc-label">ROA</div><div class="mc-value">5.9%</div><div class="mc-bench">Return on Assets</div></div>
+      <div class="metric-card caution" data-tip="Gross Margin % at 34.8 is between 20 and 40 — moderate"><div class="mc-label">GROSS MARGIN</div><div class="mc-value">34.8%</div><div class="mc-bench">Gross profit margin</div></div>
+    </div>
+    <div style="margin-top:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:8px;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px;">SECTOR BENCHMARKS — COMPUTER HARDWARE</div>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;">
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/E (fair)</span> <span style="color:#fff;font-weight:600;">35.0x</span> <span style="color:var(--text3);font-size:9px;">(sector mid)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/B (fair)</span> <span style="color:#fff;font-weight:600;">8.0x</span> <span style="color:var(--text3);font-size:9px;">(sector mid)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROE (good)</span> <span style="color:#fff;font-weight:600;">25%</span> <span style="color:var(--text3);font-size:9px;">(sector target)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">OPM (good)</span> <span style="color:#fff;font-weight:600;">25%</span> <span style="color:var(--text3);font-size:9px;">(sector target)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">D/E comfort</span> <span style="color:#fff;font-weight:600;">&lt;20</span> <span style="color:var(--text3);font-size:9px;">(sector)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="breakdown-grid">
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">VALUATION</div><div class="bc-score" style="color:#f5a623">17<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:68%;background:#f5a623;box-shadow:0 0 8px #f5a62344;"></div></div>
+      <ul class="bc-items">
+        <li>P/E at 8x</li>
+        <li>P/B at 13.2x</li>
+        <li>Analyst target: $913.05 (+0.0%)</li>
+        <li>1Y return: +2962.8%</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">FINANCIAL HEALTH</div><div class="bc-score" style="color:#ff4d6d">6<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:24%;background:#ff4d6d;box-shadow:0 0 8px #ff4d6d44;"></div></div>
+      <ul class="bc-items">
+        <li>ROE: -9.4%</li>
+        <li>Profit margin: -11.7%</li>
+        <li>Revenue growth: 61.2%</li>
+        <li>Debt/Equity: 8%</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">GROWTH</div><div class="bc-score" style="color:#00e5a0">21<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:84%;background:#00e5a0;box-shadow:0 0 8px #00e5a044;"></div></div>
+      <ul class="bc-items">
+        <li>Revenue growth: 61.2%</li>
+        <li>Earnings growth: 618.0%</li>
+        <li>Beta: 0.00</li>
+        <li>Sector: Technology</li>
+      </ul>
+    </div>
+    <div class="breakdown-card">
+      <div class="bc-header"><div><div class="bc-title">TECHNICAL</div><div class="bc-score" style="color:#00e5a0">18<span class="bc-max">/25</span></div></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);">25% WEIGHT</div></div>
+      <div class="bc-bar-track"><div class="bc-bar-fill" style="width:72%;background:#00e5a0;box-shadow:0 0 8px #00e5a044;"></div></div>
+      <ul class="bc-items">
+        <li>RSI, MACD, MA crossovers</li>
+        <li>200 DMA &amp; 50 EMA position</li>
+        <li>Volume trend analysis</li>
+        <li>Price momentum signals</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="page-break">
+
+  <div class="section">
+    <div class="section-title">📋 Quarterly Performance Trend</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Quarter</th><th>Revenue</th><th>QoQ %</th><th>Net Profit</th><th>QoQ %</th><th>Op. Cash Flow</th><th>EBITDA Margin</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Q4 '24</td>
+          <td>$1.9B</td><td style="color:var(--text3)">—</td>
+          <td class="tg">$104.0M</td><td style="color:var(--text3)">—</td>
+          <td>$95.0M</td>
+          <td>11.4%</td>
+        </tr>
+        <tr>
+          <td>Q1 '25</td>
+          <td>$1.7B</td><td class="tr">-9.6%</td>
+          <td class="tr">$-1.9B</td><td class="tr">-1958.7%</td>
+          <td>$26.0M</td>
+          <td>-109.0%</td>
+        </tr>
+        <tr>
+          <td>Q2 '25</td>
+          <td>$1.9B</td><td class="tg">+12.2%</td>
+          <td class="tr">$-23.0M</td><td class="tg">+98.8%</td>
+          <td>$94.0M</td>
+          <td>3.1%</td>
+        </tr>
+        <tr>
+          <td>Q3 '25</td>
+          <td>$2.3B</td><td class="tg">+21.4%</td>
+          <td class="tg">$112.0M</td><td class="tg">+587.0%</td>
+          <td>$488.0M</td>
+          <td>8.7%</td>
+        </tr>
+        <tr>
+          <td>Q4 '25</td>
+          <td>$3.0B</td><td class="tg">+31.1%</td>
+          <td class="tg">$803.0M</td><td class="tg">+617.0%</td>
+          <td>$1.0B</td>
+          <td>33.1%</td>
+        </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📊 Year-on-Year Trend</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>FY</th><th>Revenue</th><th>YoY %</th><th>Net Profit</th><th>YoY %</th><th>Op. Cash Flow</th><th>YoY %</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>2023</td>
+          <td>$6.1B</td><td style="color:var(--text3)">—</td>
+          <td>$-2.1B</td><td style="color:var(--text3)">—</td>
+          <td>$-713.0M</td><td style="color:var(--text3)">—</td>
+        </tr>
+        <tr>
+          <td>2024</td>
+          <td>$6.7B</td><td class="tg">+9.5%</td>
+          <td>$-672.0M</td><td class="tg">+68.6%</td>
+          <td>$-309.0M</td><td class="tg">+56.7%</td>
+        </tr>
+        <tr>
+          <td>2025</td>
+          <td>$7.4B</td><td class="tg">+10.4%</td>
+          <td>$-1.6B</td><td class="tr">-144.2%</td>
+          <td>$84.0M</td><td class="tg">+127.2%</td>
+        </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🏛 Shareholding Pattern</div>
+    
+          <div class="col-card" style="width:100%">
+            <div class="col-title">TOP HOLDERS</div>
+            <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Holder</th><th>Type</th><th>Shares</th><th>% Held</th></tr></thead>
+              <tbody><tr><td>FMR, LLC</td><td>Inst</td><td>21,466,285</td><td>14.54%</td></tr><tr><td>Vanguard Group Inc</td><td>Inst</td><td>16,976,485</td><td>11.50%</td></tr><tr><td>Blackrock Inc.</td><td>Inst</td><td>9,624,416</td><td>6.52%</td></tr><tr><td>State Street Corporation</td><td>Inst</td><td>5,281,522</td><td>3.58%</td></tr><tr><td>Geode Capital Management, LLC</td><td>Inst</td><td>3,655,860</td><td>2.48%</td></tr><tr><td>Fidelity Mt. Vernon Street Trust-Fi</td><td>MF</td><td>4,504,332</td><td>3.05%</td></tr><tr><td>VANGUARD INDEX FUNDS-Vanguard Total</td><td>MF</td><td>4,366,736</td><td>2.96%</td></tr><tr><td>VANGUARD INDEX FUNDS-Vanguard 500 I</td><td>MF</td><td>3,511,477</td><td>2.38%</td></tr></tbody>
+            </table>
+            </div>
+          </div>
+  </div>
+
+  <div class="dual-col">
+    <div class="col-card">
+      <div class="col-title" style="color:var(--green);">🟢 CATALYSTS</div>
+      <div class="col-item"><span class="col-icon">🏆</span><span><strong>Revenue Growth 61%:</strong> Strong top-line momentum indicating market demand.</span></div>
+<div class="col-item"><span class="col-icon">💹</span><span><strong>Earnings Growth (618%):</strong> Strong profit expansion.</span></div>
+<div class="col-item"><span class="col-icon">🔀</span><span><strong>Sector Opportunity:</strong> Technology / Computer Hardware — positioned in growth sector.</span></div>
+    </div>
+    <div class="col-card">
+      <div class="col-title" style="color:var(--red);">🔴 RISKS</div>
+      <div class="col-item"><span class="col-icon">📜</span><span><strong>High P/B (13.2x):</strong> Significant book value premium.</span></div>
+<div class="col-item"><span class="col-icon">💰</span><span><strong>Loss-Making:</strong> Negative profit margin — path to profitability unclear.</span></div>
+<div class="col-item"><span class="col-icon">🔓</span><span><strong>Market Risk:</strong> Broader market correction or sentiment shift could impact stock.</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🕸 Factor Analysis · Radar</div>
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+      <div style="flex:0 0 auto;max-width:420px;">
+        <svg viewBox="0 0 480 440" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:480px;">
+  <defs><filter id="spiderGlow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <polygon points="240.0,194.0 264.7,212.0 255.3,241.0 224.7,241.0 215.3,212.0" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,168.0 289.5,203.9 270.6,262.1 209.4,262.1 190.5,203.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,142.0 314.2,195.9 285.8,283.1 194.2,283.1 165.8,195.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,116.0 338.9,187.9 301.1,304.1 178.9,304.1 141.1,187.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <polygon points="240.0,90.0 363.6,179.8 316.4,325.2 163.6,325.2 116.4,179.8" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="240.0" y2="90.0" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="363.6" y2="179.8" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="316.4" y2="325.2" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="163.6" y2="325.2" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="240.0" y1="220.0" x2="116.4" y2="179.8" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <polygon points="240.0,103.0 314.2,195.9 262.9,251.6 217.1,251.6 202.9,207.9" fill="rgba(0,229,160,0.12)" stroke="#00e5a0" stroke-width="2" filter="url(#spiderGlow)"/>
+  <circle cx="240.0" cy="103.0" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Momentum 9/10: 1M +30.0%, 6M +511.6%, RSI 66, MACD bullish, Above 200DMA</title></circle>
+  <circle cx="314.2" cy="195.9" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Sentiment 6/10: Analyst upside +0.0%, Rec: buy</title></circle>
+  <circle cx="262.9" cy="251.6" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Value 3/10: P/B 13.2, EV/EBITDA 94.0</title></circle>
+  <circle cx="217.1" cy="251.6" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Quality 3/10: ROE -9.4%, Margin -11.7%, D/E 8, CR 3.11</title></circle>
+  <circle cx="202.9" cy="207.9" r="6" fill="#00e5a0" stroke="#08090d" stroke-width="2" style="cursor:pointer;"><title>Low Volatility 3/10: Ann. vol 94%</title></circle>
+  <text x="240.0" y="62.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Momentum</text>
+  <text x="240.0" y="48.0" text-anchor="middle" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">9</text>
+  <text x="390.5" y="168.4" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Sentiment</text>
+  <text x="403.8" y="164.1" text-anchor="start" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">6</text>
+  <text x="334.5" y="352.6" text-anchor="start" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Value</text>
+  <text x="342.7" y="363.9" text-anchor="start" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">3</text>
+  <text x="145.5" y="352.6" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Quality</text>
+  <text x="137.3" y="363.9" text-anchor="end" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">3</text>
+  <text x="89.5" y="168.4" text-anchor="end" font-family="Fira Code,monospace" font-size="10" fill="#9899a8">Low Vol</text>
+  <text x="76.2" y="164.1" text-anchor="end" font-family="Fira Code,monospace" font-size="12" font-weight="700" fill="#00e5a0">3</text>
+</svg>
+      </div>
+      <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #00e5a0;"><span style="color:#fff;font-weight:600;">Momentum</span> <span style="color:#00e5a0;font-weight:700;">9/10</span><br><span style="color:var(--text3);">1M +30.0%, 6M +511.6%, RSI 66, MACD bullish, Above 200DMA</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #f5a623;"><span style="color:#fff;font-weight:600;">Sentiment</span> <span style="color:#f5a623;font-weight:700;">6/10</span><br><span style="color:var(--text3);">Analyst upside +0.0%, Rec: buy</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #ff4d6d;"><span style="color:#fff;font-weight:600;">Value</span> <span style="color:#ff4d6d;font-weight:700;">3/10</span><br><span style="color:var(--text3);">P/B 13.2, EV/EBITDA 94.0</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #ff4d6d;"><span style="color:#fff;font-weight:600;">Quality</span> <span style="color:#ff4d6d;font-weight:700;">3/10</span><br><span style="color:var(--text3);">ROE -9.4%, Margin -11.7%, D/E 8, CR 3.11</span></div><div style="font-family:var(--mono);font-size:10px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #ff4d6d;"><span style="color:#fff;font-weight:600;">Low Volatility</span> <span style="color:#ff4d6d;font-weight:700;">3/10</span><br><span style="color:var(--text3);">Ann. vol 94%</span></div>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <div class="section">
+    <div class="section-title">🎯 Decision Matrix — Game Theory</div>
+    
+    <div style="overflow-x:auto;margin-bottom:16px;"><table>
+    <thead><tr><th style="width:80px;">Action</th><th>If Stock Rises</th><th>If Stock Falls</th></tr></thead>
+    <tbody>
+    <tr style="border-left:3px solid var(--green);"><td style="color:var(--green);font-weight:700;">BUY</td><td>Capture 0.0% analyst upside</td><td>OPM of 36% provides margin buffer</td></tr>
+    <tr style="border-left:3px solid var(--amber);"><td style="color:var(--amber);font-weight:700;">HOLD</td><td>Retain existing position; wait for better entry</td><td>Miss further upside if momentum continues; 1M return of +30.0% shows momentum</td></tr>
+    <tr style="border-left:3px solid var(--red);"><td style="color:var(--red);font-weight:700;">SELL</td><td>Lock in +2962.8% 1Y return</td><td>Avoid further drawdown</td></tr>
+    </tbody></table></div>
+    <div class="dual-col">
+      <div class="col-card" style="border-left:3px solid var(--green);">
+        <div class="col-title" style="color:var(--green);">REASONS TO BUY</div>
+        <ul style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:6px;">Analyst upside of 0.0% with mean target of $913.05</li>
+<li style="margin-bottom:6px;">Revenue growing at 61.2% YoY</li>
+<li style="margin-bottom:6px;">Operating margin of 36% shows pricing power</li></ul>
+      </div>
+      <div class="col-card" style="border-left:3px solid var(--red);">
+        <div class="col-title" style="color:var(--red);">REASONS TO SELL / AVOID</div>
+        <ul style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.7;padding-left:16px;"><li style="margin-bottom:6px;">1Y return of +2962.8% — profit booking opportunity</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📰 Latest News</div>
+    <div class="news-grid"><div class="news-card"><a href="https://247wallst.com/investing/2026/04/21/nasdaq-composite-jumps-on-earnings-momentum-ai-spending-and-mideast-deal-hopes/" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;"><div class="news-title">Nasdaq Composite Jumps on Earnings Momentum, AI Spending and Mideast Deal Hopes</div></a><div class="news-meta">24/7 Wall St. · 2026-04-21T13:08</div></div><div class="news-card"><a href="https://www.wsj.com/finance/stocks/these-ai-stocks-could-make-investors-queasy-4e1d7427?siteid=yhoof2&yptr=yahoo" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;"><div class="news-title">These AI Stocks Could Make Investors Queasy</div></a><div class="news-meta">The Wall Street Journal · 2026-04-21T10:34</div></div><div class="news-card"><a href="https://finance.yahoo.com/markets/stocks/articles/sandisk-joins-nasdaq-100-ai-100312128.html" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;"><div class="news-title">Sandisk Joins Nasdaq 100 As AI NAND Boom Reshapes Investor Focus</div></a><div class="news-meta">Simply Wall St. · 2026-04-21T10:03</div></div><div class="news-card"><a href="https://finance.yahoo.com/markets/stocks/articles/memory-mania-mag-7-rebound-204300472.html" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;"><div class="news-title">Memory Mania, Mag 7 Rebound, & More</div></a><div class="news-meta">Zacks · 2026-04-20T20:43</div></div><div class="news-card"><a href="https://www.barrons.com/articles/stock-movers-2133bf36?siteid=yhoof2&yptr=yahoo" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;"><div class="news-title">These Stocks Are Today’s Movers: Fermi, AST SpaceMobile, Intel, Marvell, USA Rare Earth, AtaiBeckley, and More</div></a><div class="news-meta">Barrons.com · 2026-04-20T20:21</div></div><div class="news-card"><a href="https://finance.yahoo.com/markets/stocks/articles/intel-amd-rally-faces-quiet-180141441.html" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;"><div class="news-title">Intel, AMD Rally Faces Quiet Challenge</div></a><div class="news-meta">GuruFocus.com · 2026-04-20T18:01</div></div></div>
+  </div>
+
+  <div class="verdict-card">
+    <div class="verdict-header">
+      <div><div class="verdict-rec">RECOMMENDATION</div><div class="verdict-rating" style="color:#f5a623">SPECULATIVE BUY</div></div>
+      <div style="text-align:right;"><div class="verdict-rec">COMPOSITE SCORE</div><div class="verdict-score" style="color:#f5a623"><span style="font-size:28px;font-weight:700;">62</span>/100</div></div>
+    </div>
+    <div class="rating-bar-track"><div class="rating-needle" style="left:60%;"></div></div>
+    <div class="verdict-text"><strong>Sandisk Corporation</strong> trades at $913.02 with a composite risk score of 62/100.
+    The stock scores 17/25 on valuation, 6/25 on financial health, 21/25 on growth, and 18/25 on technicals.
+    The company is currently loss-making with negative return on equity.
+    <br><br>
+    Analyst consensus suggests upside of 0.0% with a mean target of $913.05.
+    Revenue growth is at 61.2% — a strong positive signal.
+    
+    <br><br>
+    <strong>Bottom Line:</strong> Positive for Technology but monitor closely. The current recommendation is <strong style="color:#f5a623">SPECULATIVE BUY</strong>.</div>
+    <div class="verdict-tags"><span class="vtag green">STRONG GROWTH</span>
+<span class="vtag green">CHEAP</span>
+<span class="vtag red">LOSS-MAKING</span></div>
+  </div>
+
+  <div class="footer">
+    RISK SCORE REPORT · SNDK · GENERATED APR 21, 2026 13:28 ET · DATA VIA YAHOO FINANCE<br>
+    DISCLAIMER: THIS IS NOT FINANCIAL ADVICE. DATA MAY BE DELAYED. ALWAYS VERIFY WITH OFFICIAL SOURCES BEFORE INVESTING.
+  </div>
+
+</div>
+</div>
+
+<button class="copy-btn" onclick="copyReport()" id="copyBtn">📋 COPY REPORT</button>
+<script>
+function copyReport() {
+  const content = document.getElementById('report-content').innerText;
+  navigator.clipboard.writeText(content).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.innerHTML = '✓ COPIED!';
+    btn.style.borderColor = '#00e5a0';
+    setTimeout(() => { btn.innerHTML = '📋 COPY REPORT'; btn.style.borderColor = ''; }, 2000);
+  });
+}
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => { if (entry.isIntersecting) { entry.target.style.opacity = '1'; entry.target.style.transform = 'translateY(0)'; } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section, .breakdown-card, .metric-card').forEach(el => {
+  el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+
+/* ── Interactive price & candlestick charts ────────────────────── */
+const CHART_DATA = {"1D":{"d":["09:30","09:45","10:00","10:15","10:30","10:45","11:00","11:15","11:30","11:45","12:00","12:15","12:30","12:45","13:00","13:15","13:30","13:45","14:00","14:15","14:30","14:45","15:00","15:15","15:30","15:45"],"o":[930.97,925.97,919.33,918.0,919.78,918.57,908.25,907.16,917.94,914.64,915.02,924.25,925.38,924.69,924.51,924.96,923.7,925.08,925.5,924.93,924.76,921.93,921.54,918.5,914.19,914.0],"h":[951.47,927.03,924.4,923.59,924.4,919.09,910.36,919.85,920.52,917.25,926.77,927.8,926.5,926.4,925.88,927.16,925.9,926.41,926.98,926.55,925.38,924.0,922.54,919.39,915.47,916.0],"l":[916.0,912.99,910.12,916.5,917.32,905.5,900.37,904.53,913.0,909.0,913.0,922.15,922.25,921.8,923.4,923.0,921.8,922.69,922.9,923.6,918.0,920.51,918.34,913.0,910.77,910.08],"c":[925.0,919.38,918.97,919.66,919.04,908.43,906.57,919.0,914.46,915.01,924.5,925.38,924.47,924.51,925.49,923.64,925.0,925.25,924.97,924.76,922.16,922.04,919.29,914.1,913.99,912.83],"v":[2124512,559926,526536,264080,294365,554899,500248,459023,315485,267519,498384,358496,242792,214198,134941,228033,173920,183365,196844,194318,310133,188689,198300,308835,245644,558047]},"1W":{"d":["2026-04-14","2026-04-15","2026-04-16","2026-04-17","2026-04-20"],"o":[964.02,929.86,896.62,920.84,930.97],"h":[965.0,937.99,929.5,930.5,951.47],"l":[902.0,873.93,892.51,886.0,900.37],"c":[944.46,891.72,919.47,920.99,913.02],"v":[19821500,16269600,13851900,25655700,11255500]},"1M":{"d":["2026-03-23","2026-03-24","2026-03-25","2026-03-26","2026-03-27","2026-03-30","2026-03-31","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-14","2026-04-15","2026-04-16","2026-04-17","2026-04-20"],"o":[716.0,693.69,651.0,654.0,599.75,642.12,588.01,652.29,642.09,720.34,715.7,784.0,817.08,873.95,867.09,964.02,929.86,896.62,920.84,930.97],"h":[748.78,711.3,687.22,659.66,638.52,651.0,636.32,710.85,707.31,736.0,738.01,807.99,855.0,873.95,953.41,965.0,937.99,929.5,930.5,951.47],"l":[678.84,680.19,638.0,602.03,599.37,558.58,578.42,645.1,641.0,711.0,687.68,758.19,805.0,835.28,866.95,902.0,873.93,892.51,886.0,900.37],"c":[702.49,702.48,677.86,603.17,615.83,572.5,635.34,692.73,701.59,724.63,710.8,780.9,851.57,851.77,952.5,944.46,891.72,919.47,920.99,913.02],"v":[22925100,14536300,20618700,19023800,16684200,20501200,20685000,22322700,17443900,12773700,14406500,16898900,17233600,13343800,20234400,19821500,16269600,13851900,25655700,11255500]},"6M":{"d":["2025-10-21","2025-10-22","2025-10-23","2025-10-24","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-10-31","2025-11-03","2025-11-04","2025-11-05","2025-11-06","2025-11-07","2025-11-10","2025-11-11","2025-11-12","2025-11-13","2025-11-14","2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-02","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-15","2026-01-16","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-26","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-03","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-26","2026-03-27","2026-03-30","2026-03-31","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-14","2026-04-15","2026-04-16","2026-04-17","2026-04-20"],"o":[145.8,149.1,146.99,174.4,191.5,175.49,186.67,192.02,203.5,210.85,188.13,201.88,212.0,208.42,247.0,262.29,271.58,268.0,236.0,253.4,257.15,251.11,252.17,205.37,206.05,228.4,226.0,225.25,211.84,211.75,196.7,192.32,212.4,235.66,222.27,218.0,230.0,232.11,214.45,201.13,215.99,222.74,222.29,249.65,238.42,244.9,259.6,241.55,245.87,241.41,244.35,284.22,288.74,340.88,360.73,341.6,373.97,393.2,390.0,398.83,425.59,412.17,463.05,501.29,503.44,476.48,481.01,500.1,535.85,651.23,588.81,694.06,654.0,563.75,614.5,592.16,573.88,578.5,640.55,610.53,612.0,582.49,597.33,616.0,659.59,682.5,644.3,645.74,627.08,618.65,581.64,586.84,594.39,548.25,517.0,599.23,625.95,647.0,630.75,687.52,716.0,730.02,707.15,772.7,716.0,693.69,651.0,654.0,599.75,642.12,588.01,652.29,642.09,720.34,715.7,784.0,817.08,873.95,867.09,964.02,929.86,896.62,920.84,930.97],"h":[150.16,157.4,167.95,187.36,191.85,178.82,205.64,204.92,209.77,213.4,202.98,218.94,226.5,240.0,270.91,275.87,284.76,271.84,270.49,282.8,260.63,256.98,254.6,205.5,228.18,229.07,228.0,237.77,215.3,217.0,199.18,214.99,229.45,238.86,224.33,234.17,244.19,236.0,217.0,210.5,221.99,231.0,243.71,252.0,245.5,261.37,261.5,250.0,247.48,241.9,275.8,285.0,352.0,354.93,360.98,384.0,395.16,398.0,401.2,423.35,432.02,457.37,501.95,509.5,506.3,494.7,503.0,531.46,546.75,676.69,674.0,725.0,662.79,619.41,615.36,603.98,582.28,612.8,668.0,661.5,628.65,616.98,634.48,650.29,691.54,684.09,661.2,659.86,661.2,648.8,593.16,607.48,603.53,570.9,589.51,636.58,655.68,651.99,671.67,720.0,721.37,761.52,776.0,777.6,748.78,711.3,687.22,659.66,638.52,651.0,636.32,710.85,707.31,736.0,738.01,807.99,855.0,873.95,953.41,965.0,937.99,929.5,930.5,951.47],"l":[142.76,144.82,146.0,173.5,173.72,164.56,181.51,191.09,189.58,189.1,185.0,201.87,205.18,203.4,247.0,255.87,267.05,234.13,235.05,253.0,229.11,233.79,192.62,183.0,205.13,209.0,205.4,211.73,205.24,192.8,187.7,189.68,211.25,215.6,213.5,215.2,217.67,204.8,200.34,199.5,205.52,214.0,221.0,226.6,234.0,244.5,245.1,236.01,236.52,235.24,244.0,266.33,288.5,331.23,310.78,334.54,373.97,379.41,377.0,398.61,399.7,412.17,448.53,467.56,463.01,454.33,471.15,499.15,507.24,533.0,584.1,646.2,582.0,562.1,575.5,551.51,540.14,575.0,615.62,586.37,588.95,574.5,590.1,615.65,644.38,612.92,624.43,607.0,621.27,597.6,557.09,576.3,559.1,526.63,517.0,595.56,618.8,612.21,623.06,687.43,695.12,715.5,692.0,698.35,678.84,680.19,638.0,602.03,599.37,558.58,578.42,645.1,641.0,711.0,687.68,758.19,805.0,835.28,866.95,902.0,873.93,892.51,886.0,900.37],"c":[149.29,146.95,167.05,186.16,176.49,175.53,204.36,195.82,199.33,207.01,194.57,216.5,207.69,239.48,267.95,271.58,283.1,243.57,254.16,265.88,244.93,245.96,195.96,200.27,226.96,220.5,215.04,223.28,210.17,205.35,194.38,213.31,228.47,225.47,219.46,232.86,241.61,206.18,201.87,209.31,206.83,219.46,237.61,241.05,244.9,250.08,250.05,244.25,240.22,237.38,275.24,274.08,349.63,353.56,334.54,377.41,389.27,389.81,387.81,409.24,413.62,453.12,501.29,503.44,473.83,470.8,481.43,527.63,539.3,576.25,665.24,695.51,584.55,576.2,597.95,583.4,541.64,599.34,630.29,626.56,590.59,600.4,621.09,649.97,666.49,638.52,632.38,651.9,635.36,619.08,565.41,599.06,565.59,527.33,588.73,618.89,655.43,618.82,661.62,703.63,720.17,753.69,772.09,709.71,702.49,702.48,677.86,603.17,615.83,572.5,635.34,692.73,701.59,724.63,710.8,780.9,851.57,851.77,952.5,944.46,891.72,919.47,920.99,913.02],"v":[4177900,7516800,9011400,10653100,11235500,9140800,9365000,7341500,6920700,10626000,9800800,10336300,10402700,20552100,15276400,12180900,13730300,23274900,19464400,14211500,16433900,12005800,26590900,20061000,13798900,14680600,43000900,13367500,10280900,11095800,9868200,12166500,8451300,8710000,6299000,6090400,7622500,12083200,6265000,6638400,8232300,9924100,10925000,8663400,5305700,5642600,5553700,5706200,6617000,4180400,11104300,9812600,24249700,14886100,21404400,19353200,14603900,10818600,10862500,14146600,15703000,17872400,21365000,20607500,21061100,13435200,14015600,16486300,23010300,40932100,28765800,31213200,29007600,27725500,21327300,15290700,15904000,20472700,23321100,23640400,19143200,25097600,19601600,17001000,18569400,30408300,18561500,23672700,18208200,17519900,20533500,15614300,15433600,16108900,21205500,18133200,15815800,17284100,18806900,19406300,14782100,20663100,21266400,23508600,22925100,14536300,20618700,19023800,16684200,20501200,20685000,22322700,17443900,12773700,14406500,16898900,17233600,13343800,20234400,19821500,16269600,13851900,25655700,11255500]},"1Y":{"d":["2025-04-21","2025-04-22","2025-04-23","2025-04-24","2025-04-25","2025-04-28","2025-04-29","2025-04-30","2025-05-01","2025-05-02","2025-05-05","2025-05-06","2025-05-07","2025-05-08","2025-05-09","2025-05-12","2025-05-13","2025-05-14","2025-05-15","2025-05-16","2025-05-19","2025-05-20","2025-05-21","2025-05-22","2025-05-23","2025-05-27","2025-05-28","2025-05-29","2025-05-30","2025-06-02","2025-06-03","2025-06-04","2025-06-05","2025-06-06","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-16","2025-06-17","2025-06-18","2025-06-20","2025-06-23","2025-06-24","2025-06-25","2025-06-26","2025-06-27","2025-06-30","2025-07-01","2025-07-02","2025-07-03","2025-07-07","2025-07-08","2025-07-09","2025-07-10","2025-07-11","2025-07-14","2025-07-15","2025-07-16","2025-07-17","2025-07-18","2025-07-21","2025-07-22","2025-07-23","2025-07-24","2025-07-25","2025-07-28","2025-07-29","2025-07-30","2025-07-31","2025-08-01","2025-08-04","2025-08-05","2025-08-06","2025-08-07","2025-08-08","2025-08-11","2025-08-12","2025-08-13","2025-08-14","2025-08-15","2025-08-18","2025-08-19","2025-08-20","2025-08-21","2025-08-22","2025-08-25","2025-08-26","2025-08-27","2025-08-28","2025-08-29","2025-09-02","2025-09-03","2025-09-04","2025-09-05","2025-09-08","2025-09-09","2025-09-10","2025-09-11","2025-09-12","2025-09-15","2025-09-16","2025-09-17","2025-09-18","2025-09-19","2025-09-22","2025-09-23","2025-09-24","2025-09-25","2025-09-26","2025-09-29","2025-09-30","2025-10-01","2025-10-02","2025-10-03","2025-10-06","2025-10-07","2025-10-08","2025-10-09","2025-10-10","2025-10-13","2025-10-14","2025-10-15","2025-10-16","2025-10-17","2025-10-20","2025-10-21","2025-10-22","2025-10-23","2025-10-24","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-10-31","2025-11-03","2025-11-04","2025-11-05","2025-11-06","2025-11-07","2025-11-10","2025-11-11","2025-11-12","2025-11-13","2025-11-14","2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-02","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-15","2026-01-16","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-26","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-03","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-26","2026-03-27","2026-03-30","2026-03-31","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-14","2026-04-15","2026-04-16","2026-04-17","2026-04-20"],"o":[31.07,30.26,31.99,30.81,32.26,32.63,31.39,31.84,32.48,33.11,33.83,34.02,34.0,34.97,37.96,41.14,41.85,42.0,41.17,40.52,39.33,38.78,40.04,38.4,36.25,37.94,38.4,39.04,38.19,37.54,37.45,38.64,39.38,39.73,40.27,41.79,42.38,39.67,41.0,43.37,44.23,45.0,46.98,46.36,47.18,47.34,49.6,47.23,47.23,45.7,44.52,46.1,47.14,46.12,46.12,47.37,46.29,44.63,42.8,42.76,41.4,41.54,41.73,41.51,41.06,43.08,42.48,43.08,42.26,42.07,43.73,42.18,42.11,42.53,42.72,42.0,41.41,45.7,45.21,47.02,46.43,43.06,44.25,46.23,44.86,43.87,46.11,46.36,46.75,47.4,48.56,51.15,51.01,51.92,55.67,65.52,68.65,70.26,72.42,82.3,85.31,85.3,90.31,90.78,97.3,98.0,105.76,105.0,103.56,96.26,96.0,104.25,114.1,113.06,128.69,128.29,133.6,125.2,121.5,127.0,131.46,129.74,123.59,134.75,146.0,139.22,145.98,145.8,149.1,146.99,174.4,191.5,175.49,186.67,192.02,203.5,210.85,188.13,201.88,212.0,208.42,247.0,262.29,271.58,268.0,236.0,253.4,257.15,251.11,252.17,205.37,206.05,228.4,226.0,225.25,211.84,211.75,196.7,192.32,212.4,235.66,222.27,218.0,230.0,232.11,214.45,201.13,215.99,222.74,222.29,249.65,238.42,244.9,259.6,241.55,245.87,241.41,244.35,284.22,288.74,340.88,360.73,341.6,373.97,393.2,390.0,398.83,425.59,412.17,463.05,501.29,503.44,476.48,481.01,500.1,535.85,651.23,588.81,694.06,654.0,563.75,614.5,592.16,573.88,578.5,640.55,610.53,612.0,582.49,597.33,616.0,659.59,682.5,644.3,645.74,627.08,618.65,581.64,586.84,594.39,548.25,517.0,599.23,625.95,647.0,630.75,687.52,716.0,730.02,707.15,772.7,716.0,693.69,651.0,654.0,599.75,642.12,588.01,652.29,642.09,720.34,715.7,784.0,817.08,873.95,867.09,964.02,929.86,896.62,920.84,930.97],"h":[31.07,31.12,32.78,32.98,33.37,33.0,33.04,32.47,34.19,35.41,35.23,34.43,35.56,37.76,38.79,42.24,43.8,43.43,41.86,41.0,39.5,41.11,40.48,39.28,37.57,38.62,38.91,39.22,38.45,37.88,39.24,40.27,40.45,40.15,42.24,42.66,43.23,41.83,42.83,44.85,44.56,47.43,48.21,48.25,48.75,48.16,49.82,47.74,47.34,45.92,46.24,47.32,47.24,47.25,47.09,47.75,47.42,44.85,43.45,42.96,42.26,42.28,42.28,41.98,43.65,43.5,42.6,43.24,43.19,43.47,44.62,42.22,42.54,43.4,43.0,42.35,44.85,46.35,47.86,48.46,47.26,46.13,45.87,46.5,45.0,45.6,47.19,46.88,48.21,49.08,51.23,52.94,51.7,53.22,62.65,68.67,71.0,71.4,74.49,85.89,86.96,92.06,93.13,94.81,102.93,102.99,108.8,110.21,107.72,100.45,99.65,114.0,120.74,123.85,132.29,137.05,134.79,125.2,132.28,131.6,132.0,135.91,130.48,144.55,149.09,150.82,152.63,150.16,157.4,167.95,187.36,191.85,178.82,205.64,204.92,209.77,213.4,202.98,218.94,226.5,240.0,270.91,275.87,284.76,271.84,270.49,282.8,260.63,256.98,254.6,205.5,228.18,229.07,228.0,237.77,215.3,217.0,199.18,214.99,229.45,238.86,224.33,234.17,244.19,236.0,217.0,210.5,221.99,231.0,243.71,252.0,245.5,261.37,261.5,250.0,247.48,241.9,275.8,285.0,352.0,354.93,360.98,384.0,395.16,398.0,401.2,423.35,432.02,457.37,501.95,509.5,506.3,494.7,503.0,531.46,546.75,676.69,674.0,725.0,662.79,619.41,615.36,603.98,582.28,612.8,668.0,661.5,628.65,616.98,634.48,650.29,691.54,684.09,661.2,659.86,661.2,648.8,593.16,607.48,603.53,570.9,589.51,636.58,655.68,651.99,671.67,720.0,721.37,761.52,776.0,777.6,748.78,711.3,687.22,659.66,638.52,651.0,636.32,710.85,707.31,736.0,738.01,807.99,855.0,873.95,953.41,965.0,937.99,929.5,930.5,951.47],"l":[28.94,29.32,30.2,30.31,31.6,31.66,31.39,31.01,32.48,33.05,33.53,33.46,33.38,33.13,37.28,40.0,41.3,41.01,39.75,39.92,38.53,38.45,38.35,37.77,35.79,37.5,37.8,37.69,36.68,36.21,36.87,38.35,37.33,38.53,39.55,40.75,39.89,39.44,40.78,42.56,43.53,44.86,44.76,45.8,46.71,47.05,47.07,46.19,45.33,44.3,44.17,45.89,45.09,45.61,45.99,46.62,45.83,41.46,42.51,40.3,41.04,40.84,40.55,40.89,41.06,42.03,41.5,41.57,41.68,42.07,42.24,40.1,41.6,41.37,41.62,40.53,41.0,43.17,45.0,46.8,46.08,42.82,44.25,44.26,43.2,43.56,45.63,46.01,46.75,47.4,48.56,50.82,50.07,50.65,55.55,63.74,67.86,69.57,72.03,81.38,82.28,85.12,89.56,90.22,96.86,96.71,101.59,104.7,96.63,93.54,94.39,103.35,112.11,112.0,123.26,126.7,119.29,115.68,120.2,126.12,116.17,124.05,120.96,130.5,141.7,136.29,145.5,142.76,144.82,146.0,173.5,173.72,164.56,181.51,191.09,189.58,189.1,185.0,201.87,205.18,203.4,247.0,255.87,267.05,234.13,235.05,253.0,229.11,233.79,192.62,183.0,205.13,209.0,205.4,211.73,205.24,192.8,187.7,189.68,211.25,215.6,213.5,215.2,217.67,204.8,200.34,199.5,205.52,214.0,221.0,226.6,234.0,244.5,245.1,236.01,236.52,235.24,244.0,266.33,288.5,331.23,310.78,334.54,373.97,379.41,377.0,398.61,399.7,412.17,448.53,467.56,463.01,454.33,471.15,499.15,507.24,533.0,584.1,646.2,582.0,562.1,575.5,551.51,540.14,575.0,615.62,586.37,588.95,574.5,590.1,615.65,644.38,612.92,624.43,607.0,621.27,597.6,557.09,576.3,559.1,526.63,517.0,595.56,618.8,612.21,623.06,687.43,695.12,715.5,692.0,698.35,678.84,680.19,638.0,602.03,599.37,558.58,578.42,645.1,641.0,711.0,687.68,758.19,805.0,835.28,866.95,902.0,873.93,892.51,886.0,900.37],"c":[29.81,29.62,30.36,32.29,32.85,32.27,32.94,32.11,32.59,34.4,34.61,33.83,34.97,36.66,37.74,41.27,42.0,41.93,40.54,40.44,38.78,40.18,38.6,37.84,37.28,38.18,38.58,38.6,37.69,37.33,38.64,39.82,39.12,39.15,41.82,41.59,40.23,41.3,42.5,44.21,44.09,46.62,46.58,46.95,47.34,47.25,47.44,47.15,45.35,44.96,46.21,46.41,45.22,46.17,46.2,46.95,46.09,42.48,42.72,41.36,41.52,42.19,41.61,41.36,43.0,42.06,42.48,41.89,42.93,43.39,42.92,41.33,42.51,41.93,42.1,40.69,44.34,43.37,46.83,47.01,46.68,44.54,45.52,44.58,44.4,45.5,46.37,46.78,47.35,48.44,50.87,52.47,51.07,53.01,62.5,68.55,70.5,70.51,73.92,84.3,86.13,90.09,91.55,93.97,98.87,102.21,102.92,106.4,99.83,94.29,97.12,113.5,112.2,121.12,124.14,128.41,121.17,120.95,131.88,129.68,116.91,134.61,127.29,144.3,144.27,140.16,148.04,149.29,146.95,167.05,186.16,176.49,175.53,204.36,195.82,199.33,207.01,194.57,216.5,207.69,239.48,267.95,271.58,283.1,243.57,254.16,265.88,244.93,245.96,195.96,200.27,226.96,220.5,215.04,223.28,210.17,205.35,194.38,213.31,228.47,225.47,219.46,232.86,241.61,206.18,201.87,209.31,206.83,219.46,237.61,241.05,244.9,250.08,250.05,244.25,240.22,237.38,275.24,274.08,349.63,353.56,334.54,377.41,389.27,389.81,387.81,409.24,413.62,453.12,501.29,503.44,473.83,470.8,481.43,527.63,539.3,576.25,665.24,695.51,584.55,576.2,597.95,583.4,541.64,599.34,630.29,626.56,590.59,600.4,621.09,649.97,666.49,638.52,632.38,651.9,635.36,619.08,565.41,599.06,565.59,527.33,588.73,618.89,655.43,618.82,661.62,703.63,720.17,753.69,772.09,709.71,702.49,702.48,677.86,603.17,615.83,572.5,635.34,692.73,701.59,724.63,710.8,780.9,851.57,851.77,952.5,944.46,891.72,919.47,920.99,913.02],"v":[2579400,2883700,2750200,2590500,1322100,1421000,1385900,2322100,1910200,2193700,1993800,1707600,3640000,4969000,2039200,5374400,2186700,1828400,1930800,2132500,1765400,1756400,1816200,1764900,1232900,1411000,1055800,1501900,5499600,1621000,1294000,1860500,5456000,10955500,10990300,4056300,3891800,2052000,2755900,2901800,2914900,3351400,4762700,1791600,1740600,2357900,3449600,3624000,3034600,2893400,3509400,1441600,2446100,2347200,1575100,1734300,1242000,5486900,2398200,2338400,2290100,1678600,2174200,1846700,2220800,1347100,869200,851300,1202600,1334800,1849200,1661800,1540000,1422900,1553800,2207200,3516500,3095000,3204500,2348500,3549300,7519200,2541700,2372900,1526800,1802300,2208300,1318100,2577800,2145100,2919400,4228000,2023400,1689700,10189000,9050000,5869100,3364300,4053000,10167400,5641700,8981300,6292100,7031000,9441900,6459900,7692200,7835000,12409300,10569300,6418000,12435400,11414800,12237400,9453400,10193700,9963900,6594600,7173400,3561500,7860200,8297300,7078600,8971100,6289600,8279800,6626100,4177900,7516800,9011400,10653100,11235500,9140800,9365000,7341500,6920700,10626000,9800800,10336300,10402700,20552100,15276400,12180900,13730300,23274900,19464400,14211500,16433900,12005800,26590900,20061000,13798900,14680600,43000900,13367500,10280900,11095800,9868200,12166500,8451300,8710000,6299000,6090400,7622500,12083200,6265000,6638400,8232300,9924100,10925000,8663400,5305700,5642600,5553700,5706200,6617000,4180400,11104300,9812600,24249700,14886100,21404400,19353200,14603900,10818600,10862500,14146600,15703000,17872400,21365000,20607500,21061100,13435200,14015600,16486300,23010300,40932100,28765800,31213200,29007600,27725500,21327300,15290700,15904000,20472700,23321100,23640400,19143200,25097600,19601600,17001000,18569400,30408300,18561500,23672700,18208200,17519900,20533500,15614300,15433600,16108900,21205500,18133200,15815800,17284100,18806900,19406300,14782100,20663100,21266400,23508600,22925100,14536300,20618700,19023800,16684200,20501200,20685000,22322700,17443900,12773700,14406500,16898900,17233600,13343800,20234400,19821500,16269600,13851900,25655700,11255500]},"3Y":{"d":["2025-02-13","2025-02-14","2025-02-18","2025-02-19","2025-02-20","2025-02-21","2025-02-24","2025-02-25","2025-02-26","2025-02-27","2025-02-28","2025-03-03","2025-03-04","2025-03-05","2025-03-06","2025-03-07","2025-03-10","2025-03-11","2025-03-12","2025-03-13","2025-03-14","2025-03-17","2025-03-18","2025-03-19","2025-03-20","2025-03-21","2025-03-24","2025-03-25","2025-03-26","2025-03-27","2025-03-28","2025-03-31","2025-04-01","2025-04-02","2025-04-03","2025-04-04","2025-04-07","2025-04-08","2025-04-09","2025-04-10","2025-04-11","2025-04-14","2025-04-15","2025-04-16","2025-04-17","2025-04-21","2025-04-22","2025-04-23","2025-04-24","2025-04-25","2025-04-28","2025-04-29","2025-04-30","2025-05-01","2025-05-02","2025-05-05","2025-05-06","2025-05-07","2025-05-08","2025-05-09","2025-05-12","2025-05-13","2025-05-14","2025-05-15","2025-05-16","2025-05-19","2025-05-20","2025-05-21","2025-05-22","2025-05-23","2025-05-27","2025-05-28","2025-05-29","2025-05-30","2025-06-02","2025-06-03","2025-06-04","2025-06-05","2025-06-06","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-16","2025-06-17","2025-06-18","2025-06-20","2025-06-23","2025-06-24","2025-06-25","2025-06-26","2025-06-27","2025-06-30","2025-07-01","2025-07-02","2025-07-03","2025-07-07","2025-07-08","2025-07-09","2025-07-10","2025-07-11","2025-07-14","2025-07-15","2025-07-16","2025-07-17","2025-07-18","2025-07-21","2025-07-22","2025-07-23","2025-07-24","2025-07-25","2025-07-28","2025-07-29","2025-07-30","2025-07-31","2025-08-01","2025-08-04","2025-08-05","2025-08-06","2025-08-07","2025-08-08","2025-08-11","2025-08-12","2025-08-13","2025-08-14","2025-08-15","2025-08-18","2025-08-19","2025-08-20","2025-08-21","2025-08-22","2025-08-25","2025-08-26","2025-08-27","2025-08-28","2025-08-29","2025-09-02","2025-09-03","2025-09-04","2025-09-05","2025-09-08","2025-09-09","2025-09-10","2025-09-11","2025-09-12","2025-09-15","2025-09-16","2025-09-17","2025-09-18","2025-09-19","2025-09-22","2025-09-23","2025-09-24","2025-09-25","2025-09-26","2025-09-29","2025-09-30","2025-10-01","2025-10-02","2025-10-03","2025-10-06","2025-10-07","2025-10-08","2025-10-09","2025-10-10","2025-10-13","2025-10-14","2025-10-15","2025-10-16","2025-10-17","2025-10-20","2025-10-21","2025-10-22","2025-10-23","2025-10-24","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-10-31","2025-11-03","2025-11-04","2025-11-05","2025-11-06","2025-11-07","2025-11-10","2025-11-11","2025-11-12","2025-11-13","2025-11-14","2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-02","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-15","2026-01-16","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-26","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-03","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-26","2026-03-27","2026-03-30","2026-03-31","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-14","2026-04-15","2026-04-16","2026-04-17","2026-04-20"],"o":[35.06,37.0,40.53,46.51,48.98,48.99,52.0,48.3,46.15,46.04,45.23,48.49,46.69,47.6,47.41,49.2,50.49,51.84,53.0,50.0,49.43,54.8,55.14,56.3,56.51,55.1,54.61,52.13,53.53,51.95,52.21,47.41,47.55,46.92,44.8,35.72,29.22,33.0,31.92,34.6,30.56,33.75,33.3,32.3,31.75,31.07,30.26,31.99,30.81,32.26,32.63,31.39,31.84,32.48,33.11,33.83,34.02,34.0,34.97,37.96,41.14,41.85,42.0,41.17,40.52,39.33,38.78,40.04,38.4,36.25,37.94,38.4,39.04,38.19,37.54,37.45,38.64,39.38,39.73,40.27,41.79,42.38,39.67,41.0,43.37,44.23,45.0,46.98,46.36,47.18,47.34,49.6,47.23,47.23,45.7,44.52,46.1,47.14,46.12,46.12,47.37,46.29,44.63,42.8,42.76,41.4,41.54,41.73,41.51,41.06,43.08,42.48,43.08,42.26,42.07,43.73,42.18,42.11,42.53,42.72,42.0,41.41,45.7,45.21,47.02,46.43,43.06,44.25,46.23,44.86,43.87,46.11,46.36,46.75,47.4,48.56,51.15,51.01,51.92,55.67,65.52,68.65,70.26,72.42,82.3,85.31,85.3,90.31,90.78,97.3,98.0,105.76,105.0,103.56,96.26,96.0,104.25,114.1,113.06,128.69,128.29,133.6,125.2,121.5,127.0,131.46,129.74,123.59,134.75,146.0,139.22,145.98,145.8,149.1,146.99,174.4,191.5,175.49,186.67,192.02,203.5,210.85,188.13,201.88,212.0,208.42,247.0,262.29,271.58,268.0,236.0,253.4,257.15,251.11,252.17,205.37,206.05,228.4,226.0,225.25,211.84,211.75,196.7,192.32,212.4,235.66,222.27,218.0,230.0,232.11,214.45,201.13,215.99,222.74,222.29,249.65,238.42,244.9,259.6,241.55,245.87,241.41,244.35,284.22,288.74,340.88,360.73,341.6,373.97,393.2,390.0,398.83,425.59,412.17,463.05,501.29,503.44,476.48,481.01,500.1,535.85,651.23,588.81,694.06,654.0,563.75,614.5,592.16,573.88,578.5,640.55,610.53,612.0,582.49,597.33,616.0,659.59,682.5,644.3,645.74,627.08,618.65,581.64,586.84,594.39,548.25,517.0,599.23,625.95,647.0,630.75,687.52,716.0,730.02,707.15,772.7,716.0,693.69,651.0,654.0,599.75,642.12,588.01,652.29,642.09,720.34,715.7,784.0,817.08,873.95,867.09,964.02,929.86,896.62,920.84,930.97],"h":[44.0,38.25,47.15,48.5,49.49,50.69,53.0,55.01,49.91,47.87,48.7,50.88,50.1,49.4,49.06,51.13,53.67,53.19,53.1,50.87,54.94,58.36,57.89,57.6,57.17,55.45,55.69,53.18,53.7,54.24,52.89,48.4,49.36,48.71,44.8,35.87,32.98,35.84,39.65,35.03,32.05,36.17,34.56,33.12,32.66,31.07,31.12,32.78,32.98,33.37,33.0,33.04,32.47,34.19,35.41,35.23,34.43,35.56,37.76,38.79,42.24,43.8,43.43,41.86,41.0,39.5,41.11,40.48,39.28,37.57,38.62,38.91,39.22,38.45,37.88,39.24,40.27,40.45,40.15,42.24,42.66,43.23,41.83,42.83,44.85,44.56,47.43,48.21,48.25,48.75,48.16,49.82,47.74,47.34,45.92,46.24,47.32,47.24,47.25,47.09,47.75,47.42,44.85,43.45,42.96,42.26,42.28,42.28,41.98,43.65,43.5,42.6,43.24,43.19,43.47,44.62,42.22,42.54,43.4,43.0,42.35,44.85,46.35,47.86,48.46,47.26,46.13,45.87,46.5,45.0,45.6,47.19,46.88,48.21,49.08,51.23,52.94,51.7,53.22,62.65,68.67,71.0,71.4,74.49,85.89,86.96,92.06,93.13,94.81,102.93,102.99,108.8,110.21,107.72,100.45,99.65,114.0,120.74,123.85,132.29,137.05,134.79,125.2,132.28,131.6,132.0,135.91,130.48,144.55,149.09,150.82,152.63,150.16,157.4,167.95,187.36,191.85,178.82,205.64,204.92,209.77,213.4,202.98,218.94,226.5,240.0,270.91,275.87,284.76,271.84,270.49,282.8,260.63,256.98,254.6,205.5,228.18,229.07,228.0,237.77,215.3,217.0,199.18,214.99,229.45,238.86,224.33,234.17,244.19,236.0,217.0,210.5,221.99,231.0,243.71,252.0,245.5,261.37,261.5,250.0,247.48,241.9,275.8,285.0,352.0,354.93,360.98,384.0,395.16,398.0,401.2,423.35,432.02,457.37,501.95,509.5,506.3,494.7,503.0,531.46,546.75,676.69,674.0,725.0,662.79,619.41,615.36,603.98,582.28,612.8,668.0,661.5,628.65,616.98,634.48,650.29,691.54,684.09,661.2,659.86,661.2,648.8,593.16,607.48,603.53,570.9,589.51,636.58,655.68,651.99,671.67,720.0,721.37,761.52,776.0,777.6,748.78,711.3,687.22,659.66,638.52,651.0,636.32,710.85,707.31,736.0,738.01,807.99,855.0,873.95,953.41,965.0,937.99,929.5,930.5,951.47],"l":[34.99,35.51,39.0,45.5,46.71,48.0,46.21,47.81,45.3,41.58,43.75,47.6,45.1,46.5,45.24,47.16,49.55,49.82,50.38,47.86,49.43,54.74,54.57,55.67,54.92,51.92,51.84,51.76,51.98,51.71,48.46,47.02,46.58,46.51,37.55,28.36,27.89,31.66,31.26,30.51,28.27,32.48,32.89,30.75,30.39,28.94,29.32,30.2,30.31,31.6,31.66,31.39,31.01,32.48,33.05,33.53,33.46,33.38,33.13,37.28,40.0,41.3,41.01,39.75,39.92,38.53,38.45,38.35,37.77,35.79,37.5,37.8,37.69,36.68,36.21,36.87,38.35,37.33,38.53,39.55,40.75,39.89,39.44,40.78,42.56,43.53,44.86,44.76,45.8,46.71,47.05,47.07,46.19,45.33,44.3,44.17,45.89,45.09,45.61,45.99,46.62,45.83,41.46,42.51,40.3,41.04,40.84,40.55,40.89,41.06,42.03,41.5,41.57,41.68,42.07,42.24,40.1,41.6,41.37,41.62,40.53,41.0,43.17,45.0,46.8,46.08,42.82,44.25,44.26,43.2,43.56,45.63,46.01,46.75,47.4,48.56,50.82,50.07,50.65,55.55,63.74,67.86,69.57,72.03,81.38,82.28,85.12,89.56,90.22,96.86,96.71,101.59,104.7,96.63,93.54,94.39,103.35,112.11,112.0,123.26,126.7,119.29,115.68,120.2,126.12,116.17,124.05,120.96,130.5,141.7,136.29,145.5,142.76,144.82,146.0,173.5,173.72,164.56,181.51,191.09,189.58,189.1,185.0,201.87,205.18,203.4,247.0,255.87,267.05,234.13,235.05,253.0,229.11,233.79,192.62,183.0,205.13,209.0,205.4,211.73,205.24,192.8,187.7,189.68,211.25,215.6,213.5,215.2,217.67,204.8,200.34,199.5,205.52,214.0,221.0,226.6,234.0,244.5,245.1,236.01,236.52,235.24,244.0,266.33,288.5,331.23,310.78,334.54,373.97,379.41,377.0,398.61,399.7,412.17,448.53,467.56,463.01,454.33,471.15,499.15,507.24,533.0,584.1,646.2,582.0,562.1,575.5,551.51,540.14,575.0,615.62,586.37,588.95,574.5,590.1,615.65,644.38,612.92,624.43,607.0,621.27,597.6,557.09,576.3,559.1,526.63,517.0,595.56,618.8,612.21,623.06,687.43,695.12,715.5,692.0,698.35,678.84,680.19,638.0,602.03,599.37,558.58,578.42,645.1,641.0,711.0,687.68,758.19,805.0,835.28,866.95,902.0,873.93,892.51,886.0,900.37],"c":[36.0,36.65,47.15,46.0,48.26,50.37,48.6,48.16,46.58,45.16,46.85,50.31,48.69,48.47,46.5,51.0,53.0,52.16,50.44,48.44,54.82,55.65,56.42,56.33,56.21,53.96,52.99,52.2,52.62,52.88,48.97,47.61,48.11,47.67,38.26,30.11,31.48,32.35,36.58,31.08,31.97,33.55,33.23,32.03,31.29,29.81,29.62,30.36,32.29,32.85,32.27,32.94,32.11,32.59,34.4,34.61,33.83,34.97,36.66,37.74,41.27,42.0,41.93,40.54,40.44,38.78,40.18,38.6,37.84,37.28,38.18,38.58,38.6,37.69,37.33,38.64,39.82,39.12,39.15,41.82,41.59,40.23,41.3,42.5,44.21,44.09,46.62,46.58,46.95,47.34,47.25,47.44,47.15,45.35,44.96,46.21,46.41,45.22,46.17,46.2,46.95,46.09,42.48,42.72,41.36,41.52,42.19,41.61,41.36,43.0,42.06,42.48,41.89,42.93,43.39,42.92,41.33,42.51,41.93,42.1,40.69,44.34,43.37,46.83,47.01,46.68,44.54,45.52,44.58,44.4,45.5,46.37,46.78,47.35,48.44,50.87,52.47,51.07,53.01,62.5,68.55,70.5,70.51,73.92,84.3,86.13,90.09,91.55,93.97,98.87,102.21,102.92,106.4,99.83,94.29,97.12,113.5,112.2,121.12,124.14,128.41,121.17,120.95,131.88,129.68,116.91,134.61,127.29,144.3,144.27,140.16,148.04,149.29,146.95,167.05,186.16,176.49,175.53,204.36,195.82,199.33,207.01,194.57,216.5,207.69,239.48,267.95,271.58,283.1,243.57,254.16,265.88,244.93,245.96,195.96,200.27,226.96,220.5,215.04,223.28,210.17,205.35,194.38,213.31,228.47,225.47,219.46,232.86,241.61,206.18,201.87,209.31,206.83,219.46,237.61,241.05,244.9,250.08,250.05,244.25,240.22,237.38,275.24,274.08,349.63,353.56,334.54,377.41,389.27,389.81,387.81,409.24,413.62,453.12,501.29,503.44,473.83,470.8,481.43,527.63,539.3,576.25,665.24,695.51,584.55,576.2,597.95,583.4,541.64,599.34,630.29,626.56,590.59,600.4,621.09,649.97,666.49,638.52,632.38,651.9,635.36,619.08,565.41,599.06,565.59,527.33,588.73,618.89,655.43,618.82,661.62,703.63,720.17,753.69,772.09,709.71,702.49,702.48,677.86,603.17,615.83,572.5,635.34,692.73,701.59,724.63,710.8,780.9,851.57,851.77,952.5,944.46,891.72,919.47,920.99,913.02],"v":[369100,242700,444500,220700,446200,1252100,33848500,8198900,8389000,9676100,7713800,4813000,6074700,5071800,4157300,7825500,5223800,3153400,2177500,3547400,4847600,2930700,2587300,2520700,2701900,6372200,3562800,3079000,1242400,1618100,3987300,2113400,2115600,1725300,7372000,11428600,6238600,5979600,5601600,4153400,4856000,4102300,1936800,2321000,2057200,2579400,2883700,2750200,2590500,1322100,1421000,1385900,2322100,1910200,2193700,1993800,1707600,3640000,4969000,2039200,5374400,2186700,1828400,1930800,2132500,1765400,1756400,1816200,1764900,1232900,1411000,1055800,1501900,5499600,1621000,1294000,1860500,5456000,10955500,10990300,4056300,3891800,2052000,2755900,2901800,2914900,3351400,4762700,1791600,1740600,2357900,3449600,3624000,3034600,2893400,3509400,1441600,2446100,2347200,1575100,1734300,1242000,5486900,2398200,2338400,2290100,1678600,2174200,1846700,2220800,1347100,869200,851300,1202600,1334800,1849200,1661800,1540000,1422900,1553800,2207200,3516500,3095000,3204500,2348500,3549300,7519200,2541700,2372900,1526800,1802300,2208300,1318100,2577800,2145100,2919400,4228000,2023400,1689700,10189000,9050000,5869100,3364300,4053000,10167400,5641700,8981300,6292100,7031000,9441900,6459900,7692200,7835000,12409300,10569300,6418000,12435400,11414800,12237400,9453400,10193700,9963900,6594600,7173400,3561500,7860200,8297300,7078600,8971100,6289600,8279800,6626100,4177900,7516800,9011400,10653100,11235500,9140800,9365000,7341500,6920700,10626000,9800800,10336300,10402700,20552100,15276400,12180900,13730300,23274900,19464400,14211500,16433900,12005800,26590900,20061000,13798900,14680600,43000900,13367500,10280900,11095800,9868200,12166500,8451300,8710000,6299000,6090400,7622500,12083200,6265000,6638400,8232300,9924100,10925000,8663400,5305700,5642600,5553700,5706200,6617000,4180400,11104300,9812600,24249700,14886100,21404400,19353200,14603900,10818600,10862500,14146600,15703000,17872400,21365000,20607500,21061100,13435200,14015600,16486300,23010300,40932100,28765800,31213200,29007600,27725500,21327300,15290700,15904000,20472700,23321100,23640400,19143200,25097600,19601600,17001000,18569400,30408300,18561500,23672700,18208200,17519900,20533500,15614300,15433600,16108900,21205500,18133200,15815800,17284100,18806900,19406300,14782100,20663100,21266400,23508600,22925100,14536300,20618700,19023800,16684200,20501200,20685000,22322700,17443900,12773700,14406500,16898900,17233600,13343800,20234400,19821500,16269600,13851900,25655700,11255500]},"5Y":{"d":["2025-02-13","2025-02-14","2025-02-18","2025-02-19","2025-02-20","2025-02-21","2025-02-24","2025-02-25","2025-02-26","2025-02-27","2025-02-28","2025-03-03","2025-03-04","2025-03-05","2025-03-06","2025-03-07","2025-03-10","2025-03-11","2025-03-12","2025-03-13","2025-03-14","2025-03-17","2025-03-18","2025-03-19","2025-03-20","2025-03-21","2025-03-24","2025-03-25","2025-03-26","2025-03-27","2025-03-28","2025-03-31","2025-04-01","2025-04-02","2025-04-03","2025-04-04","2025-04-07","2025-04-08","2025-04-09","2025-04-10","2025-04-11","2025-04-14","2025-04-15","2025-04-16","2025-04-17","2025-04-21","2025-04-22","2025-04-23","2025-04-24","2025-04-25","2025-04-28","2025-04-29","2025-04-30","2025-05-01","2025-05-02","2025-05-05","2025-05-06","2025-05-07","2025-05-08","2025-05-09","2025-05-12","2025-05-13","2025-05-14","2025-05-15","2025-05-16","2025-05-19","2025-05-20","2025-05-21","2025-05-22","2025-05-23","2025-05-27","2025-05-28","2025-05-29","2025-05-30","2025-06-02","2025-06-03","2025-06-04","2025-06-05","2025-06-06","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-16","2025-06-17","2025-06-18","2025-06-20","2025-06-23","2025-06-24","2025-06-25","2025-06-26","2025-06-27","2025-06-30","2025-07-01","2025-07-02","2025-07-03","2025-07-07","2025-07-08","2025-07-09","2025-07-10","2025-07-11","2025-07-14","2025-07-15","2025-07-16","2025-07-17","2025-07-18","2025-07-21","2025-07-22","2025-07-23","2025-07-24","2025-07-25","2025-07-28","2025-07-29","2025-07-30","2025-07-31","2025-08-01","2025-08-04","2025-08-05","2025-08-06","2025-08-07","2025-08-08","2025-08-11","2025-08-12","2025-08-13","2025-08-14","2025-08-15","2025-08-18","2025-08-19","2025-08-20","2025-08-21","2025-08-22","2025-08-25","2025-08-26","2025-08-27","2025-08-28","2025-08-29","2025-09-02","2025-09-03","2025-09-04","2025-09-05","2025-09-08","2025-09-09","2025-09-10","2025-09-11","2025-09-12","2025-09-15","2025-09-16","2025-09-17","2025-09-18","2025-09-19","2025-09-22","2025-09-23","2025-09-24","2025-09-25","2025-09-26","2025-09-29","2025-09-30","2025-10-01","2025-10-02","2025-10-03","2025-10-06","2025-10-07","2025-10-08","2025-10-09","2025-10-10","2025-10-13","2025-10-14","2025-10-15","2025-10-16","2025-10-17","2025-10-20","2025-10-21","2025-10-22","2025-10-23","2025-10-24","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-10-31","2025-11-03","2025-11-04","2025-11-05","2025-11-06","2025-11-07","2025-11-10","2025-11-11","2025-11-12","2025-11-13","2025-11-14","2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-02","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-15","2026-01-16","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-26","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-03","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-26","2026-03-27","2026-03-30","2026-03-31","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-14","2026-04-15","2026-04-16","2026-04-17","2026-04-20"],"o":[35.06,37.0,40.53,46.51,48.98,48.99,52.0,48.3,46.15,46.04,45.23,48.49,46.69,47.6,47.41,49.2,50.49,51.84,53.0,50.0,49.43,54.8,55.14,56.3,56.51,55.1,54.61,52.13,53.53,51.95,52.21,47.41,47.55,46.92,44.8,35.72,29.22,33.0,31.92,34.6,30.56,33.75,33.3,32.3,31.75,31.07,30.26,31.99,30.81,32.26,32.63,31.39,31.84,32.48,33.11,33.83,34.02,34.0,34.97,37.96,41.14,41.85,42.0,41.17,40.52,39.33,38.78,40.04,38.4,36.25,37.94,38.4,39.04,38.19,37.54,37.45,38.64,39.38,39.73,40.27,41.79,42.38,39.67,41.0,43.37,44.23,45.0,46.98,46.36,47.18,47.34,49.6,47.23,47.23,45.7,44.52,46.1,47.14,46.12,46.12,47.37,46.29,44.63,42.8,42.76,41.4,41.54,41.73,41.51,41.06,43.08,42.48,43.08,42.26,42.07,43.73,42.18,42.11,42.53,42.72,42.0,41.41,45.7,45.21,47.02,46.43,43.06,44.25,46.23,44.86,43.87,46.11,46.36,46.75,47.4,48.56,51.15,51.01,51.92,55.67,65.52,68.65,70.26,72.42,82.3,85.31,85.3,90.31,90.78,97.3,98.0,105.76,105.0,103.56,96.26,96.0,104.25,114.1,113.06,128.69,128.29,133.6,125.2,121.5,127.0,131.46,129.74,123.59,134.75,146.0,139.22,145.98,145.8,149.1,146.99,174.4,191.5,175.49,186.67,192.02,203.5,210.85,188.13,201.88,212.0,208.42,247.0,262.29,271.58,268.0,236.0,253.4,257.15,251.11,252.17,205.37,206.05,228.4,226.0,225.25,211.84,211.75,196.7,192.32,212.4,235.66,222.27,218.0,230.0,232.11,214.45,201.13,215.99,222.74,222.29,249.65,238.42,244.9,259.6,241.55,245.87,241.41,244.35,284.22,288.74,340.88,360.73,341.6,373.97,393.2,390.0,398.83,425.59,412.17,463.05,501.29,503.44,476.48,481.01,500.1,535.85,651.23,588.81,694.06,654.0,563.75,614.5,592.16,573.88,578.5,640.55,610.53,612.0,582.49,597.33,616.0,659.59,682.5,644.3,645.74,627.08,618.65,581.64,586.84,594.39,548.25,517.0,599.23,625.95,647.0,630.75,687.52,716.0,730.02,707.15,772.7,716.0,693.69,651.0,654.0,599.75,642.12,588.01,652.29,642.09,720.34,715.7,784.0,817.08,873.95,867.09,964.02,929.86,896.62,920.84,930.97],"h":[44.0,38.25,47.15,48.5,49.49,50.69,53.0,55.01,49.91,47.87,48.7,50.88,50.1,49.4,49.06,51.13,53.67,53.19,53.1,50.87,54.94,58.36,57.89,57.6,57.17,55.45,55.69,53.18,53.7,54.24,52.89,48.4,49.36,48.71,44.8,35.87,32.98,35.84,39.65,35.03,32.05,36.17,34.56,33.12,32.66,31.07,31.12,32.78,32.98,33.37,33.0,33.04,32.47,34.19,35.41,35.23,34.43,35.56,37.76,38.79,42.24,43.8,43.43,41.86,41.0,39.5,41.11,40.48,39.28,37.57,38.62,38.91,39.22,38.45,37.88,39.24,40.27,40.45,40.15,42.24,42.66,43.23,41.83,42.83,44.85,44.56,47.43,48.21,48.25,48.75,48.16,49.82,47.74,47.34,45.92,46.24,47.32,47.24,47.25,47.09,47.75,47.42,44.85,43.45,42.96,42.26,42.28,42.28,41.98,43.65,43.5,42.6,43.24,43.19,43.47,44.62,42.22,42.54,43.4,43.0,42.35,44.85,46.35,47.86,48.46,47.26,46.13,45.87,46.5,45.0,45.6,47.19,46.88,48.21,49.08,51.23,52.94,51.7,53.22,62.65,68.67,71.0,71.4,74.49,85.89,86.96,92.06,93.13,94.81,102.93,102.99,108.8,110.21,107.72,100.45,99.65,114.0,120.74,123.85,132.29,137.05,134.79,125.2,132.28,131.6,132.0,135.91,130.48,144.55,149.09,150.82,152.63,150.16,157.4,167.95,187.36,191.85,178.82,205.64,204.92,209.77,213.4,202.98,218.94,226.5,240.0,270.91,275.87,284.76,271.84,270.49,282.8,260.63,256.98,254.6,205.5,228.18,229.07,228.0,237.77,215.3,217.0,199.18,214.99,229.45,238.86,224.33,234.17,244.19,236.0,217.0,210.5,221.99,231.0,243.71,252.0,245.5,261.37,261.5,250.0,247.48,241.9,275.8,285.0,352.0,354.93,360.98,384.0,395.16,398.0,401.2,423.35,432.02,457.37,501.95,509.5,506.3,494.7,503.0,531.46,546.75,676.69,674.0,725.0,662.79,619.41,615.36,603.98,582.28,612.8,668.0,661.5,628.65,616.98,634.48,650.29,691.54,684.09,661.2,659.86,661.2,648.8,593.16,607.48,603.53,570.9,589.51,636.58,655.68,651.99,671.67,720.0,721.37,761.52,776.0,777.6,748.78,711.3,687.22,659.66,638.52,651.0,636.32,710.85,707.31,736.0,738.01,807.99,855.0,873.95,953.41,965.0,937.99,929.5,930.5,951.47],"l":[34.99,35.51,39.0,45.5,46.71,48.0,46.21,47.81,45.3,41.58,43.75,47.6,45.1,46.5,45.24,47.16,49.55,49.82,50.38,47.86,49.43,54.74,54.57,55.67,54.92,51.92,51.84,51.76,51.98,51.71,48.46,47.02,46.58,46.51,37.55,28.36,27.89,31.66,31.26,30.51,28.27,32.48,32.89,30.75,30.39,28.94,29.32,30.2,30.31,31.6,31.66,31.39,31.01,32.48,33.05,33.53,33.46,33.38,33.13,37.28,40.0,41.3,41.01,39.75,39.92,38.53,38.45,38.35,37.77,35.79,37.5,37.8,37.69,36.68,36.21,36.87,38.35,37.33,38.53,39.55,40.75,39.89,39.44,40.78,42.56,43.53,44.86,44.76,45.8,46.71,47.05,47.07,46.19,45.33,44.3,44.17,45.89,45.09,45.61,45.99,46.62,45.83,41.46,42.51,40.3,41.04,40.84,40.55,40.89,41.06,42.03,41.5,41.57,41.68,42.07,42.24,40.1,41.6,41.37,41.62,40.53,41.0,43.17,45.0,46.8,46.08,42.82,44.25,44.26,43.2,43.56,45.63,46.01,46.75,47.4,48.56,50.82,50.07,50.65,55.55,63.74,67.86,69.57,72.03,81.38,82.28,85.12,89.56,90.22,96.86,96.71,101.59,104.7,96.63,93.54,94.39,103.35,112.11,112.0,123.26,126.7,119.29,115.68,120.2,126.12,116.17,124.05,120.96,130.5,141.7,136.29,145.5,142.76,144.82,146.0,173.5,173.72,164.56,181.51,191.09,189.58,189.1,185.0,201.87,205.18,203.4,247.0,255.87,267.05,234.13,235.05,253.0,229.11,233.79,192.62,183.0,205.13,209.0,205.4,211.73,205.24,192.8,187.7,189.68,211.25,215.6,213.5,215.2,217.67,204.8,200.34,199.5,205.52,214.0,221.0,226.6,234.0,244.5,245.1,236.01,236.52,235.24,244.0,266.33,288.5,331.23,310.78,334.54,373.97,379.41,377.0,398.61,399.7,412.17,448.53,467.56,463.01,454.33,471.15,499.15,507.24,533.0,584.1,646.2,582.0,562.1,575.5,551.51,540.14,575.0,615.62,586.37,588.95,574.5,590.1,615.65,644.38,612.92,624.43,607.0,621.27,597.6,557.09,576.3,559.1,526.63,517.0,595.56,618.8,612.21,623.06,687.43,695.12,715.5,692.0,698.35,678.84,680.19,638.0,602.03,599.37,558.58,578.42,645.1,641.0,711.0,687.68,758.19,805.0,835.28,866.95,902.0,873.93,892.51,886.0,900.37],"c":[36.0,36.65,47.15,46.0,48.26,50.37,48.6,48.16,46.58,45.16,46.85,50.31,48.69,48.47,46.5,51.0,53.0,52.16,50.44,48.44,54.82,55.65,56.42,56.33,56.21,53.96,52.99,52.2,52.62,52.88,48.97,47.61,48.11,47.67,38.26,30.11,31.48,32.35,36.58,31.08,31.97,33.55,33.23,32.03,31.29,29.81,29.62,30.36,32.29,32.85,32.27,32.94,32.11,32.59,34.4,34.61,33.83,34.97,36.66,37.74,41.27,42.0,41.93,40.54,40.44,38.78,40.18,38.6,37.84,37.28,38.18,38.58,38.6,37.69,37.33,38.64,39.82,39.12,39.15,41.82,41.59,40.23,41.3,42.5,44.21,44.09,46.62,46.58,46.95,47.34,47.25,47.44,47.15,45.35,44.96,46.21,46.41,45.22,46.17,46.2,46.95,46.09,42.48,42.72,41.36,41.52,42.19,41.61,41.36,43.0,42.06,42.48,41.89,42.93,43.39,42.92,41.33,42.51,41.93,42.1,40.69,44.34,43.37,46.83,47.01,46.68,44.54,45.52,44.58,44.4,45.5,46.37,46.78,47.35,48.44,50.87,52.47,51.07,53.01,62.5,68.55,70.5,70.51,73.92,84.3,86.13,90.09,91.55,93.97,98.87,102.21,102.92,106.4,99.83,94.29,97.12,113.5,112.2,121.12,124.14,128.41,121.17,120.95,131.88,129.68,116.91,134.61,127.29,144.3,144.27,140.16,148.04,149.29,146.95,167.05,186.16,176.49,175.53,204.36,195.82,199.33,207.01,194.57,216.5,207.69,239.48,267.95,271.58,283.1,243.57,254.16,265.88,244.93,245.96,195.96,200.27,226.96,220.5,215.04,223.28,210.17,205.35,194.38,213.31,228.47,225.47,219.46,232.86,241.61,206.18,201.87,209.31,206.83,219.46,237.61,241.05,244.9,250.08,250.05,244.25,240.22,237.38,275.24,274.08,349.63,353.56,334.54,377.41,389.27,389.81,387.81,409.24,413.62,453.12,501.29,503.44,473.83,470.8,481.43,527.63,539.3,576.25,665.24,695.51,584.55,576.2,597.95,583.4,541.64,599.34,630.29,626.56,590.59,600.4,621.09,649.97,666.49,638.52,632.38,651.9,635.36,619.08,565.41,599.06,565.59,527.33,588.73,618.89,655.43,618.82,661.62,703.63,720.17,753.69,772.09,709.71,702.49,702.48,677.86,603.17,615.83,572.5,635.34,692.73,701.59,724.63,710.8,780.9,851.57,851.77,952.5,944.46,891.72,919.47,920.99,913.02],"v":[369100,242700,444500,220700,446200,1252100,33848500,8198900,8389000,9676100,7713800,4813000,6074700,5071800,4157300,7825500,5223800,3153400,2177500,3547400,4847600,2930700,2587300,2520700,2701900,6372200,3562800,3079000,1242400,1618100,3987300,2113400,2115600,1725300,7372000,11428600,6238600,5979600,5601600,4153400,4856000,4102300,1936800,2321000,2057200,2579400,2883700,2750200,2590500,1322100,1421000,1385900,2322100,1910200,2193700,1993800,1707600,3640000,4969000,2039200,5374400,2186700,1828400,1930800,2132500,1765400,1756400,1816200,1764900,1232900,1411000,1055800,1501900,5499600,1621000,1294000,1860500,5456000,10955500,10990300,4056300,3891800,2052000,2755900,2901800,2914900,3351400,4762700,1791600,1740600,2357900,3449600,3624000,3034600,2893400,3509400,1441600,2446100,2347200,1575100,1734300,1242000,5486900,2398200,2338400,2290100,1678600,2174200,1846700,2220800,1347100,869200,851300,1202600,1334800,1849200,1661800,1540000,1422900,1553800,2207200,3516500,3095000,3204500,2348500,3549300,7519200,2541700,2372900,1526800,1802300,2208300,1318100,2577800,2145100,2919400,4228000,2023400,1689700,10189000,9050000,5869100,3364300,4053000,10167400,5641700,8981300,6292100,7031000,9441900,6459900,7692200,7835000,12409300,10569300,6418000,12435400,11414800,12237400,9453400,10193700,9963900,6594600,7173400,3561500,7860200,8297300,7078600,8971100,6289600,8279800,6626100,4177900,7516800,9011400,10653100,11235500,9140800,9365000,7341500,6920700,10626000,9800800,10336300,10402700,20552100,15276400,12180900,13730300,23274900,19464400,14211500,16433900,12005800,26590900,20061000,13798900,14680600,43000900,13367500,10280900,11095800,9868200,12166500,8451300,8710000,6299000,6090400,7622500,12083200,6265000,6638400,8232300,9924100,10925000,8663400,5305700,5642600,5553700,5706200,6617000,4180400,11104300,9812600,24249700,14886100,21404400,19353200,14603900,10818600,10862500,14146600,15703000,17872400,21365000,20607500,21061100,13435200,14015600,16486300,23010300,40932100,28765800,31213200,29007600,27725500,21327300,15290700,15904000,20472700,23321100,23640400,19143200,25097600,19601600,17001000,18569400,30408300,18561500,23672700,18208200,17519900,20533500,15614300,15433600,16108900,21205500,18133200,15815800,17284100,18806900,19406300,14782100,20663100,21266400,23508600,22925100,14536300,20618700,19023800,16684200,20501200,20685000,22322700,17443900,12773700,14406500,16898900,17233600,13343800,20234400,19821500,16269600,13851900,25655700,11255500]}};
+
+function _setupCanvas(id) {
+  const c = document.getElementById(id);
+  if (!c) return null;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  c.width = w * dpr; c.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+
+function drawLineChart(tf) {
+  const d = CHART_DATA[tf];
+  if (!d || !d.c.length) return;
+  const s = _setupCanvas('cv-line');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const closes = d.c, n = closes.length;
+  const mn = Math.min(...closes), mx = Math.max(...closes);
+  const range = mx - mn || 1;
+  const pad = { t:18, b:24, l:55, r:12 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+
+  const ret = ((closes[n-1] - closes[0]) / closes[0] * 100);
+  const retEl = document.getElementById('tf-line-ret');
+  if (retEl) {
+    retEl.textContent = (ret >= 0 ? '+' : '') + ret.toFixed(2) + '%';
+    retEl.className = 'tf-ret ' + (ret >= 0 ? 'up' : 'dn');
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    const val = mx - (i / 4) * range;
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
+    ctx.fillText(val >= 1000 ? val.toFixed(0) : val.toFixed(2), pad.l - 6, y + 3);
+  }
+
+  const nLabels = Math.min(6, n);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < nLabels; i++) {
+    const idx = Math.round(i / (nLabels - 1) * (n - 1));
+    const x = pad.l + (idx / (n - 1)) * cw;
+    ctx.fillText(d.d[idx], x, h - 4);
+  }
+
+  const color = ret >= 0 ? '#00e5a0' : '#ff4d6d';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.8;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  closes.forEach((v, i) => {
+    const x = pad.l + (i / (n - 1 || 1)) * cw;
+    const y = pad.t + (1 - (v - mn) / range) * ch;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
+  grad.addColorStop(0, color + '22');
+  grad.addColorStop(1, color + '00');
+  ctx.lineTo(pad.l + cw, pad.t + ch);
+  ctx.lineTo(pad.l, pad.t + ch);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+function drawCandleChart(tf) {
+  const d = CHART_DATA[tf];
+  if (!d || !d.c.length) return;
+  const s = _setupCanvas('cv-candle');
+  if (!s) return;
+  const { ctx, w, h } = s;
+  const n = d.c.length;
+  const allVals = d.h.concat(d.l);
+  const mn = Math.min(...allVals), mx = Math.max(...allVals);
+  const range = mx - mn || 1;
+  const pad = { t:18, b:24, l:55, r:12 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+
+  const ret = ((d.c[n-1] - d.c[0]) / d.c[0] * 100);
+  const retEl = document.getElementById('tf-candle-ret');
+  if (retEl) {
+    retEl.textContent = (ret >= 0 ? '+' : '') + ret.toFixed(2) + '%';
+    retEl.className = 'tf-ret ' + (ret >= 0 ? 'up' : 'dn');
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    const val = mx - (i / 4) * range;
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
+    ctx.fillText(val >= 1000 ? val.toFixed(0) : val.toFixed(2), pad.l - 6, y + 3);
+  }
+
+  const nLabels = Math.min(6, n);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < nLabels; i++) {
+    const idx = Math.round(i / (nLabels - 1) * (n - 1));
+    const x = pad.l + (idx / (n - 1)) * cw;
+    ctx.fillText(d.d[idx], x, h - 4);
+  }
+
+  const barW = Math.max(1, Math.min(8, (cw / n) * 0.65));
+  for (let i = 0; i < n; i++) {
+    const x = pad.l + ((i + 0.5) / n) * cw;
+    const oY = pad.t + (1 - (d.o[i] - mn) / range) * ch;
+    const cY = pad.t + (1 - (d.c[i] - mn) / range) * ch;
+    const hY = pad.t + (1 - (d.h[i] - mn) / range) * ch;
+    const lY = pad.t + (1 - (d.l[i] - mn) / range) * ch;
+    const bull = d.c[i] >= d.o[i];
+    const clr = bull ? '#00e5a0' : '#ff4d6d';
+    ctx.strokeStyle = clr; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, hY); ctx.lineTo(x, lY); ctx.stroke();
+    ctx.fillStyle = bull ? clr + '88' : clr;
+    const top = Math.min(oY, cY), bh = Math.max(1, Math.abs(oY - cY));
+    ctx.fillRect(x - barW/2, top, barW, bh);
+  }
+
+  if (n >= 50) {
+    const ema50 = _calcEMA(d.c, 50);
+    _drawMA(ctx, ema50, n, mn, range, pad, cw, ch, '#f5a623', [5,3]);
+  }
+  if (n >= 200) {
+    const dma200 = _calcSMA(d.c, 200);
+    _drawMA(ctx, dma200, n, mn, range, pad, cw, ch, '#a855f7', []);
+  }
+}
+
+function _calcEMA(data, period) {
+  const result = new Array(data.length).fill(null);
+  if (data.length < period) return result;
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += data[i];
+  result[period-1] = sum / period;
+  const k = 2 / (period + 1);
+  for (let i = period; i < data.length; i++) result[i] = data[i] * k + result[i-1] * (1-k);
+  return result;
+}
+function _calcSMA(data, period) {
+  const result = new Array(data.length).fill(null);
+  if (data.length < period) return result;
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += data[i];
+  result[period-1] = sum / period;
+  for (let i = period; i < data.length; i++) { sum += data[i] - data[i-period]; result[i] = sum / period; }
+  return result;
+}
+function _drawMA(ctx, vals, n, mn, range, pad, cw, ch, color, dash) {
+  ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.setLineDash(dash);
+  ctx.beginPath();
+  let started = false;
+  vals.forEach((v, i) => {
+    if (v === null) return;
+    const x = pad.l + ((i + 0.5) / n) * cw;
+    const y = pad.t + (1 - (v - mn) / range) * ch;
+    if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function _bindTF(groupId, drawFn, defaultTf) {
+  const btns = document.querySelectorAll('#' + groupId + ' .tf-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      drawFn(btn.dataset.tf);
+    });
+  });
+  drawFn(defaultTf);
+}
+_bindTF('tf-line', drawLineChart, '1Y');
+_bindTF('tf-candle', drawCandleChart, '6M');
+</script>
+</body>
+</html>
