@@ -4,8 +4,9 @@ on:
   schedule:
     # Every 15 minutes, Mon–Fri, 3:30–10:15 UTC (9:00 AM–3:45 PM IST)
     - cron: '*/15 3-10 * * 1-5'
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["Daily Stock Reports"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
