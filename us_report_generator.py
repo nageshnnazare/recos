@@ -2331,7 +2331,8 @@ def generate_html_report(data, scores):
     fair_value_low = target_low if target_low else current_price * 0.75
     fair_value_mid = target_mean if target_mean else current_price
     fair_value_high = target_high if target_high else current_price * 1.25
-    fair_value_svg = generate_fair_value_svg(current_price, fair_value_low, fair_value_mid, fair_value_high)
+
+    # prediction_data_json built after n_analysts is set (below)
 
     if hist_1y is not None and not hist_1y.empty and len(hist_1y) > 1:
         price_1y_ago = hist_1y["Close"].iloc[0]
@@ -2357,6 +2358,26 @@ def generate_html_report(data, scores):
     rec_key = safe_get(info, "recommendationKey", "")
     n_analysts = safe_get(info, "numberOfAnalystOpinions", 0)
     employees = safe_get(info, "fullTimeEmployees", 0)
+
+    # Build prediction cone data (6M history + analyst targets)
+    _pred_hist = data.get("hist_6m")
+    if _pred_hist is None or _pred_hist.empty:
+        _pred_hist = data.get("hist_1y")
+    _pred_dates, _pred_prices = [], []
+    if _pred_hist is not None and not _pred_hist.empty:
+        _ph = _pred_hist["Close"].dropna()
+        _pred_dates = [d.strftime("%Y-%m-%d") for d in _ph.index]
+        _pred_prices = [round(float(v), 2) for v in _ph.values]
+    prediction_data_json = json.dumps({
+        "dates": _pred_dates, "prices": _pred_prices,
+        "current": round(current_price, 2),
+        "targetLow": round(fair_value_low, 2),
+        "targetMid": round(fair_value_mid, 2),
+        "targetHigh": round(fair_value_high, 2),
+        "nAnalysts": n_analysts or 0,
+        "hasTargets": bool(target_mean),
+        "currency": "$"
+    })
 
     biz_bullets = []
     if desc_text:
@@ -3381,8 +3402,8 @@ def generate_html_report(data, scores):
   </div>
 
   <div class="section">
-    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets</div>
-    {fair_value_svg}
+    <div class="section-title">🎯 Price Prediction · Analyst Target Cone</div>
+    <canvas id="cv-prediction" style="width:100%;height:360px;display:block;"></canvas>
   </div>
 
   {vt_html}
@@ -4008,6 +4029,198 @@ function drawFinChart(mode) {{
     }});
   }});
 }})();
+
+// Prediction cone chart
+const PRED = {prediction_data_json};
+function drawPredictionChart() {{
+  const c = document.getElementById('cv-prediction');
+  if (!c || !PRED.dates.length) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  const W = rect.width * dpr, H = rect.height * dpr;
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const prices = PRED.prices;
+  const cur = PRED.current;
+  const tLow = PRED.targetLow, tMid = PRED.targetMid, tHigh = PRED.targetHigh;
+  const curr = PRED.currency;
+  const hasTgt = PRED.hasTargets;
+  const nA = PRED.nAnalysts;
+
+  const pad = {{ l: 60, r: 130, t: 30, b: 40 }};
+  // History takes ~65% of width, projection takes ~35%
+  const histW = (w - pad.l - pad.r) * 0.65;
+  const projW = (w - pad.l - pad.r) * 0.35;
+  const chartH = h - pad.t - pad.b;
+
+  // Price range: include history + targets
+  const allVals = prices.concat([tLow, tMid, tHigh]);
+  let pMin = Math.min(...allVals) * 0.95;
+  let pMax = Math.max(...allVals) * 1.05;
+  if (pMax === pMin) {{ pMax = pMin * 1.2; pMin = pMin * 0.8; }}
+  const yScale = v => pad.t + chartH - ((v - pMin) / (pMax - pMin)) * chartH;
+
+  const n = prices.length;
+  const xHist = i => pad.l + (i / (n - 1)) * histW;
+  const histEnd = pad.l + histW;
+  const projEnd = histEnd + projW;
+
+  // Gridlines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 0.5;
+  const nGrid = 6;
+  for (let i = 0; i <= nGrid; i++) {{
+    const v = pMin + (pMax - pMin) * i / nGrid;
+    const y = yScale(v);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
+    ctx.fillText(curr + v.toLocaleString(undefined, {{maximumFractionDigits: 0}}), pad.l - 6, y + 3);
+  }}
+
+  // X-axis labels for history
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'center';
+  const dates = PRED.dates;
+  const labelStep = Math.max(1, Math.floor(n / 5));
+  for (let i = 0; i < n; i += labelStep) {{
+    const d = new Date(dates[i]);
+    ctx.fillText(d.toLocaleDateString('en', {{month:'short', year:'2-digit'}}), xHist(i), h - pad.b + 14);
+  }}
+  ctx.fillText('12M Target', histEnd + projW * 0.5, h - pad.b + 14);
+
+  // Projection cone (shaded area)
+  const curY = yScale(cur);
+  const highY = yScale(tHigh);
+  const lowY = yScale(tLow);
+  const midY = yScale(tMid);
+
+  // Full cone gradient (high to low)
+  const grad = ctx.createLinearGradient(0, highY, 0, lowY);
+  grad.addColorStop(0, 'rgba(0,229,160,0.08)');
+  grad.addColorStop(0.5, 'rgba(245,166,35,0.04)');
+  grad.addColorStop(1, 'rgba(255,77,109,0.08)');
+  ctx.beginPath();
+  ctx.moveTo(histEnd, curY);
+  ctx.lineTo(projEnd, highY);
+  ctx.lineTo(projEnd, lowY);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Upper cone half (green tint)
+  const gradUp = ctx.createLinearGradient(0, highY, 0, curY);
+  gradUp.addColorStop(0, 'rgba(0,229,160,0.12)');
+  gradUp.addColorStop(1, 'rgba(0,229,160,0.02)');
+  ctx.beginPath();
+  ctx.moveTo(histEnd, curY);
+  ctx.lineTo(projEnd, highY);
+  ctx.lineTo(projEnd, midY);
+  ctx.closePath();
+  ctx.fillStyle = gradUp;
+  ctx.fill();
+
+  // Lower cone half (red tint)
+  const gradDn = ctx.createLinearGradient(0, curY, 0, lowY);
+  gradDn.addColorStop(0, 'rgba(255,77,109,0.02)');
+  gradDn.addColorStop(1, 'rgba(255,77,109,0.12)');
+  ctx.beginPath();
+  ctx.moveTo(histEnd, curY);
+  ctx.lineTo(projEnd, midY);
+  ctx.lineTo(projEnd, lowY);
+  ctx.closePath();
+  ctx.fillStyle = gradDn;
+  ctx.fill();
+
+  // Draw history line
+  ctx.beginPath();
+  ctx.moveTo(xHist(0), yScale(prices[0]));
+  for (let i = 1; i < n; i++) ctx.lineTo(xHist(i), yScale(prices[i]));
+  ctx.strokeStyle = '#3d9cf5'; ctx.lineWidth = 1.8; ctx.stroke();
+
+  // History area fill
+  const gradHist = ctx.createLinearGradient(0, pad.t, 0, pad.t + chartH);
+  gradHist.addColorStop(0, 'rgba(61,156,245,0.15)');
+  gradHist.addColorStop(1, 'rgba(61,156,245,0.01)');
+  ctx.lineTo(xHist(n - 1), pad.t + chartH);
+  ctx.lineTo(xHist(0), pad.t + chartH);
+  ctx.closePath();
+  ctx.fillStyle = gradHist;
+  ctx.fill();
+
+  // Dotted line: high target (green)
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(histEnd, curY); ctx.lineTo(projEnd, highY);
+  ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 1.8; ctx.stroke();
+  // Dashed line: mean target (amber)
+  ctx.setLineDash([8, 4]);
+  ctx.beginPath(); ctx.moveTo(histEnd, curY); ctx.lineTo(projEnd, midY);
+  ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 2; ctx.stroke();
+  // Dotted line: low target (red)
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(histEnd, curY); ctx.lineTo(projEnd, lowY);
+  ctx.strokeStyle = '#ff4d6d'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Current price marker — vertical line + triangle
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(histEnd, pad.t); ctx.lineTo(histEnd, pad.t + chartH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#3d9cf5';
+  ctx.beginPath();
+  ctx.moveTo(histEnd, curY - 5); ctx.lineTo(histEnd - 6, curY - 12); ctx.lineTo(histEnd + 6, curY - 12);
+  ctx.closePath(); ctx.fill();
+  ctx.font = 'bold 10px "Fira Code",monospace'; ctx.textAlign = 'center';
+  ctx.fillText(curr + cur.toLocaleString(undefined, {{maximumFractionDigits: 2}}), histEnd, curY - 16);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '7px "Fira Code",monospace';
+  ctx.fillText('NOW', histEnd, curY - 26);
+
+  // Target labels with triangles on the right
+  const fmtPct = (t) => {{ const p = ((t - cur) / cur * 100); return (p >= 0 ? '+' : '') + p.toFixed(1) + '%'; }};
+  // High target
+  ctx.fillStyle = '#00e5a0'; ctx.font = 'bold 10px "Fira Code",monospace'; ctx.textAlign = 'left';
+  ctx.beginPath(); ctx.moveTo(projEnd + 2, highY); ctx.lineTo(projEnd + 8, highY - 5); ctx.lineTo(projEnd + 8, highY + 5); ctx.closePath(); ctx.fill();
+  ctx.fillText(curr + tHigh.toLocaleString(undefined, {{maximumFractionDigits: 0}}), projEnd + 11, highY + 4);
+  ctx.fillStyle = 'rgba(0,229,160,0.7)'; ctx.font = '8px "Fira Code",monospace';
+  ctx.fillText(fmtPct(tHigh), projEnd + 11, highY + 14);
+
+  // Mean target
+  ctx.fillStyle = '#f5a623'; ctx.font = 'bold 10px "Fira Code",monospace';
+  ctx.beginPath(); ctx.moveTo(projEnd + 2, midY); ctx.lineTo(projEnd + 8, midY - 5); ctx.lineTo(projEnd + 8, midY + 5); ctx.closePath(); ctx.fill();
+  ctx.fillText(curr + tMid.toLocaleString(undefined, {{maximumFractionDigits: 0}}), projEnd + 11, midY + 4);
+  ctx.fillStyle = 'rgba(245,166,35,0.7)'; ctx.font = '8px "Fira Code",monospace';
+  ctx.fillText(fmtPct(tMid) + (nA ? ' (' + nA + ' analysts)' : ''), projEnd + 11, midY + 14);
+
+  // Low target
+  ctx.fillStyle = '#ff4d6d'; ctx.font = 'bold 10px "Fira Code",monospace';
+  ctx.beginPath(); ctx.moveTo(projEnd + 2, lowY); ctx.lineTo(projEnd + 8, lowY - 5); ctx.lineTo(projEnd + 8, lowY + 5); ctx.closePath(); ctx.fill();
+  ctx.fillText(curr + tLow.toLocaleString(undefined, {{maximumFractionDigits: 0}}), projEnd + 11, lowY + 4);
+  ctx.fillStyle = 'rgba(255,77,109,0.7)'; ctx.font = '8px "Fira Code",monospace';
+  ctx.fillText(fmtPct(tLow), projEnd + 11, lowY + 14);
+
+  // Legend
+  ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'left';
+  let lx = pad.l;
+  ctx.strokeStyle = '#3d9cf5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx, pad.t - 10); ctx.lineTo(lx + 20, pad.t - 10); ctx.stroke();
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Historical', lx + 24, pad.t - 6); lx += 80;
+  ctx.setLineDash([6, 4]); ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(lx, pad.t - 10); ctx.lineTo(lx + 20, pad.t - 10); ctx.stroke();
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Upside', lx + 24, pad.t - 6); lx += 64;
+  ctx.setLineDash([8, 4]); ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(lx, pad.t - 10); ctx.lineTo(lx + 20, pad.t - 10); ctx.stroke();
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Mean Target', lx + 24, pad.t - 6); lx += 90;
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = '#ff4d6d'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(lx, pad.t - 10); ctx.lineTo(lx + 20, pad.t - 10); ctx.stroke();
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Drawdown', lx + 24, pad.t - 6);
+  ctx.setLineDash([]);
+
+  if (!hasTgt) {{
+    ctx.fillStyle = 'rgba(245,166,35,0.7)'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+    ctx.fillText('No analyst targets available — using ±25% estimate', histEnd + projW * 0.5, pad.t + chartH / 2);
+  }}
+}}
+drawPredictionChart();
+window.addEventListener('resize', drawPredictionChart);
 
 // Sankey carousel wiring
 function _initSankeyCarousel(id) {{
