@@ -109,53 +109,6 @@ python3 dashboard_generator.py -r . -o ./index.html
 | `make fno-live` | Start F&O live server on port 8787 |
 | `make clean` | Delete all generated reports |
 
-## GitHub Actions
-
-### Daily Reports (`daily-reports.yml`)
-
-Runs Mon–Fri at 9:30 AM IST. Generates all reports, builds the dashboard, commits them to the repo, and opens a GitHub Issue if value-buy alerts are found.
-
-### Dashboard & F&O Live Pages (`fno-live.yml`)
-
-Runs every 15 minutes during NSE market hours (9:00 AM – 3:45 PM IST). Regenerates the F&O report with fresh option chain data and deploys the full dashboard + all reports to GitHub Pages.
-
-**Setup:** Go to repo Settings → Pages → set Source to **GitHub Actions**.
-
-## View Reports Live
-
-| Report | Link |
-|--------|------|
-| Dashboard | [View](https://nageshnnazare.github.io/recos/) |
-| Sector Rotation | [View](https://nageshnnazare.github.io/recos/sector_reports/SectorRotation_Report.html) |
-| F&O Outlook | [View](https://nageshnnazare.github.io/recos/fno_reports/FNO_IndexOutlook_Report.html) |
-| NSE Stock Reports | [Browse](https://nageshnnazare.github.io/recos/reports/) |
-| US Stock Reports | [Browse](https://nageshnnazare.github.io/recos/us_reports/) |
-
-## Project Structure
-
-```
-recos/
-├── report_generator.py          # NSE stock risk reports
-├── us_report_generator.py       # US stock risk reports
-├── sector_report_generator.py   # NSE sector rotation & RRG
-├── fno_report_generator.py      # F&O option chain & strategy
-├── dashboard_generator.py       # Top-level dashboard builder
-├── watchlist.txt                # NSE tickers
-├── us_watchlist.txt             # US tickers
-├── requirements.txt             # Python dependencies
-├── Makefile                     # Build targets
-├── .github/workflows/
-│   ├── daily-reports.yml        # Daily report generation
-│   └── fno-live.yml             # Pages deployment + F&O refresh
-├── reports/                     # NSE reports (git-ignored, CI-only)
-├── us_reports/                  # US reports (git-ignored, CI-only)
-├── sector_reports/              # Sector reports (git-ignored, CI-only)
-├── fno_reports/                 # F&O reports (git-ignored, CI-only)
-└── index.html                   # Dashboard (git-ignored, CI-only)
-```
-
-Report directories are gitignored locally. Only the GitHub Actions bot commits generated reports via `git add -f`.
-
 ## Data Sources
 
 | Data | Source |

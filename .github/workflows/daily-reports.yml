@@ -2,11 +2,20 @@ name: Daily Stock Reports
 
 on:
   schedule:
-    # Run at 9:30 AM IST (4:00 AM UTC) — market open, Mon-Fri
+    # Morning run — 9:30 AM IST (4:00 AM UTC) — NSE market open, Mon-Fri
     - cron: '0 4 * * 1-5'
+    # Evening run — 8:00 PM IST (2:30 PM UTC) — US market active, Mon-Fri
+    - cron: '30 14 * * 1-5'
   push:
     branches: [ main ]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      session:
+        description: 'Which session to run'
+        required: false
+        default: 'all'
+        type: choice
+        options: [all, morning, evening]
 
 permissions:
   contents: write
@@ -20,6 +29,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Determine session (morning/evening)
+        id: session
+        run: |
+          # Manual override
+          if [ "${{ github.event.inputs.session }}" = "morning" ]; then
+            echo "run_nse=true"  >> "$GITHUB_OUTPUT"
+            echo "run_us=false"  >> "$GITHUB_OUTPUT"
+            exit 0
+          elif [ "${{ github.event.inputs.session }}" = "evening" ]; then
+            echo "run_nse=false" >> "$GITHUB_OUTPUT"
+            echo "run_us=true"   >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # On push or 'all' manual, run everything
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ github.event.inputs.session }}" = "all" ]; then
+            echo "run_nse=true" >> "$GITHUB_OUTPUT"
+            echo "run_us=true"  >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Schedule-based: 4:00 UTC → morning, 14:30 UTC → evening
+          HOUR=$(date -u +%-H)
+          if [ "$HOUR" -lt 10 ]; then
+            echo "run_nse=true"  >> "$GITHUB_OUTPUT"
+            echo "run_us=false"  >> "$GITHUB_OUTPUT"
+          else
+            echo "run_nse=false" >> "$GITHUB_OUTPUT"
+            echo "run_us=true"   >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -29,27 +69,32 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Generate NSE reports
+        if: steps.session.outputs.run_nse == 'true'
         run: |
           python3 report_generator.py --watchlist watchlist.txt --alerts --delay 8 -o ./reports/
           echo "NSE_SUMMARY<<EOF" >> $GITHUB_ENV
           cat ./reports/DAILY_SUMMARY.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
+      - name: Generate NSE F&O index outlook
+        if: steps.session.outputs.run_nse == 'true'
+        run: python3 fno_report_generator.py -o ./fno_reports/
+
+      - name: Generate sector rotation report
+        if: steps.session.outputs.run_nse == 'true'
+        run: python3 sector_report_generator.py -o ./sector_reports/
+
       - name: Generate US reports
+        if: steps.session.outputs.run_us == 'true'
         run: |
           python3 us_report_generator.py --watchlist us_watchlist.txt --alerts -o ./us_reports/
           echo "US_SUMMARY<<EOF" >> $GITHUB_ENV
           cat ./us_reports/DAILY_SUMMARY.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Generate NSE F&O index outlook (NIFTY / BANK NIFTY)
-        run: python3 fno_report_generator.py -o ./fno_reports/
-
-      - name: Generate sector rotation report
-        run: python3 sector_report_generator.py -o ./sector_reports/
-
-      - name: Generate S&P 500 sector heatmap
-        run: python3 sp500_heatmap_generator.py -o ./sp500_reports/
+      - name: Generate S&P 500 sector report
+        if: steps.session.outputs.run_us == 'true'
+        run: python3 sp500_sector_report_generator.py -o ./sp500_reports/
 
       - name: Generate dashboard index
         run: python3 dashboard_generator.py -r . -o ./index.html
@@ -57,17 +102,10 @@ jobs:
       - name: Check for value-buy alerts
         id: check_alerts
         run: |
-          NSE_ALERTS=false
-          if grep -q "Value Buy Opportunities" ./reports/DAILY_SUMMARY.md; then NSE_ALERTS=true; fi
-          
-          US_ALERTS=false
-          if grep -q "Value Buy Opportunities" ./us_reports/DAILY_SUMMARY.md; then US_ALERTS=true; fi
-          
-          if [ "$NSE_ALERTS" = "true" ] || [ "$US_ALERTS" = "true" ]; then
-            echo "has_alerts=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_alerts=false" >> $GITHUB_OUTPUT
-          fi
+          HAS_ALERTS=false
+          [ -f ./reports/DAILY_SUMMARY.md ] && grep -q "Value Buy Opportunities" ./reports/DAILY_SUMMARY.md && HAS_ALERTS=true
+          [ -f ./us_reports/DAILY_SUMMARY.md ] && grep -q "Value Buy Opportunities" ./us_reports/DAILY_SUMMARY.md && HAS_ALERTS=true
+          echo "has_alerts=$HAS_ALERTS" >> $GITHUB_OUTPUT
 
       - name: Commit reports and README
         run: |
@@ -77,4 +115,3 @@ jobs:
           git diff --cached --quiet || git commit -m "📊 Daily stock reports & README update — $(date +%Y-%m-%d)"
           git pull --rebase
           git push
-

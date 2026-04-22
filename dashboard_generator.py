@@ -28,18 +28,21 @@ IST = ZoneInfo("Asia/Kolkata")
 REPORT_DIRS = {
     "nse": {"dir": "reports", "label": "NSE Stocks", "icon": "🇮🇳", "suffix": "_RiskReport.html", "color": "#3d9cf5"},
     "us": {"dir": "us_reports", "label": "US Stocks", "icon": "🇺🇸", "suffix": "_RiskReport.html", "color": "#9b7fff"},
-    "sectors": {"dir": "sector_reports", "label": "Sector Rotation", "icon": "🔄", "file": "SectorRotation_Report.html", "color": "#f5a623"},
+    "sectors": {"dir": "sector_reports", "label": "Nifty Sector Report", "icon": "🔄", "file": "SectorRotation_Report.html", "color": "#f5a623"},
     "fno": {"dir": "fno_reports", "label": "F&O Index Outlook", "icon": "📊", "file": "FNO_IndexOutlook_Report.html", "color": "#00e5a0"},
-    "sp500": {"dir": "sp500_reports", "label": "S&P 500 Heatmap", "icon": "🗺️", "file": "SP500_SectorHeatmap.html", "color": "#3d9cf5"},
+    "sp500": {"dir": "sp500_reports", "label": "S&P 500 Sector Report", "icon": "🗺️", "file": "SP500_SectorReport.html", "color": "#3d9cf5"},
 }
 
 MARKET_TICKERS = [
-    {"symbol": "^NSEI",  "label": "NIFTY 50",   "color": "#3d9cf5"},
-    {"symbol": "^GSPC",  "label": "S&P 500",    "color": "#9b7fff"},
-    {"symbol": "GC=F",   "label": "GOLD",       "color": "#f5a623"},
-    {"symbol": "SI=F",   "label": "SILVER",     "color": "#9ca3af"},
-    {"symbol": "^TNX",   "label": "US 10Y YIELD","color": "#ff4d6d"},
-    {"symbol": "CL=F",   "label": "CRUDE OIL",  "color": "#00e5a0"},
+    {"symbol": "^NSEI",    "label": "NIFTY 50",     "color": "#3d9cf5"},
+    {"symbol": "^GSPC",    "label": "S&P 500",      "color": "#9b7fff"},
+    {"symbol": "USDINR=X", "label": "USD / INR",    "color": "#d48820"},
+    {"symbol": "^INDIAVIX","label": "INDIA VIX",    "color": "#ff4d6d"},
+    {"symbol": "^VIX",     "label": "US VIX",       "color": "#e04098"},
+    {"symbol": "GC=F",     "label": "GOLD",         "color": "#ffd447"},
+    {"symbol": "SI=F",     "label": "SILVER",       "color": "#9ca3af"},
+    {"symbol": "^TNX",     "label": "US 10Y YIELD", "color": "#48d1cc"},
+    {"symbol": "CL=F",     "label": "CRUDE OIL",    "color": "#00e5a0"},
 ]
 
 
@@ -57,6 +60,25 @@ def _scan_dates(base: str) -> list[str]:
     return dates
 
 
+def _extract_signal(filepath: str) -> str:
+    """Extract BUY/HOLD/SELL recommendation from a report HTML file."""
+    try:
+        with open(filepath, "r", encoding="utf-8") as fh:
+            for line in fh:
+                if "verdict-rating" in line and "font-size" not in line:
+                    m = re.search(r'class="verdict-rating"[^>]*>\s*([^<]+?)\s*<', line, re.I)
+                    if m:
+                        sig = m.group(1).strip().upper()
+                        if "BUY" in sig:
+                            return "BUY"
+                        if "SELL" in sig:
+                            return "SELL"
+                        return "HOLD"
+    except Exception:
+        pass
+    return ""
+
+
 def _scan_stock_reports(dir_name: str, date: str, suffix: str, root: str) -> list[dict[str, str]]:
     """Scan for stock reports, returning relative paths from root."""
     folder = os.path.join(root, dir_name, date)
@@ -66,7 +88,9 @@ def _scan_stock_reports(dir_name: str, date: str, suffix: str, root: str) -> lis
     for f in sorted(os.listdir(folder)):
         if f.endswith(suffix):
             ticker = f.replace(suffix, "")
-            reports.append({"ticker": ticker, "path": f"{dir_name}/{date}/{f}"})
+            fpath = os.path.join(folder, f)
+            signal = _extract_signal(fpath)
+            reports.append({"ticker": ticker, "path": f"{dir_name}/{date}/{f}", "signal": signal})
     return reports
 
 
@@ -105,27 +129,27 @@ def _build_stock_grid(reports: list[dict[str, str]], color: str) -> str:
         return '<div class="empty">No reports found for this date.</div>'
     items = ""
     for r in reports:
+        sig = r.get("signal", "")
         items += (
-            f'<a class="stock-chip" href="{_esc(r["path"])}" style="--chip-color:{color}">'
+            f'<a class="stock-chip" href="{_esc(r["path"])}" style="--chip-color:{color}"'
+            f' data-signal="{_esc(sig)}">'
             f'{_esc(r["ticker"])}</a>'
         )
     return f'<div class="stock-grid">{items}</div>'
 
 
-def _build_summary_badges(info: dict[str, str]) -> str:
+def _build_summary_badges(info: dict[str, str], key: str) -> str:
     if not info:
         return ""
     parts = []
     if "total" in info:
         parts.append(f'<span class="sum-badge">{info["total"]} stocks</span>')
     if info.get("buy", "0") != "0":
-        parts.append(f'<span class="sum-badge buy">BUY {info["buy"]}</span>')
+        parts.append(f'<span class="sum-badge buy clickable" data-filter="BUY" data-grid="grid-{key}" onclick="toggleSignalFilter(this)">BUY {info["buy"]}</span>')
     if info.get("hold", "0") != "0":
-        parts.append(f'<span class="sum-badge hold">HOLD {info["hold"]}</span>')
+        parts.append(f'<span class="sum-badge hold clickable" data-filter="HOLD" data-grid="grid-{key}" onclick="toggleSignalFilter(this)">HOLD {info["hold"]}</span>')
     if info.get("sell", "0") != "0":
-        parts.append(f'<span class="sum-badge sell">SELL {info["sell"]}</span>')
-    if info.get("buy_alerts"):
-        parts.append(f'<span class="sum-badge alert">🔔 {info["buy_alerts"]} alerts</span>')
+        parts.append(f'<span class="sum-badge sell clickable" data-filter="SELL" data-grid="grid-{key}" onclick="toggleSignalFilter(this)">SELL {info["sell"]}</span>')
     return '<div class="sum-badges">' + "".join(parts) + '</div>'
 
 
@@ -166,7 +190,7 @@ def generate_dashboard(root: str) -> str:
 
     sections: list[str] = []
 
-    for key in ("nse", "us", "sectors", "fno", "sp500"):
+    for key in ("nse", "us", "sectors", "sp500", "fno"):
         cfg = REPORT_DIRS[key]
         base = os.path.join(root, cfg["dir"])
         dates = _scan_dates(base)
@@ -201,8 +225,44 @@ def generate_dashboard(root: str) -> str:
 </div>""")
         else:
             latest_date = dates[0] if dates else None
-            stock_reports = _scan_stock_reports(cfg["dir"], latest_date, cfg["suffix"], root) if latest_date else []
-            summary_info = _parse_summary(base, latest_date) if latest_date else {}
+
+            # Pre-scan all dates for client-side date switching
+            all_dates_data: dict[str, list[dict[str, str]]] = {}
+            all_dates_summary: dict[str, dict[str, str]] = {}
+            for d in dates[:15]:
+                reps = _scan_stock_reports(cfg["dir"], d, cfg["suffix"], root)
+                all_dates_data[d] = reps
+                all_dates_summary[d] = _parse_summary(base, d)
+
+            stock_reports = all_dates_data.get(latest_date, []) if latest_date else []
+            summary_info = all_dates_summary.get(latest_date, {}) if latest_date else {}
+
+            # Compute signal counts from extracted data if summary doesn't have them
+            if not summary_info.get("total") and stock_reports:
+                buy_c = sum(1 for r in stock_reports if "BUY" in (r.get("signal", "").upper()))
+                hold_c = sum(1 for r in stock_reports if r.get("signal", "").upper() == "HOLD")
+                sell_c = sum(1 for r in stock_reports if "SELL" in (r.get("signal", "").upper()))
+                total_c = buy_c + hold_c + sell_c
+                if total_c > 0:
+                    summary_info = {"buy": str(buy_c), "hold": str(hold_c), "sell": str(sell_c), "total": str(total_c)}
+
+            # Build JS data for all dates (ticker, path, signal)
+            dates_js_entries = []
+            for d in dates[:15]:
+                reps = all_dates_data.get(d, [])
+                reps_json = json.dumps([{"t": r["ticker"], "p": r["path"], "s": r.get("signal", "")} for r in reps], separators=(",", ":"))
+                si = dict(all_dates_summary.get(d, {}))
+                # Compute signal counts from extracted data if summary doesn't have them
+                if not si.get("total") and reps:
+                    bc = sum(1 for r in reps if "BUY" in (r.get("signal", "").upper()))
+                    hc = sum(1 for r in reps if r.get("signal", "").upper() == "HOLD")
+                    sc = sum(1 for r in reps if "SELL" in (r.get("signal", "").upper()))
+                    tc = bc + hc + sc
+                    if tc > 0:
+                        si = {"buy": str(bc), "hold": str(hc), "sell": str(sc), "total": str(tc)}
+                si_json = json.dumps(si, separators=(",", ":"))
+                dates_js_entries.append(f'"{d}":{{"stocks":{reps_json},"summary":{si_json}}}')
+            dates_js = "{" + ",".join(dates_js_entries) + "}"
 
             date_options = ""
             for d in dates[:15]:
@@ -210,7 +270,7 @@ def generate_dashboard(root: str) -> str:
                 date_options += f'<option value="{d}"{sel}>{d}</option>'
 
             grid_html = _build_stock_grid(stock_reports, color)
-            badges_html = _build_summary_badges(summary_info)
+            badges_html = _build_summary_badges(summary_info, key)
 
             summary_link = ""
             if latest_date:
@@ -224,16 +284,18 @@ def generate_dashboard(root: str) -> str:
     <span class="card-icon">{cfg["icon"]}</span>
     <div>
       <div class="card-title">{_esc(cfg["label"])}</div>
-      <div class="card-sub">{len(stock_reports)} stocks · {latest_date or 'no data'}</div>
+      <div class="card-sub" id="sub-{key}">{len(stock_reports)} stocks \u00b7 {latest_date or 'no data'}</div>
     </div>
-    <select class="date-sel" onchange="switchDate(this, '{key}', '{cfg["dir"]}', '{cfg["suffix"]}')">{date_options}</select>
+    <select class="date-sel" onchange="switchDate(this, '{key}', '{color}')">{date_options}</select>
   </div>
-  {badges_html}
+  <div id="badges-{key}">{badges_html}</div>
+  <div class="search-wrap"><input class="stock-search" type="text" placeholder="Search {_esc(cfg['label'])}..." data-grid="grid-{key}" oninput="filterStocks(this)"></div>
   <div class="stock-grid-wrap" id="grid-{key}">
     {grid_html}
   </div>
   <div class="card-actions">{summary_link}</div>
-</div>""")
+</div>
+<script>window._dateData = window._dateData || {{}};window._dateData['{key}']={dates_js};</script>""")
 
     sections_html = "\n".join(sections)
 
@@ -313,11 +375,19 @@ body {{ background:var(--bg); color:var(--text); font-family:var(--sans); font-s
 .sum-badge.buy {{ color:var(--green); border-color:rgba(0,229,160,.25); background:rgba(0,229,160,.08); }}
 .sum-badge.hold {{ color:var(--amber); border-color:rgba(245,166,35,.25); background:rgba(245,166,35,.08); }}
 .sum-badge.sell {{ color:var(--red); border-color:rgba(255,77,109,.25); background:rgba(255,77,109,.08); }}
-.sum-badge.alert {{ color:var(--amber); border-color:rgba(245,166,35,.3); background:rgba(245,166,35,.1); }}
+.sum-badge.clickable {{ cursor:pointer; transition:all .18s; }}
+.sum-badge.clickable:hover {{ filter:brightness(1.3); }}
+.sum-badge.clickable.active {{ box-shadow:0 0 8px currentColor; filter:brightness(1.2); }}
 
+.stock-search {{ width:100%; background:var(--bg4); border:1px solid var(--border); border-radius:8px; padding:8px 12px 8px 32px; font-family:var(--mono); font-size:11px; color:var(--text); margin-bottom:10px; outline:none; transition:border-color .2s; }}
+.stock-search:focus {{ border-color:var(--border2); }}
+.stock-search::placeholder {{ color:var(--text3); }}
+.search-wrap {{ position:relative; }}
+.search-wrap::before {{ content:'🔍'; position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:11px; pointer-events:none; z-index:1; }}
 .stock-grid {{ display:flex; flex-wrap:wrap; gap:6px; max-height:180px; overflow-y:auto; padding-right:4px; }}
 .stock-grid::-webkit-scrollbar {{ width:4px; }}
 .stock-grid::-webkit-scrollbar-thumb {{ background:var(--border2); border-radius:2px; }}
+.stock-chip.hidden {{ display:none; }}
 .stock-chip {{ font-family:var(--mono); font-size:10px; font-weight:600; padding:5px 11px; border-radius:6px;
   background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--text2);
   text-decoration:none; transition:all .15s; white-space:nowrap; }}
@@ -465,13 +535,88 @@ function drawChart(idx, tf) {{
 
 initMarketCharts();
 
-function switchDate(sel, key, dir, suffix) {{
+window._activeFilters = {{}};
+
+function applyFilters(gridId) {{
+  const wrap = document.getElementById(gridId);
+  if (!wrap) return;
+  const key = gridId.replace('grid-', '');
+  const searchInput = document.querySelector('input[data-grid="'+gridId+'"]');
+  const q = searchInput ? searchInput.value.trim().toUpperCase() : '';
+  const sigFilter = window._activeFilters[gridId] || '';
+  const chips = wrap.querySelectorAll('.stock-chip');
+  chips.forEach(chip => {{
+    const ticker = chip.textContent.trim().toUpperCase();
+    const sig = (chip.dataset.signal || '').toUpperCase();
+    const matchSearch = q === '' || ticker.includes(q);
+    const matchSig = sigFilter === '' || sig.includes(sigFilter);
+    chip.classList.toggle('hidden', !(matchSearch && matchSig));
+  }});
+}}
+
+function filterStocks(input) {{
+  const gridId = input.dataset.grid;
+  applyFilters(gridId);
+}}
+
+function toggleSignalFilter(badge) {{
+  const gridId = badge.dataset.grid;
+  const filter = badge.dataset.filter;
+  const isActive = badge.classList.contains('active');
+  const parent = badge.closest('.sum-badges');
+  if (parent) parent.querySelectorAll('.clickable').forEach(b => b.classList.remove('active'));
+  if (isActive) {{
+    window._activeFilters[gridId] = '';
+  }} else {{
+    badge.classList.add('active');
+    window._activeFilters[gridId] = filter;
+  }}
+  applyFilters(gridId);
+}}
+
+function switchDate(sel, key, color) {{
   const date = sel.value;
+  const dd = (window._dateData || {{}})[key] || {{}};
+  const info = dd[date];
+  if (!info) return;
+
   const wrap = document.getElementById('grid-'+key);
-  if(!wrap) return;
-  wrap.innerHTML = '<div class="empty">Loading…</div>';
-  const base = dir + '/' + date + '/';
-  window.location.href = base;
+  if (!wrap) return;
+
+  const stocks = info.stocks || [];
+  if (!stocks.length) {{
+    wrap.innerHTML = '<div class="empty">No reports found for this date.</div>';
+  }} else {{
+    let html = '<div class="stock-grid">';
+    stocks.forEach(r => {{
+      html += '<a class="stock-chip" href="'+r.p+'" style="--chip-color:'+color+'" data-signal="'+(r.s||'')+'">'+r.t+'</a>';
+    }});
+    html += '</div>';
+    wrap.innerHTML = html;
+  }}
+
+  const subEl = document.getElementById('sub-'+key);
+  if (subEl) subEl.textContent = stocks.length + ' stocks · ' + date;
+
+  const badgesEl = document.getElementById('badges-'+key);
+  if (badgesEl) {{
+    const si = info.summary || {{}};
+    let bh = '';
+    const buy = parseInt(si.buy||'0'), hold = parseInt(si.hold||'0'), sell = parseInt(si.sell||'0');
+    const total = buy+hold+sell;
+    if (total > 0) {{
+      bh += '<div class="sum-badges">';
+      bh += '<span class="sum-badge">'+total+' stocks</span>';
+      if (buy > 0) bh += '<span class="sum-badge buy clickable" data-filter="BUY" data-grid="grid-'+key+'" onclick="toggleSignalFilter(this)">BUY '+buy+'</span>';
+      if (hold > 0) bh += '<span class="sum-badge hold clickable" data-filter="HOLD" data-grid="grid-'+key+'" onclick="toggleSignalFilter(this)">HOLD '+hold+'</span>';
+      if (sell > 0) bh += '<span class="sum-badge sell clickable" data-filter="SELL" data-grid="grid-'+key+'" onclick="toggleSignalFilter(this)">SELL '+sell+'</span>';
+      bh += '</div>';
+    }}
+    badgesEl.innerHTML = bh;
+  }}
+
+  window._activeFilters['grid-'+key] = '';
+  applyFilters('grid-'+key);
 }}
 </script>
 </body>

@@ -13,7 +13,7 @@ fno:
 	python3 fno_report_generator.py -o ./fno_reports/
 
 sp500:
-	python3 sp500_heatmap_generator.py -o ./sp500_reports/
+	python3 sp500_sector_report_generator.py -o ./sp500_reports/
 
 dashboard:
 	python3 dashboard_generator.py -r . -o ./index.html

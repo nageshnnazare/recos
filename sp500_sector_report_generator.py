@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-S&P 500 Sector Heatmap Generator
+S&P 500 Sector Report Generator
 =================================
-Generates a dark-themed, interactive HTML heatmap of all 11 GICS sectors.
+Generates a dark-themed, interactive HTML report of all 11 GICS sectors.
 
 Features:
   - Color-coded cards by YTD performance (green=gains, amber/red=loss)
@@ -14,8 +14,8 @@ Features:
   - Gradient legend bar
 
 Usage:
-    python sp500_heatmap_generator.py
-    python sp500_heatmap_generator.py -o ./sp500_reports/
+    python sp500_sector_report_generator.py
+    python sp500_sector_report_generator.py -o ./sp500_reports/
 
 Requirements:
     pip install yfinance pandas numpy
@@ -485,7 +485,7 @@ def generate_html(sectors_data, index_data, gen_date):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>S&P 500 Sector Heatmap — {gen_date}</title>
+<title>S&P 500 Sector Report — {gen_date}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
 <style>
@@ -641,7 +641,7 @@ body {{ background:var(--bg); color:var(--text); font-family:var(--sans); font-s
   <div class="header fade-in">
     <div class="header-top">
       <div>
-        <div class="title">S&P 500 Sector Heatmap</div>
+        <div class="title">S&P 500 Sector Report</div>
         <div class="subtitle">All 11 GICS sectors · Color-coded by YTD performance</div>
       </div>
       <div class="gen-badge">Updated {gen_date}</div>
@@ -772,7 +772,7 @@ def cleanup_old_reports(reports_root, keep_days=15):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="S&P 500 Sector Heatmap Generator")
+    parser = argparse.ArgumentParser(description="S&P 500 Sector Report Generator")
     parser.add_argument("-o", "--output-dir", default="./sp500_reports", help="Output directory (default: ./sp500_reports)")
     args = parser.parse_args()
 
@@ -786,7 +786,7 @@ def main():
         print(f"  🧹 Cleaned up {removed} report folder(s) older than 15 days")
 
     print("=" * 62)
-    print("  S&P 500 Sector Heatmap Generator")
+    print("  S&P 500 Sector Report Generator")
     print("  Powered by yfinance · No API Key Required")
     print(f"  Sectors: {len(GICS_SECTORS)}")
     print(f"  Date:    {today_str}")
@@ -825,11 +825,11 @@ def main():
     print("  📄 Generating HTML report...")
     html = generate_html(sectors_data, index_data, gen_date)
 
-    output_file = os.path.join(output_dir, "SP500_SectorHeatmap.html")
+    output_file = os.path.join(output_dir, "SP500_SectorReport.html")
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(html)
 
-    root_report = os.path.join(reports_root, "SP500_SectorHeatmap.html")
+    root_report = os.path.join(reports_root, "SP500_SectorReport.html")
     shutil.copy2(output_file, root_report)
 
     file_size = os.path.getsize(output_file) / 1024

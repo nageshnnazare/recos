@@ -915,6 +915,154 @@ def generate_html_report(sectors_data, benchmark_metrics, today_str, mktcap_data
           </table>
         </div>'''
 
+    # ── Build Overview tab: S&P-style heatmap sector cards ─────────────────
+    overview_cards_html = ""
+    for s in sorted_sectors:
+        m = s.get("metrics", {})
+        ret = m.get("returns", {})
+        outlook = s.get("outlook", {})
+        r1m = ret.get("1M", 0) or 0
+        q = s.get("quadrant", "—")
+        q_color = QUADRANT_COLORS.get(q, "#5c5d6e")
+
+        if r1m >= 10:
+            card_bg, accent = "rgba(0,229,160,0.18)", "#00e5a0"
+        elif r1m >= 3:
+            card_bg, accent = "rgba(0,229,160,0.10)", "#00e5a0"
+        elif r1m >= 0:
+            card_bg, accent = "rgba(0,229,160,0.05)", "#4ade80"
+        elif r1m >= -3:
+            card_bg, accent = "rgba(245,166,35,0.08)", "#f5a623"
+        elif r1m >= -10:
+            card_bg, accent = "rgba(245,166,35,0.15)", "#f59e0b"
+        else:
+            card_bg, accent = "rgba(255,77,109,0.14)", "#ff4d6d"
+
+        sname = s["name"]
+        leaders = leaders_data.get(sname, [])
+        leader_rows_ov = ""
+        for st in leaders:
+            st_ret = st.get("returns", {})
+            def _fl(v):
+                if v is None:
+                    return '<span style="color:var(--text3)">—</span>'
+                c = "var(--green)" if v >= 0 else "var(--red)"
+                return f'<span style="color:{c}">{v:+.1f}%</span>'
+            st_price = st.get("price", 0) or 0
+            leader_rows_ov += f'''<tr>
+              <td class="h-sym">{(st.get("name") or st["symbol"])[:22]}</td>
+              <td class="h-mcap">\u20b9{st_price:,.0f}</td>
+              <td class="h-ytd">{_fl(st_ret.get("1W"))}</td>
+              <td class="h-ytd">{_fl(st_ret.get("1M"))}</td>
+              <td class="h-ytd">{_fl(st_ret.get("1Y"))}</td>
+            </tr>'''
+
+        low = m.get("low_52w", 0) or 0
+        high = m.get("high_52w", 0) or 0
+        cur = m.get("current_price", 0) or 0
+        range_pct = ((cur - low) / (high - low)) * 100 if high > low else 50
+
+        r1d = ret.get("1D")
+        r1w = ret.get("1W")
+        r3m = ret.get("3M")
+        vol = m.get("volatility_30d")
+        verdict = outlook.get("verdict", "—")
+        v_clr = outlook.get("verdict_color", "")
+        _color_map = {"green": "#00e5a0", "amber": "#f5a623", "red": "#ff4d6d"}
+        _css_map = {"green": "var(--green)", "amber": "var(--amber)", "red": "var(--red)"}
+        v_css_ov = _color_map.get(v_clr, "#9899a8")
+        trend_ov = outlook.get("trend", "—")
+        trend_clr_ov = get_trend_signal(m)[1] if m else "text3"
+        trend_css_ov = _css_map.get(trend_clr_ov, "var(--text2)")
+
+        def _pc(v):
+            return "positive" if v is not None and v >= 0 else ("negative" if v is not None else "neutral")
+        def _sg(v):
+            return "+" if v is not None and v >= 0 else ""
+
+        rs_r = s.get("rs_ratio")
+        rs_m = s.get("rs_momentum")
+        rs_str = f"RS-Ratio: <b>{rs_r:.2f}</b> | RS-Momentum: <b>{rs_m:.2f}</b>" if rs_r and rs_m else "—"
+
+        r1d_str = f"{_sg(r1d)}{r1d:.1f}%" if r1d is not None else "N/A"
+        r1w_str = f"{_sg(r1w)}{r1w:.1f}%" if r1w is not None else "N/A"
+        r3m_str = f"{_sg(r3m)}{r3m:.1f}%" if r3m is not None else "N/A"
+        vol_str = f"{vol:.0f}%" if vol is not None else "N/A"
+        sym_str = NSE_SECTORS.get(sname, {}).get("symbol", "")
+        desc_str = NSE_SECTORS.get(sname, {}).get("desc", "")
+
+        rs_r_val = rs_r if rs_r is not None else 0
+        rs_m_val = rs_m if rs_m is not None else 0
+
+        overview_cards_html += f"""
+    <div class="sector-card fade-in" data-ret1m="{r1m:.2f}" data-vol="{vol if vol else 0}" data-rsratio="{rs_r_val:.2f}" data-rsmom="{rs_m_val:.2f}"
+         style="--card-bg:{card_bg};--card-accent:{accent}" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">{sname}</div>
+          <div class="etf-ticker">{sym_str}</div>
+        </div>
+        <div class="ytd-badge {_pc(r1m)}">
+          {_sg(r1m)}{r1m:.1f}%
+        </div>
+      </div>
+      <div class="card-desc">{desc_str}</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">Quadrant</span>
+          <span class="metric-value" style="color:{q_color}">{q}</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1D</span>
+          <span class="metric-value {_pc(r1d)}">{r1d_str}</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1W</span>
+          <span class="metric-value {_pc(r1w)}">{r1w_str}</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">3M</span>
+          <span class="metric-value {_pc(r3m)}">{r3m_str}</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Volatility</span>
+          <span class="metric-value">{vol_str}</span>
+        </div>
+        <div class="metric rating" style="--r-color:{v_css_ov}">
+          <span class="metric-label">Outlook</span>
+          <span class="metric-value">{verdict}</span>
+        </div>
+      </div>
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top Leader Stocks</div>
+          <table class="holdings-table">
+            <thead><tr><th>Stock</th><th>Price</th><th>1W</th><th>1M</th><th>1Y</th></tr></thead>
+            <tbody>{leader_rows_ov}</tbody>
+          </table>
+        </div>
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:{range_pct:.1f}%">
+              <div class="marker-label">\u20b9{cur:,.0f}</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>\u20b9{low:,.0f}</span>
+            <span>\u20b9{high:,.0f}</span>
+          </div>
+        </div>
+        <div class="expand-block">
+          <div class="expand-title">Relative Strength</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.8;">
+            {rs_str} | Trend: <b style="color:{trend_css_ov}">{trend_ov}</b>
+          </div>
+        </div>
+      </div>
+    </div>"""
+
     html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -936,12 +1084,13 @@ def generate_html_report(sectors_data, benchmark_metrics, today_str, mktcap_data
     --mono: 'Fira Code', monospace; --sans: 'DM Sans', sans-serif;
   }}
   *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  html {{ scroll-behavior:smooth; }}
   body {{ background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased; }}
   ::-webkit-scrollbar {{ width: 4px; }} ::-webkit-scrollbar-track {{ background: var(--bg); }} ::-webkit-scrollbar-thumb {{ background: var(--border2); border-radius: 2px; }}
   .page {{ max-width: 1280px; margin: 0 auto; padding: 32px 24px; }}
 
-  /* Header */
-  .report-header {{ padding:28px 32px; background:linear-gradient(135deg,#0f1018,#131420 60%,#0d1020); border:1px solid var(--border2); border-radius:16px; position:relative; overflow:hidden; margin-bottom:24px; }}
+  /* ── Header ────────────────────────────────────── */
+  .report-header {{ padding:28px 32px; background:linear-gradient(135deg,#0f1018,#131420 60%,#0d1020); border:1px solid var(--border2); border-radius:16px; position:relative; overflow:hidden; margin-bottom:0; }}
   .report-header::before {{ content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--blue),transparent); opacity:0.4; }}
   .rh-badge {{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; font-weight:600; color:var(--blue); letter-spacing:2px; margin-bottom:8px; }}
   .rh-badge span {{ background:var(--blue-dim); color:var(--blue); border:1px solid rgba(61,156,245,0.2); border-radius:4px; padding:1px 6px; font-size:9px; }}
@@ -952,31 +1101,89 @@ def generate_html_report(sectors_data, benchmark_metrics, today_str, mktcap_data
   .rh-nifty-label {{ font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:1px; }}
   .rh-date {{ font-family:var(--mono); font-size:9px; color:var(--text3); margin-top:6px; }}
 
-  /* KPI strip */
-  .kpi-row {{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }}
+  /* ── Tab Bar ────────────────────────────────────── */
+  .tab-bar {{ display:flex; gap:0; background:var(--bg2); border:1px solid var(--border); border-radius:0 0 14px 14px; border-top:none; padding:0 16px; position:sticky; top:0; z-index:100; margin-bottom:20px; }}
+  .tab-btn {{ font-family:var(--mono); font-size:10px; font-weight:600; color:var(--text3); background:none; border:none; border-bottom:2px solid transparent; padding:12px 18px; cursor:pointer; transition:all .15s; white-space:nowrap; letter-spacing:0.5px; }}
+  .tab-btn:hover {{ color:var(--text); }}
+  .tab-btn.active {{ color:#fff; border-bottom-color:var(--blue); }}
+  .tab-pane {{ display:none; }}
+  .tab-pane.active {{ display:block; }}
+
+  /* ── KPI strip ─────────────────────────────────── */
+  .kpi-row {{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }}
   .kpi-card {{ background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }}
   .kpi-label {{ font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }}
   .kpi-value {{ font-family:var(--mono); font-size:24px; font-weight:700; }}
   .kpi-sub {{ font-size:10px; color:var(--text2); margin-top:2px; }}
 
-  /* Section */
+  /* ── Sort & Controls ───────────────────────────── */
+  .controls {{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:18px; }}
+  .controls-label {{ font-family:var(--mono); font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-right:4px; }}
+  .sort-btn {{ font-family:var(--mono); font-size:10px; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); background:var(--bg3); color:var(--text3); cursor:pointer; transition:all .18s; }}
+  .sort-btn:hover {{ color:var(--text); border-color:var(--border2); }}
+  .sort-btn.active {{ color:#fff; background:var(--bg4); border-color:var(--blue); box-shadow:0 0 8px rgba(61,156,245,0.15); }}
+
+  /* ── Legend bar ─────────────────────────────────── */
+  .perf-legend {{ display:flex; align-items:center; gap:12px; margin-bottom:20px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:12px 18px; }}
+  .perf-legend-label {{ font-family:var(--mono); font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; }}
+  .perf-legend-bar {{ flex:1; height:10px; border-radius:5px; background:linear-gradient(90deg,#ff4d6d,#f5a623 40%,#4ade80 60%,#00e5a0); }}
+  .perf-legend-range {{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:9px; color:var(--text3); flex:1; }}
+
+  /* ── Sector Grid (S&P-style cards) ─────────────── */
+  .sector-grid {{ display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; }}
+  @media(max-width:700px) {{ .sector-grid {{ grid-template-columns:1fr; }} }}
+  .sector-card {{ background:var(--card-bg, var(--bg2)); border:1px solid var(--border); border-radius:14px; padding:18px 20px; cursor:pointer; transition:all .22s ease; position:relative; overflow:hidden; }}
+  .sector-card::before {{ content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--card-accent,var(--blue)),transparent); opacity:.35; }}
+  .sector-card:hover {{ border-color:var(--card-accent,var(--border2)); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.35); }}
+  .card-top {{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }}
+  .card-header {{ }}
+  .sector-name {{ font-family:var(--mono); font-size:14px; font-weight:700; color:#fff; }}
+  .etf-ticker {{ font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:2px; }}
+  .card-desc {{ font-size:11px; color:var(--text3); margin-bottom:10px; line-height:1.4; }}
+  .ytd-badge {{ font-family:var(--mono); font-size:16px; font-weight:700; padding:4px 12px; border-radius:8px; white-space:nowrap; }}
+  .ytd-badge.positive {{ color:var(--green); background:var(--green-dim); }}
+  .ytd-badge.negative {{ color:var(--red); background:var(--red-dim); }}
+  .ytd-badge.neutral {{ color:var(--text3); background:var(--bg4); }}
+  .card-metrics {{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }}
+  .metric {{ background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:8px 10px; text-align:center; }}
+  .metric-label {{ display:block; font-family:var(--mono); font-size:8px; color:var(--text3); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:2px; }}
+  .metric-value {{ font-family:var(--mono); font-size:12px; font-weight:600; color:var(--text); }}
+  .metric-value.positive {{ color:var(--green); }}
+  .metric-value.negative {{ color:var(--red); }}
+  .metric.rating {{ border-color:var(--r-color,var(--border)); }}
+  .metric.rating .metric-value {{ color:var(--r-color,var(--text)); font-size:10px; }}
+  .expand-section {{ max-height:0; overflow:hidden; transition:max-height .4s cubic-bezier(0.4,0,0.2,1), opacity .3s ease; opacity:0; margin-top:0; }}
+  .sector-card.expanded .expand-section {{ max-height:600px; opacity:1; margin-top:14px; }}
+  .expand-block {{ margin-bottom:14px; }}
+  .expand-title {{ font-family:var(--mono); font-size:10px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid var(--border); }}
+  .holdings-table {{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; }}
+  .holdings-table th {{ text-align:left; color:var(--text3); font-size:8px; text-transform:uppercase; letter-spacing:0.8px; padding:4px 6px; border-bottom:1px solid var(--border); }}
+  .holdings-table td {{ padding:5px 6px; border-bottom:1px solid rgba(255,255,255,0.03); }}
+  .h-sym {{ color:#fff; font-weight:600; }}
+  .h-mcap {{ color:var(--text2); text-align:right; }}
+  .h-ytd {{ text-align:right; font-weight:600; }}
+  .range-track {{ position:relative; height:8px; background:linear-gradient(90deg,var(--red),var(--amber),var(--green)); border-radius:4px; margin:12px 0 4px; }}
+  .range-fill {{ height:100%; border-radius:4px; }}
+  .range-marker {{ position:absolute; top:-6px; width:3px; height:20px; background:#fff; border-radius:2px; transform:translateX(-50%); box-shadow:0 0 8px rgba(255,255,255,0.4); }}
+  .marker-label {{ position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:9px; font-weight:700; color:#fff; white-space:nowrap; background:var(--bg4); padding:1px 6px; border-radius:3px; }}
+  .range-labels {{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:9px; color:var(--text3); }}
+
+  /* ── Section ───────────────────────────────────── */
   .section {{ background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:24px; }}
   .section-title {{ font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }}
   .section-title::after {{ content:''; flex:1; height:1px; background:var(--border); }}
 
-  /* Charts full-width stacked */
+  /* ── Charts ────────────────────────────────────── */
   .chart-grid {{ display:grid; grid-template-columns:1fr; gap:20px; margin-bottom:24px; }}
   .chart-card {{ background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; }}
   .chart-label {{ font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; gap:8px; }}
   .chart-label::after {{ content:''; flex:1; height:1px; background:var(--border); }}
-
-  /* Legend */
   .legend {{ display:flex; flex-wrap:wrap; gap:10px 16px; padding:12px 16px; background:var(--bg3); border:1px solid var(--border); border-radius:10px; margin-top:12px; }}
   .legend-item {{ display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:9px; color:var(--text2); }}
   .legend-dot {{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }}
   .legend-q {{ font-size:8px; font-weight:600; }}
 
-  /* Table */
+  /* ── Table ──────────────────────────────────────── */
   .table-wrap {{ overflow-x:auto; }}
   table {{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }}
   thead th {{ padding:10px 10px; text-align:right; color:var(--text3); font-weight:500; font-size:9px; letter-spacing:1px; text-transform:uppercase; border-bottom:2px solid var(--border2); white-space:nowrap; }}
@@ -986,13 +1193,12 @@ def generate_html_report(sectors_data, benchmark_metrics, today_str, mktcap_data
   tbody td {{ padding:10px 10px; text-align:right; white-space:nowrap; }}
   tbody td:first-child {{ text-align:left; }}
 
-  /* Quadrant detail blocks */
+  /* ── Quadrant detail blocks ────────────────────── */
   .quadrant-block {{ background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:20px 22px; margin-bottom:16px; }}
   .qb-title {{ font-family:var(--mono); font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:10px; }}
   .qb-dot {{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }}
   .qb-count {{ font-size:10px; font-weight:400; color:var(--text3); margin-left:auto; }}
   .qb-desc {{ font-size:12px; color:var(--text2); line-height:1.7; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border); }}
-
   .sector-detail-card {{ background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }}
   .sector-detail-card:last-child {{ margin-bottom:0; }}
   .sdc-header {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }}
@@ -1004,16 +1210,12 @@ def generate_html_report(sectors_data, benchmark_metrics, today_str, mktcap_data
   .sdc-reasons li {{ display:flex; align-items:flex-start; gap:6px; font-size:11px; color:var(--text2); padding:3px 0; line-height:1.5; }}
   .sdc-reasons li::before {{ content:'›'; color:var(--text3); font-weight:700; flex-shrink:0; }}
 
-  /* Performance bars section */
+  /* ── Performance, RRG, Leaders ─────────────────── */
   .perf-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }}
-
-  /* How to Read RRG */
   .rrg-explainer {{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }}
   .rrg-quad-card {{ background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }}
   .rrg-quad-card h4 {{ font-family:var(--mono); font-size:11px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }}
   .rrg-quad-card p {{ font-size:11px; color:var(--text2); line-height:1.6; }}
-
-  /* Leader blocks */
   .leaders-grid {{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }}
   .leader-block {{ background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }}
   .lb-header {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }}
@@ -1026,182 +1228,277 @@ def generate_html_report(sectors_data, benchmark_metrics, today_str, mktcap_data
   .leader-table tbody td:first-child {{ text-align:left; }}
   .leader-table tbody tr {{ border-bottom:1px solid var(--border); }}
 
-  /* Footer */
+  /* ── Animations ────────────────────────────────── */
+  .fade-in {{ opacity:0; transform:translateY(20px); transition:opacity .5s ease, transform .5s ease; }}
+  .fade-in.visible {{ opacity:1; transform:translateY(0); }}
+
+  /* ── Back link ─────────────────────────────────── */
+  .back-link {{ display:inline-block; font-family:var(--mono); font-size:10px; color:var(--text3); text-decoration:none; margin-bottom:16px; padding:5px 12px; border:1px solid var(--border); border-radius:6px; transition:all .15s; }}
+  .back-link:hover {{ color:var(--text); border-color:var(--border2); }}
+
+  /* ── Footer ────────────────────────────────────── */
   .report-footer {{ text-align:center; padding:24px 0; font-family:var(--mono); font-size:9px; color:var(--text3); }}
 
   @media (max-width: 900px) {{
     .perf-grid, .rrg-explainer, .leaders-grid {{ grid-template-columns: 1fr; }}
     .kpi-row {{ grid-template-columns: repeat(2, 1fr); }}
+    .sector-grid {{ grid-template-columns: 1fr; }}
     table {{ font-size: 10px; }}
   }}
+  @media print {{ .tab-pane {{ display:block !important; }} .tab-bar {{ display:none; }} }}
 </style>
 </head>
 <body>
 <div class="page">
 
+  <a href="../index.html" class="back-link">\u2190 Dashboard</a>
+
   <!-- HEADER -->
   <div class="report-header">
     <div class="rh-badge">SECTOR ROTATION REPORT <span>NSE</span></div>
     <div class="rh-title">NSE Sector Outlook</div>
-    <div class="rh-sub">Relative Rotation Analysis · All NSE Tradable Sectors · Benchmark: {BENCHMARK_NAME}</div>
+    <div class="rh-sub">Relative Rotation Analysis \u00b7 All NSE Tradable Sectors \u00b7 Benchmark: {BENCHMARK_NAME}</div>
     <div class="rh-right">
       <div class="rh-nifty-label">{BENCHMARK_NAME}</div>
       <div class="rh-nifty">{bench_price:,.0f}</div>
-      <div class="rh-date">{today_str} · Auto-generated</div>
+      <div class="rh-date">{today_str} \u00b7 Auto-generated</div>
     </div>
   </div>
 
-  <!-- KPI STRIP -->
-  <div class="kpi-row">
-    <div class="kpi-card">
-      <div class="kpi-label">Leading Sectors</div>
-      <div class="kpi-value" style="color:var(--green)">{quadrant_counts["Leading"]}</div>
-      <div class="kpi-sub">Strong RS + Rising Momentum</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Improving Sectors</div>
-      <div class="kpi-value" style="color:var(--blue)">{quadrant_counts["Improving"]}</div>
-      <div class="kpi-sub">Weak RS + Rising Momentum</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Weakening Sectors</div>
-      <div class="kpi-value" style="color:var(--amber)">{quadrant_counts["Weakening"]}</div>
-      <div class="kpi-sub">Strong RS + Falling Momentum</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Lagging Sectors</div>
-      <div class="kpi-value" style="color:var(--red)">{quadrant_counts["Lagging"]}</div>
-      <div class="kpi-sub">Weak RS + Falling Momentum</div>
-    </div>
+  <!-- TAB BAR -->
+  <div class="tab-bar" id="main-tabs">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">Overview</button>
+    <button class="tab-btn" onclick="switchTab('rrg',this)">RRG &amp; Rotation</button>
+    <button class="tab-btn" onclick="switchTab('performance',this)">Performance</button>
+    <button class="tab-btn" onclick="switchTab('leaders',this)">Leaders</button>
+    <button class="tab-btn" onclick="switchTab('analysis',this)">Analysis</button>
   </div>
 
-  <!-- HOW TO READ RRG -->
-  <div class="section">
-    <div class="section-title">How to Read the Relative Rotation Graph</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7;">
-      The RRG (Relative Rotation Graph) plots each sector's <b style="color:#fff">relative strength</b> (RS-Ratio, X-axis) against its <b style="color:#fff">momentum</b> (RS-Momentum, Y-axis) compared to the {BENCHMARK_NAME} benchmark. The center (100,100) represents parity with the benchmark. Sectors rotate clockwise through the four quadrants over time — this rotation reflects the natural cycle of sector leadership.
-    </p>
-    <div class="rrg-explainer">
-      <div class="rrg-quad-card">
-        <h4 style="color:var(--blue)"><span class="qb-dot" style="background:var(--blue);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Improving (Top-Left)</h4>
-        <p>RS-Ratio &lt; 100, RS-Momentum &gt; 100 — Sector still underperforms but momentum is turning up. Early rotation signal. Watch for breakout into Leading.</p>
+  <!-- ═══════════ TAB: OVERVIEW ═══════════ -->
+  <div class="tab-pane active" id="tab-overview">
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Leading Sectors</div>
+        <div class="kpi-value" style="color:var(--green)">{quadrant_counts["Leading"]}</div>
+        <div class="kpi-sub">Strong RS + Rising Momentum</div>
       </div>
-      <div class="rrg-quad-card">
-        <h4 style="color:var(--green)"><span class="qb-dot" style="background:var(--green);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Leading (Top-Right)</h4>
-        <p>RS-Ratio &gt; 100, RS-Momentum &gt; 100 — Sector is outperforming and acceleration is positive. The strongest position. Best sectors for momentum trades.</p>
+      <div class="kpi-card">
+        <div class="kpi-label">Improving Sectors</div>
+        <div class="kpi-value" style="color:var(--blue)">{quadrant_counts["Improving"]}</div>
+        <div class="kpi-sub">Weak RS + Rising Momentum</div>
       </div>
-      <div class="rrg-quad-card">
-        <h4 style="color:var(--red)"><span class="qb-dot" style="background:var(--red);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Lagging (Bottom-Left)</h4>
-        <p>RS-Ratio &lt; 100, RS-Momentum &lt; 100 — Sector underperforms with declining momentum. Weakest position. Avoid until momentum turns. Watch for rotation into Improving.</p>
+      <div class="kpi-card">
+        <div class="kpi-label">Weakening Sectors</div>
+        <div class="kpi-value" style="color:var(--amber)">{quadrant_counts["Weakening"]}</div>
+        <div class="kpi-sub">Strong RS + Falling Momentum</div>
       </div>
-      <div class="rrg-quad-card">
-        <h4 style="color:var(--amber)"><span class="qb-dot" style="background:var(--amber);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Weakening (Bottom-Right)</h4>
-        <p>RS-Ratio &gt; 100, RS-Momentum &lt; 100 — Sector still outperforms but momentum is fading. Leadership is ending. Consider booking profits.</p>
+      <div class="kpi-card">
+        <div class="kpi-label">Lagging Sectors</div>
+        <div class="kpi-value" style="color:var(--red)">{quadrant_counts["Lagging"]}</div>
+        <div class="kpi-sub">Weak RS + Falling Momentum</div>
       </div>
     </div>
+
+    <div class="controls fade-in">
+      <span class="controls-label">Sort by</span>
+      <button class="sort-btn active" data-sort="ret1m" onclick="sortCards('ret1m',this)">1M Return</button>
+      <button class="sort-btn" data-sort="rsratio" onclick="sortCards('rsratio',this)">RS-Ratio</button>
+      <button class="sort-btn" data-sort="rsmom" onclick="sortCards('rsmom',this)">RS-Momentum</button>
+      <button class="sort-btn" data-sort="vol" onclick="sortCards('vol',this)">Volatility</button>
+    </div>
+
+    <div class="perf-legend fade-in">
+      <span class="perf-legend-label">1M Performance</span>
+      <div style="flex:1">
+        <div class="perf-legend-bar"></div>
+        <div class="perf-legend-range">
+          <span>\u221220%</span>
+          <span>0%</span>
+          <span>+20%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sector-grid" id="sector-grid">
+      {overview_cards_html}
+    </div>
+
   </div>
 
-  <!-- RRG SCATTER & ROTATION TRAIL -->
-  <div class="chart-grid">
-    <div class="chart-card">
-      <div class="chart-label">RRG Scatter Plot — Current Positioning</div>
-      {rrg_svg}
+  <!-- ═══════════ TAB: RRG & ROTATION ═══════════ -->
+  <div class="tab-pane" id="tab-rrg">
+
+    <div class="section">
+      <div class="section-title">How to Read the Relative Rotation Graph</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7;">
+        The RRG plots each sector's <b style="color:#fff">relative strength</b> (RS-Ratio, X-axis) against its <b style="color:#fff">momentum</b> (RS-Momentum, Y-axis) compared to the {BENCHMARK_NAME} benchmark. The center (100,100) represents parity. Sectors rotate clockwise through the four quadrants — this rotation reflects the natural cycle of sector leadership.
+      </p>
+      <div class="rrg-explainer">
+        <div class="rrg-quad-card">
+          <h4 style="color:var(--blue)"><span class="qb-dot" style="background:var(--blue);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Improving (Top-Left)</h4>
+          <p>RS-Ratio &lt; 100, RS-Momentum &gt; 100 — Sector still underperforms but momentum is turning up. Early rotation signal.</p>
+        </div>
+        <div class="rrg-quad-card">
+          <h4 style="color:var(--green)"><span class="qb-dot" style="background:var(--green);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Leading (Top-Right)</h4>
+          <p>RS-Ratio &gt; 100, RS-Momentum &gt; 100 — Sector is outperforming and acceleration is positive. Strongest position.</p>
+        </div>
+        <div class="rrg-quad-card">
+          <h4 style="color:var(--red)"><span class="qb-dot" style="background:var(--red);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Lagging (Bottom-Left)</h4>
+          <p>RS-Ratio &lt; 100, RS-Momentum &lt; 100 — Sector underperforms with declining momentum. Weakest position.</p>
+        </div>
+        <div class="rrg-quad-card">
+          <h4 style="color:var(--amber)"><span class="qb-dot" style="background:var(--amber);width:8px;height:8px;border-radius:50%;display:inline-block;"></span> Weakening (Bottom-Right)</h4>
+          <p>RS-Ratio &gt; 100, RS-Momentum &lt; 100 — Sector still outperforms but momentum is fading. Consider booking profits.</p>
+        </div>
+      </div>
     </div>
-    <div class="chart-card">
-      <div class="chart-label">Sector Rotation Trail — Weekly Movement</div>
-      {trail_svg}
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-label">RRG Scatter Plot \u2014 Current Positioning</div>
+        {rrg_svg}
+      </div>
+      <div class="chart-card">
+        <div class="chart-label">Sector Rotation Trail \u2014 Weekly Movement</div>
+        {trail_svg}
+      </div>
     </div>
+
+    <div class="section" style="padding:14px 22px;">
+      <div class="legend">
+        {legend_items}
+      </div>
+    </div>
+
   </div>
 
-  <!-- Legend -->
-  <div class="section" style="padding:14px 22px;">
-    <div class="legend">
-      {legend_items}
+  <!-- ═══════════ TAB: PERFORMANCE ═══════════ -->
+  <div class="tab-pane" id="tab-performance">
+
+    <div class="perf-grid" style="margin-bottom:24px;">
+      <div class="chart-card">
+        <div class="chart-label">1-Month Sector Performance</div>
+        {perf_1m_svg}
+      </div>
+      <div class="chart-card">
+        <div class="chart-label">3-Month Sector Performance</div>
+        {perf_3m_svg}
+      </div>
     </div>
+
+    <div class="section">
+      <div class="section-title">Market Breadth \u2014 Cap-wise Index Performance</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left;">Index</th>
+              <th>Level</th>
+              <th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>6M</th><th>1Y</th>
+              <th>From High</th>
+              <th>Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mktcap_rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Sector Outlook Summary</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left;">Sector</th>
+              <th>Quadrant</th>
+              <th>Trend</th>
+              <th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>6M</th>
+              <th>From High</th>
+              <th>Vol (30d)</th>
+              <th>Outlook</th>
+            </tr>
+          </thead>
+          <tbody>
+            {table_rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
-  <!-- PERFORMANCE BARS -->
-  <div class="perf-grid" style="margin-bottom:24px;">
-    <div class="chart-card">
-      <div class="chart-label">1-Month Sector Performance</div>
-      {perf_1m_svg}
+  <!-- ═══════════ TAB: LEADERS ═══════════ -->
+  <div class="tab-pane" id="tab-leaders">
+
+    <div class="section">
+      <div class="section-title">Sector Leaders \u2014 Top 3 Stocks per Sector</div>
+      <div class="leaders-grid">
+        {leaders_html}
+      </div>
     </div>
-    <div class="chart-card">
-      <div class="chart-label">3-Month Sector Performance</div>
-      {perf_3m_svg}
-    </div>
+
   </div>
 
-  <!-- MARKET CAP INDICES -->
-  <div class="section">
-    <div class="section-title">Market Breadth — Cap-wise Index Performance</div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th style="text-align:left;">Index</th>
-            <th>Level</th>
-            <th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>6M</th><th>1Y</th>
-            <th>From High</th>
-            <th>Trend</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mktcap_rows}
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <!-- ═══════════ TAB: ANALYSIS ═══════════ -->
+  <div class="tab-pane" id="tab-analysis">
 
-  <!-- SECTOR TABLE -->
-  <div class="section">
-    <div class="section-title">Sector Outlook Summary</div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th style="text-align:left;">Sector</th>
-            <th>Quadrant</th>
-            <th>Trend</th>
-            <th>1D</th>
-            <th>1W</th>
-            <th>1M</th>
-            <th>3M</th>
-            <th>6M</th>
-            <th>From High</th>
-            <th>Vol (30d)</th>
-            <th>Outlook</th>
-          </tr>
-        </thead>
-        <tbody>
-          {table_rows}
-        </tbody>
-      </table>
+    <div class="section">
+      <div class="section-title">Detailed Sector Analysis by Quadrant</div>
+      {quadrant_detail_html}
     </div>
-  </div>
 
-  <!-- SECTOR LEADERS -->
-  <div class="section">
-    <div class="section-title">Sector Leaders — Top 3 Stocks per Sector</div>
-    <div class="leaders-grid">
-      {leaders_html}
-    </div>
-  </div>
-
-  <!-- QUADRANT DETAILED ANALYSIS -->
-  <div class="section">
-    <div class="section-title">Detailed Sector Analysis by Quadrant</div>
-    {quadrant_detail_html}
   </div>
 
   <!-- FOOTER -->
   <div class="report-footer">
-    Generated on {today_str} · Data via Yahoo Finance · Benchmark: {BENCHMARK_NAME}<br>
+    Generated on {today_str} \u00b7 Data via Yahoo Finance \u00b7 Benchmark: {BENCHMARK_NAME}<br>
     Relative Rotation Graph methodology based on Julius de Kempenaer's RRG framework<br>
-    Not investment advice · For informational purposes only
+    Not investment advice \u00b7 For informational purposes only
   </div>
 
 </div>
+
+<script>
+function switchTab(id, btn) {{
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({{top: document.querySelector('.tab-bar').offsetTop - 10, behavior:'smooth'}});
+}}
+
+function toggleExpand(card) {{
+  card.classList.toggle('expanded');
+}}
+
+function sortCards(key, btn) {{
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const grid = document.getElementById('sector-grid');
+  const cards = Array.from(grid.querySelectorAll('.sector-card'));
+  cards.sort((a, b) => {{
+    const av = parseFloat(a.dataset[key]) || 0;
+    const bv = parseFloat(b.dataset[key]) || 0;
+    if (key === 'vol') return av - bv;  // lower volatility first
+    return bv - av;  // higher values first for returns, RS-Ratio, RS-Momentum
+  }});
+  cards.forEach(c => grid.appendChild(c));
+}}
+
+const observer = new IntersectionObserver((entries) => {{
+  entries.forEach(e => {{
+    if (e.isIntersecting) {{
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }}
+  }});
+}}, {{ threshold: 0.08, rootMargin: '0px 0px -40px 0px' }});
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
 </body>
 </html>'''
 

@@ -2316,6 +2316,18 @@ def generate_html_report(data, scores):
     w52_range = high_52w - low_52w if high_52w and low_52w and high_52w > low_52w else 0
     w52_pct = max(0, min(100, ((current_price - low_52w) / w52_range * 100))) if w52_range > 0 else 50
 
+    def _range_dot_color(pct):
+        if pct <= 30:
+            return "#00e5a0"
+        elif pct <= 70:
+            return "#f5a623"
+        else:
+            return "#ff4d6d"
+    day_dot_color = _range_dot_color(day_pct)
+    w52_dot_color = _range_dot_color(w52_pct)
+    day_zone = "Oversold" if day_pct <= 30 else ("Overbought" if day_pct >= 70 else "Neutral")
+    w52_zone = "Oversold" if w52_pct <= 30 else ("Overbought" if w52_pct >= 70 else "Neutral")
+
     def score_color(score, max_score):
         pct = score / max_score * 100 if max_score > 0 else 0
         if pct >= 70:
@@ -3229,9 +3241,10 @@ def generate_html_report(data, scores):
   .sh-range {{ display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9px; }}
   .sh-range-label {{ color:var(--text3); width:32px; text-align:right; letter-spacing:0.5px; flex-shrink:0; }}
   .sh-range-val {{ color:var(--text3); width:42px; text-align:right; flex-shrink:0; }}
-  .sh-range-track {{ flex:1; height:4px; background:var(--border); border-radius:2px; position:relative; min-width:80px; }}
-  .sh-range-fill {{ height:100%; border-radius:2px; background:linear-gradient(90deg,var(--green),var(--green)); }}
-  .sh-range-dot {{ position:absolute; top:50%; width:10px; height:10px; border-radius:50%; background:var(--green); border:2px solid var(--bg); transform:translate(-50%,-50%); box-shadow:0 0 6px rgba(0,229,160,0.5); }}
+  .sh-range-track {{ flex:1; height:5px; background:linear-gradient(90deg,rgba(0,229,160,0.15),rgba(245,166,35,0.15),rgba(255,77,109,0.15)); border-radius:3px; position:relative; min-width:80px; }}
+  .sh-range-fill {{ height:100%; border-radius:3px; background:linear-gradient(90deg,#00e5a0,#f5a623,#ff4d6d); }}
+  .sh-range-dot {{ position:absolute; top:50%; width:10px; height:10px; border-radius:50%; border:2px solid var(--bg); transform:translate(-50%,-50%); }}
+  .sh-range-zone {{ font-family:var(--mono); font-size:8px; font-weight:600; letter-spacing:0.5px; flex-shrink:0; min-width:56px; text-align:center; }}
   .gauge-kpi-row {{ display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }}
   .gauge-card {{ background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; }}
   .gauge-title {{ font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }}
@@ -3347,14 +3360,16 @@ def generate_html_report(data, scores):
         <div class="sh-range">
           <span class="sh-range-label">Day</span>
           <span class="sh-range-val">${day_low:,.0f}</span>
-          <div class="sh-range-track"><div class="sh-range-fill" style="width:{day_pct:.1f}%"></div><div class="sh-range-dot" style="left:{day_pct:.1f}%"></div></div>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:{day_pct:.1f}%"></div><div class="sh-range-dot" style="left:{day_pct:.1f}%;background:{day_dot_color};box-shadow:0 0 6px {day_dot_color}80;"></div></div>
           <span class="sh-range-val">${day_high:,.0f}</span>
+          <span class="sh-range-zone" style="color:{day_dot_color}">{day_zone}</span>
         </div>
         <div class="sh-range">
           <span class="sh-range-label">52W</span>
           <span class="sh-range-val">${low_52w:,.0f}</span>
-          <div class="sh-range-track"><div class="sh-range-fill" style="width:{w52_pct:.1f}%"></div><div class="sh-range-dot" style="left:{w52_pct:.1f}%"></div></div>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:{w52_pct:.1f}%"></div><div class="sh-range-dot" style="left:{w52_pct:.1f}%;background:{w52_dot_color};box-shadow:0 0 6px {w52_dot_color}80;"></div></div>
           <span class="sh-range-val">${high_52w:,.0f}</span>
+          <span class="sh-range-zone" style="color:{w52_dot_color}">{w52_zone}</span>
         </div>
       </div>
     </div>
