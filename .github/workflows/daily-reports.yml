@@ -48,6 +48,9 @@ jobs:
       - name: Generate sector rotation report
         run: python3 sector_report_generator.py -o ./sector_reports/
 
+      - name: Generate S&P 500 sector heatmap
+        run: python3 sp500_heatmap_generator.py -o ./sp500_reports/
+
       - name: Generate dashboard index
         run: python3 dashboard_generator.py -r . -o ./index.html
 
@@ -70,7 +73,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f reports/ us_reports/ sector_reports/ fno_reports/ index.html README.md
+          git add -f reports/ us_reports/ sector_reports/ fno_reports/ sp500_reports/ index.html README.md
           git diff --cached --quiet || git commit -m "📊 Daily stock reports & README update — $(date +%Y-%m-%d)"
           git pull --rebase
           git push

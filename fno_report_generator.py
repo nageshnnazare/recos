@@ -878,7 +878,9 @@ _HTML_TEMPLATE = """<!DOCTYPE html>
   --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
   --green:#00e5a0; --green-dim:rgba(0,229,160,0.12);
   --red:#ff4d6d; --red-dim:rgba(255,77,109,0.12);
-  --amber:#f5a623; --blue:#3d9cf5; --blue-dim:rgba(61,156,245,0.12);
+  --amber:#f5a623; --amber-dim:rgba(245,166,35,0.12);
+  --blue:#3d9cf5; --blue-dim:rgba(61,156,245,0.12);
+  --purple:#9b7fff;
   --text:#e8e9f0; --text2:#9899a8; --text3:#5c5d6e;
   --mono:'Fira Code',monospace; --sans:'DM Sans',sans-serif;
 }}

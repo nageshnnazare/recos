@@ -1,4 +1,4 @@
-all: nse us sectors fno dashboard
+all: nse us sectors fno sp500 dashboard
 
 nse:
 	python3 report_generator.py --watchlist watchlist.txt --alerts --delay 8 -o ./reports/
@@ -12,6 +12,9 @@ sectors:
 fno:
 	python3 fno_report_generator.py -o ./fno_reports/
 
+sp500:
+	python3 sp500_heatmap_generator.py -o ./sp500_reports/
+
 dashboard:
 	python3 dashboard_generator.py -r . -o ./index.html
 
@@ -24,4 +27,4 @@ clean:
 	rm -rf ./sector_reports/*
 	rm -rf ./fno_reports/*
 
-.PHONY: all nse us sectors fno dashboard fno-live clean
+.PHONY: all nse us sectors fno sp500 dashboard fno-live clean

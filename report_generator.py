@@ -50,21 +50,23 @@ except ImportError:
 # pe: (cheap, fair, expensive)   pb: (cheap, fair, expensive)
 # roe: (moderate, good) as decimal   margin: (moderate, good) as decimal
 # de: (comfortable, high)
+# rev_growth: (moderate, strong) as decimal — sector-typical YoY revenue growth norms
+# earn_growth: (moderate, strong) as decimal — sector-typical YoY earnings growth norms
 
-_DEFAULT_BENCH = {"pe": (15, 25, 50), "pb": (2, 5, 12), "roe": (0.10, 0.18), "margin": (0.08, 0.18), "de": (40, 100)}
+_DEFAULT_BENCH = {"pe": (15, 25, 50), "pb": (2, 5, 12), "roe": (0.10, 0.18), "margin": (0.08, 0.18), "de": (40, 100), "rev_growth": (0.08, 0.20), "earn_growth": (0.10, 0.25)}
 
 SECTOR_BENCHMARKS = {
-    "Financial Services": {"pe": (12, 22, 35), "pb": (1.5, 3, 5),  "roe": (0.12, 0.18), "margin": (0.15, 0.30), "de": (200, 500)},
-    "Technology":         {"pe": (20, 35, 60), "pb": (3, 8, 15),   "roe": (0.15, 0.25), "margin": (0.15, 0.25), "de": (20, 60)},
-    "Energy":             {"pe": (8, 15, 25),  "pb": (1, 2, 4),    "roe": (0.10, 0.18), "margin": (0.05, 0.12), "de": (40, 100)},
-    "Industrials":        {"pe": (15, 30, 50), "pb": (2, 5, 10),   "roe": (0.12, 0.20), "margin": (0.10, 0.20), "de": (30, 80)},
-    "Healthcare":         {"pe": (18, 30, 50), "pb": (2, 5, 10),   "roe": (0.12, 0.20), "margin": (0.12, 0.22), "de": (20, 60)},
-    "Consumer Cyclical":  {"pe": (15, 25, 45), "pb": (2, 5, 12),   "roe": (0.12, 0.20), "margin": (0.08, 0.18), "de": (30, 80)},
-    "Consumer Defensive": {"pe": (18, 30, 50), "pb": (3, 8, 15),   "roe": (0.15, 0.25), "margin": (0.10, 0.20), "de": (30, 80)},
-    "Basic Materials":    {"pe": (8, 15, 30),  "pb": (1, 2.5, 6),  "roe": (0.10, 0.18), "margin": (0.08, 0.15), "de": (40, 100)},
-    "Communication Services": {"pe": (12, 25, 45), "pb": (1.5, 4, 10), "roe": (0.08, 0.15), "margin": (0.10, 0.20), "de": (50, 120)},
-    "Real Estate":        {"pe": (10, 20, 40), "pb": (1, 2.5, 6),  "roe": (0.08, 0.15), "margin": (0.10, 0.25), "de": (50, 120)},
-    "Utilities":          {"pe": (10, 18, 30), "pb": (1, 2, 4),    "roe": (0.10, 0.15), "margin": (0.10, 0.20), "de": (80, 200)},
+    "Financial Services":      {"pe": (12, 22, 35), "pb": (1.5, 3, 5),  "roe": (0.12, 0.18), "margin": (0.15, 0.30), "de": (200, 500), "rev_growth": (0.06, 0.15), "earn_growth": (0.08, 0.20)},
+    "Technology":              {"pe": (20, 35, 60), "pb": (3, 8, 15),   "roe": (0.15, 0.25), "margin": (0.15, 0.25), "de": (20, 60),   "rev_growth": (0.12, 0.30), "earn_growth": (0.15, 0.35)},
+    "Energy":                  {"pe": (8, 15, 25),  "pb": (1, 2, 4),    "roe": (0.10, 0.18), "margin": (0.05, 0.12), "de": (40, 100),  "rev_growth": (0.05, 0.15), "earn_growth": (0.08, 0.20)},
+    "Industrials":             {"pe": (15, 30, 50), "pb": (2, 5, 10),   "roe": (0.12, 0.20), "margin": (0.10, 0.20), "de": (30, 80),   "rev_growth": (0.06, 0.18), "earn_growth": (0.10, 0.25)},
+    "Healthcare":              {"pe": (18, 30, 50), "pb": (2, 5, 10),   "roe": (0.12, 0.20), "margin": (0.12, 0.22), "de": (20, 60),   "rev_growth": (0.10, 0.25), "earn_growth": (0.12, 0.30)},
+    "Consumer Cyclical":       {"pe": (15, 25, 45), "pb": (2, 5, 12),   "roe": (0.12, 0.20), "margin": (0.08, 0.18), "de": (30, 80),   "rev_growth": (0.08, 0.20), "earn_growth": (0.10, 0.25)},
+    "Consumer Defensive":      {"pe": (18, 30, 50), "pb": (3, 8, 15),   "roe": (0.15, 0.25), "margin": (0.10, 0.20), "de": (30, 80),   "rev_growth": (0.04, 0.12), "earn_growth": (0.06, 0.15)},
+    "Basic Materials":         {"pe": (8, 15, 30),  "pb": (1, 2.5, 6),  "roe": (0.10, 0.18), "margin": (0.08, 0.15), "de": (40, 100),  "rev_growth": (0.05, 0.15), "earn_growth": (0.08, 0.20)},
+    "Communication Services":  {"pe": (12, 25, 45), "pb": (1.5, 4, 10), "roe": (0.08, 0.15), "margin": (0.10, 0.20), "de": (50, 120),  "rev_growth": (0.06, 0.18), "earn_growth": (0.10, 0.25)},
+    "Real Estate":             {"pe": (10, 20, 40), "pb": (1, 2.5, 6),  "roe": (0.08, 0.15), "margin": (0.10, 0.25), "de": (50, 120),  "rev_growth": (0.03, 0.10), "earn_growth": (0.05, 0.12)},
+    "Utilities":               {"pe": (10, 18, 30), "pb": (1, 2, 4),    "roe": (0.10, 0.15), "margin": (0.10, 0.20), "de": (80, 200),  "rev_growth": (0.02, 0.08), "earn_growth": (0.04, 0.10)},
 }
 
 def get_sector_bench(sector):
@@ -146,6 +148,12 @@ def fetch_stock_data(ticker_symbol):
     except Exception as e:
         print(f"    ⚠ Could not fetch annual cash flow: {e}")
         result["annual_cash_flow"] = None
+
+    # Earnings history (estimated vs actual EPS per quarter)
+    try:
+        result["earnings_history"] = ticker.earnings_history
+    except Exception:
+        result["earnings_history"] = None
 
     # Additional history periods for multi-period returns and charts
     for period_key, period_val in [("hist_5d", "5d"), ("hist_1mo", "1mo"), ("hist_3y", "3y"), ("hist_5y", "5y")]:
@@ -529,20 +537,30 @@ def fetch_screener_data(ticker_symbol):
     if growth_data:
         result["growth_rates"] = growth_data
 
-    # ── Extract EPS and Book Value series for PE/PB charts ──
+    # ── Extract EPS, Sales, and Book Value series for valuation charts ──
     pl_rows_data = result.get("pl_rows", [])
     if pl_rows_data:
         for row in pl_rows_data:
             c = row["cells"]
-            if c and c[0].lower().replace("+", "").strip().startswith("eps"):
+            if not c:
+                continue
+            label = c[0].lower().replace("+", "").strip()
+            if label.startswith("eps") and "eps_series" not in result:
                 try:
                     result["eps_series"] = {
                         "headers": pl_headers[1:],
                         "values": [_try_float(v) for v in c[1:]]
                     }
-                except:
+                except Exception:
                     pass
-                break
+            if label.startswith("sales") and "sales_series" not in result:
+                try:
+                    result["sales_series"] = {
+                        "headers": pl_headers[1:],
+                        "values": [_try_float(v) for v in c[1:]]
+                    }
+                except Exception:
+                    pass
 
     bs_rows_data = result.get("bs_rows", [])
     if bs_rows_data:
@@ -842,14 +860,18 @@ def _technical_score(data):
 
     # Volume trend — 20-day avg vs 50-day avg on up-days
     if hist_6m is not None and not hist_6m.empty and len(hist_6m) >= 50:
-        vol = hist_6m["Volume"].dropna()
-        close = hist_6m["Close"].dropna()
-        if len(vol) >= 50 and len(close) >= 50:
+        aligned = hist_6m[["Close", "Volume"]].dropna()
+        if len(aligned) >= 50:
+            vol = aligned["Volume"]
+            close = aligned["Close"]
             vol_20 = vol.tail(20).mean()
             vol_50 = vol.tail(50).mean()
             price_chg = close.diff().tail(20)
-            up_vol = vol.tail(20)[price_chg > 0].mean() if (price_chg > 0).any() else 0
-            dn_vol = vol.tail(20)[price_chg < 0].mean() if (price_chg < 0).any() else 0
+            vol_tail = vol.tail(20)
+            up_mask = price_chg > 0
+            dn_mask = price_chg < 0
+            up_vol = vol_tail[up_mask].mean() if up_mask.any() else 0
+            dn_vol = vol_tail[dn_mask].mean() if dn_mask.any() else 0
             if vol_20 > vol_50 * 1.1 and up_vol > dn_vol:
                 score += 2    # rising volume on up-days
             elif vol_20 < vol_50 * 0.8:
@@ -876,6 +898,8 @@ def calculate_risk_scores(data):
     roe_mod, roe_good = bench["roe"]
     margin_mod, margin_good = bench["margin"]
     de_ok, de_high = bench["de"]
+    rg_mod, rg_strong = bench["rev_growth"]
+    eg_mod, eg_strong = bench["earn_growth"]
 
     # ── VALUATION SCORE /25 ──
     val_score = 9
@@ -957,11 +981,11 @@ def calculate_risk_scores(data):
 
     rev_growth = safe_get(info, "revenueGrowth")
     if rev_growth:
-        if rev_growth > 0.3:
+        if rev_growth > rg_strong * 1.5:
             fin_score += 4
-        elif rev_growth > 0.15:
+        elif rev_growth > rg_strong:
             fin_score += 2
-        elif rev_growth > 0.05:
+        elif rev_growth > rg_mod:
             fin_score += 1
         elif rev_growth > 0:
             fin_score += 0
@@ -985,11 +1009,11 @@ def calculate_risk_scores(data):
     growth_score = 9
 
     if rev_growth:
-        if rev_growth > 0.4:
+        if rev_growth > rg_strong * 2:
             growth_score += 7
-        elif rev_growth > 0.25:
+        elif rev_growth > rg_strong:
             growth_score += 4
-        elif rev_growth > 0.1:
+        elif rev_growth > rg_mod:
             growth_score += 2
         elif rev_growth > 0:
             growth_score += 0
@@ -998,9 +1022,9 @@ def calculate_risk_scores(data):
 
     earnings_growth = safe_get(info, "earningsGrowth")
     if earnings_growth:
-        if earnings_growth > 0.3:
+        if earnings_growth > eg_strong:
             earnings_bump = 5
-        elif earnings_growth > 0.1:
+        elif earnings_growth > eg_mod:
             earnings_bump = 3
         elif earnings_growth > 0:
             earnings_bump = 1
@@ -1834,7 +1858,7 @@ def generate_pe_pb_chart_svg(series, label="P/E", color="#3d9cf5", width=520, he
 
     labels_list = [p[0] for p in pts]
     vals = [p[1] for p in pts]
-    pad_l, pad_r, pad_t, pad_b = 50, 20, 20, 32
+    pad_l, pad_r, pad_t, pad_b = 50, 55, 20, 32
     cw = width - pad_l - pad_r
     ch = height - pad_t - pad_b
     min_v = min(vals) * 0.85
@@ -2026,6 +2050,34 @@ def _build_corporate_actions_html(data):
 def _serialize_chart_data(data):
     """Serialize all historical price data into a JSON string for interactive charts."""
     import json as _json
+
+    # Use the longest available daily history for accurate MA warm-up
+    full_hist = None
+    for fk in ["hist_5y", "hist_3y", "hist_1y", "hist_6m"]:
+        fh = data.get(fk)
+        if fh is not None and not fh.empty:
+            fh_clean = fh[["Open", "High", "Low", "Close", "Volume"]].dropna()
+            if full_hist is None or len(fh_clean) > len(full_hist):
+                full_hist = fh_clean
+
+    ema50_full = []
+    sma200_full = []
+    full_date_idx = {}
+    if full_hist is not None and not full_hist.empty:
+        all_c = [float(v) for v in full_hist["Close"]]
+        total = len(all_c)
+        ema50_full = [all_c[0]]
+        k50 = 2 / 51
+        for i in range(1, total):
+            ema50_full.append(all_c[i] * k50 + ema50_full[-1] * (1 - k50))
+        for i in range(min(49, total)):
+            ema50_full[i] = None
+        sma200_full = [None] * total
+        for i in range(199, total):
+            sma200_full[i] = sum(all_c[i - 199 : i + 1]) / 200
+        for i, d in enumerate(full_hist.index):
+            full_date_idx[d.strftime("%Y-%m-%d")] = i
+
     periods = [
         ("1D", "hist_1d_intra"), ("1W", "hist_5d"), ("1M", "hist_1mo"),
         ("6M", "hist_6m"), ("1Y", "hist_1y"), ("3Y", "hist_3y"), ("5Y", "hist_5y"),
@@ -2035,6 +2087,10 @@ def _serialize_chart_data(data):
         hist = data.get(key)
         if hist is None or hist.empty or len(hist) < 2:
             continue
+        # Drop rows where any OHLCV value is NaN to prevent JS Math.min/max failures
+        hist = hist[["Open", "High", "Low", "Close", "Volume"]].dropna()
+        if len(hist) < 2:
+            continue
         is_intraday = (label == "1D")
         dates = [d.strftime("%H:%M") if is_intraday else d.strftime("%Y-%m-%d") for d in hist.index]
         opens = [round(float(v), 2) for v in hist["Open"]]
@@ -2042,7 +2098,70 @@ def _serialize_chart_data(data):
         lows = [round(float(v), 2) for v in hist["Low"]]
         closes = [round(float(v), 2) for v in hist["Close"]]
         volumes = [int(v) for v in hist["Volume"]]
-        result[label] = {"d": dates, "o": opens, "h": highs, "l": lows, "c": closes, "v": volumes}
+        entry = {"d": dates, "o": opens, "h": highs, "l": lows, "c": closes, "v": volumes}
+
+        # Pre-compute RSI(14) and MACD for each period
+        if len(closes) >= 14:
+            import numpy as _np
+            c_arr = _np.array(closes, dtype=float)
+            delta = _np.diff(c_arr, prepend=c_arr[0])
+            gain = _np.where(delta > 0, delta, 0.0)
+            loss = _np.where(delta < 0, -delta, 0.0)
+            avg_g = _np.full(len(c_arr), _np.nan)
+            avg_l = _np.full(len(c_arr), _np.nan)
+            avg_g[14] = _np.mean(gain[1:15])
+            avg_l[14] = _np.mean(loss[1:15])
+            for j in range(15, len(c_arr)):
+                avg_g[j] = (avg_g[j-1] * 13 + gain[j]) / 14
+                avg_l[j] = (avg_l[j-1] * 13 + loss[j]) / 14
+            rs = _np.where(avg_l > 0, avg_g / avg_l, 100.0)
+            rsi_arr = 100 - (100 / (1 + rs))
+            entry["rsi"] = [round(float(v), 1) if not _np.isnan(v) else None for v in rsi_arr]
+
+        if len(closes) >= 26:
+            import numpy as _np
+            c_arr = _np.array(closes, dtype=float)
+            def _ema_np(arr, span):
+                k = 2 / (span + 1)
+                out = _np.full(len(arr), _np.nan)
+                out[span - 1] = _np.mean(arr[:span])
+                for j in range(span, len(arr)):
+                    out[j] = arr[j] * k + out[j-1] * (1 - k)
+                return out
+            ema12 = _ema_np(c_arr, 12)
+            ema26 = _ema_np(c_arr, 26)
+            macd_line = ema12 - ema26
+            sig_arr = _np.full(len(c_arr), _np.nan)
+            valid_macd = macd_line[~_np.isnan(macd_line)]
+            if len(valid_macd) >= 9:
+                sig_start = int(_np.where(~_np.isnan(macd_line))[0][0])
+                k_s = 2 / 10
+                sig_arr[sig_start + 8] = _np.mean(macd_line[sig_start:sig_start + 9])
+                for j in range(sig_start + 9, len(c_arr)):
+                    if not _np.isnan(macd_line[j]):
+                        sig_arr[j] = macd_line[j] * k_s + sig_arr[j-1] * (1 - k_s)
+            hist_arr = macd_line - sig_arr
+            entry["macd"] = [round(float(v), 2) if not _np.isnan(v) else None for v in macd_line]
+            entry["macd_sig"] = [round(float(v), 2) if not _np.isnan(v) else None for v in sig_arr]
+            entry["macd_hist"] = [round(float(v), 2) if not _np.isnan(v) else None for v in hist_arr]
+
+        if not is_intraday and full_date_idx:
+            ema_slice = []
+            sma_slice = []
+            for d in hist.index:
+                idx = full_date_idx.get(d.strftime("%Y-%m-%d"))
+                if idx is not None:
+                    e = ema50_full[idx] if idx < len(ema50_full) else None
+                    s = sma200_full[idx] if idx < len(sma200_full) else None
+                    ema_slice.append(round(e, 2) if e is not None else None)
+                    sma_slice.append(round(s, 2) if s is not None else None)
+                else:
+                    ema_slice.append(None)
+                    sma_slice.append(None)
+            entry["ema50"] = ema_slice
+            entry["sma200"] = sma_slice
+
+        result[label] = entry
     return _json.dumps(result, separators=(",", ":"))
 
 
@@ -2156,23 +2275,189 @@ def generate_html_report(data, scores):
     pros_list = screener.get("pros", [])
     cons_list = screener.get("cons", [])
 
-    company_overview_html = ""
-    if about_text or pros_list or cons_list:
-        pros_html_items = "".join(f'<li style="margin-bottom:4px;color:var(--green);">{p}</li>' for p in pros_list[:6])
-        cons_html_items = "".join(f'<li style="margin-bottom:4px;color:var(--red);">{c}</li>' for c in cons_list[:6])
-        company_overview_html = f'''
+    # ── Rich Company Analysis ──
+    yf_summary = safe_get(info, "longBusinessSummary", "")
+    desc_text = yf_summary or about_text or ""
+
+    rev_growth = safe_get(info, "revenueGrowth", None)
+    earn_growth = safe_get(info, "earningsGrowth", None)
+    earn_q_growth = safe_get(info, "earningsQuarterlyGrowth", None)
+    rec_key = safe_get(info, "recommendationKey", "")
+    n_analysts = safe_get(info, "numberOfAnalystOpinions", 0)
+    employees = safe_get(info, "fullTimeEmployees", 0)
+
+    # -- 1. Business Model --
+    biz_bullets = []
+    if desc_text:
+        sentences = [s.strip() + "." for s in desc_text.replace(". ", ".\n").split("\n") if s.strip()]
+        biz_bullets = sentences[:4]
+    if industry != "N/A":
+        biz_bullets.append(f"Operates in <strong>{industry}</strong> within the <strong>{sector}</strong> sector.")
+    if employees and employees > 0:
+        biz_bullets.append(f"Workforce of <strong>{employees:,}</strong> employees.")
+    if not biz_bullets:
+        biz_bullets.append("Company business description not available.")
+
+    # -- 2. Moat & Competition --
+    moat_bullets = []
+    if mcap_cr > 100000:
+        moat_bullets.append(f"Mega-cap (₹{mcap_cr:,.0f} Cr) — dominant market position with significant scale advantages.")
+    elif mcap_cr > 20000:
+        moat_bullets.append(f"Large-cap (₹{mcap_cr:,.0f} Cr) — established player with meaningful market presence.")
+    elif mcap_cr > 5000:
+        moat_bullets.append(f"Mid-cap (₹{mcap_cr:,.0f} Cr) — growing company in a competitive landscape.")
+    else:
+        moat_bullets.append(f"Small-cap (₹{mcap_cr:,.0f} Cr) — higher risk/reward profile.")
+
+    roe_val = safe_get(info, "returnOnEquity", 0) or 0
+    pm_val = safe_get(info, "profitMargins", 0) or 0
+    if roe_val > 0.20:
+        moat_bullets.append(f"ROE of <strong>{roe_val*100:.1f}%</strong> indicates strong competitive advantage and efficient capital deployment.")
+    elif roe_val > 0.12:
+        moat_bullets.append(f"ROE of <strong>{roe_val*100:.1f}%</strong> — decent but not exceptional capital efficiency.")
+    if pm_val > 0.20:
+        moat_bullets.append(f"Profit margin of <strong>{pm_val*100:.1f}%</strong> suggests pricing power / cost moat.")
+    elif pm_val > 0.10:
+        moat_bullets.append(f"Profit margin of <strong>{pm_val*100:.1f}%</strong> — moderate pricing power.")
+
+    peers = data.get("peers", [])
+    if peers:
+        peer_names = [p.get("name", "") for p in peers[:4] if p.get("name")]
+        if peer_names:
+            moat_bullets.append(f"Key competitors: {', '.join(peer_names)}.")
+
+    for p in pros_list:
+        lp = p.lower()
+        if any(kw in lp for kw in ["market leader", "brand", "moat", "dominant", "monopoly", "leader", "scale"]):
+            moat_bullets.append(p)
+            break
+    if not moat_bullets:
+        moat_bullets.append("Competitive analysis data limited.")
+
+    # -- 3. Catalysts --
+    catalyst_bullets = []
+    for p in pros_list:
+        lp = p.lower()
+        if any(kw in lp for kw in ["launch", "expand", "partner", "approv", "new", "grow", "capex", "invest", "capacity", "enter"]):
+            catalyst_bullets.append(p)
+    for ni in news_items[:5]:
+        title_l = ni.get("title", "").lower()
+        if any(kw in title_l for kw in ["launch", "partner", "deal", "acqui", "expan", "approv", "regul", "invest", "order", "contract"]):
+            catalyst_bullets.append(f'{ni["title"]} <span style="color:var(--text3);">({ni.get("publisher", "")})</span>')
+    if rev_growth and rev_growth > 0.15:
+        catalyst_bullets.append(f"Revenue growing at <strong>{rev_growth*100:.0f}%</strong> — strong top-line momentum.")
+    if earn_growth and earn_growth > 0.20:
+        catalyst_bullets.append(f"Earnings growth of <strong>{earn_growth*100:.0f}%</strong> signals execution on profitability.")
+    if not catalyst_bullets:
+        catalyst_bullets.append("No specific near-term catalysts identified from available data.")
+    catalyst_bullets = catalyst_bullets[:5]
+
+    # -- 4. Asymmetry Check --
+    asym_bullets = []
+    target_mean_price = safe_get(info, "targetMeanPrice", 0) or 0
+    target_high = safe_get(info, "targetHighPrice", 0) or 0
+    target_low = safe_get(info, "targetLowPrice", 0) or 0
+    if target_mean_price and current_price:
+        upside = (target_mean_price - current_price) / current_price * 100
+        downside_floor = (target_low - current_price) / current_price * 100 if target_low else 0
+        upside_ceiling = (target_high - current_price) / current_price * 100 if target_high else 0
+        asym_bullets.append(f"Analyst target range: ₹{target_low:,.0f} — ₹{target_high:,.0f} (mean ₹{target_mean_price:,.0f}, {n_analysts} analysts).")
+        if upside_ceiling > 0 and abs(downside_floor) > 0:
+            ratio = abs(upside_ceiling / downside_floor) if downside_floor != 0 else float('inf')
+            if ratio > 2:
+                asym_bullets.append(f"<strong style='color:var(--green);'>Favorable asymmetry</strong> — upside potential of <strong>{upside_ceiling:+.0f}%</strong> vs downside floor of <strong>{downside_floor:+.0f}%</strong> ({ratio:.1f}x reward-to-risk).")
+            elif ratio > 1:
+                asym_bullets.append(f"<strong style='color:var(--amber);'>Moderate asymmetry</strong> — upside {upside_ceiling:+.0f}% vs downside {downside_floor:+.0f}% ({ratio:.1f}x).")
+            else:
+                asym_bullets.append(f"<strong style='color:var(--red);'>Unfavorable asymmetry</strong> — limited upside {upside_ceiling:+.0f}% vs downside {downside_floor:+.0f}% ({ratio:.1f}x).")
+    pe_asym = safe_get(info, "trailingPE", 0) or 0
+    if pe_asym > 0:
+        if pe_asym < 15:
+            asym_bullets.append(f"P/E of {pe_asym:.1f}x — <strong>low valuation floor</strong>, limited downside from de-rating.")
+        elif pe_asym > 40:
+            asym_bullets.append(f"P/E of {pe_asym:.1f}x — <strong>premium valuation</strong>, growth must sustain to avoid de-rating risk.")
+        else:
+            asym_bullets.append(f"P/E of {pe_asym:.1f}x — fair value territory; catalysts needed for re-rating.")
+    for c in cons_list:
+        lc = c.lower()
+        if any(kw in lc for kw in ["expensive", "high valuation", "overvalued", "debt", "slow"]):
+            asym_bullets.append(f'<span style="color:var(--red);">⚠</span> {c}')
+            break
+    if not asym_bullets:
+        asym_bullets.append("Insufficient analyst data for asymmetry assessment.")
+
+    # -- 5. Future Outlook --
+    outlook_bullets = []
+    if rec_key:
+        rec_label = rec_key.replace("_", " ").title()
+        outlook_bullets.append(f"Analyst consensus: <strong>{rec_label}</strong> ({n_analysts} analysts).")
+    if earn_q_growth is not None:
+        if earn_q_growth > 0.10:
+            outlook_bullets.append(f"Latest quarter earnings grew <strong>{earn_q_growth*100:.0f}%</strong> YoY — positive trajectory.")
+        elif earn_q_growth < -0.10:
+            outlook_bullets.append(f"Latest quarter earnings declined <strong>{earn_q_growth*100:.0f}%</strong> YoY — watch for recovery signals.")
+        else:
+            outlook_bullets.append(f"Latest quarter earnings change: <strong>{earn_q_growth*100:+.0f}%</strong> YoY — relatively flat.")
+    for p in pros_list:
+        if p not in catalyst_bullets:
+            lp = p.lower()
+            if any(kw in lp for kw in ["growth", "future", "potential", "opportunity", "margin", "improv"]):
+                outlook_bullets.append(p)
+                break
+    for c in cons_list:
+        lc = c.lower()
+        if any(kw in lc for kw in ["risk", "threat", "decline", "slow", "head", "regulatory"]):
+            outlook_bullets.append(f'<span style="color:var(--amber);">Risk:</span> {c}')
+            break
+    if not outlook_bullets:
+        outlook_bullets.append("Limited forward-looking data available.")
+
+    def _bullets_html(items, accent_color="#3d9cf5"):
+        return "".join(f'<li style="margin-bottom:6px;">{it}</li>' for it in items)
+
+    company_overview_html = f'''
   <div class="section">
-    <div class="section-title">🏢 Company Overview</div>
-    {"<p style='font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px;'>" + about_text + "</p>" if about_text else ""}
-    <div class="dual-col">
-      <div class="col-card" style="border-left:3px solid var(--green);">
-        <div class="col-title" style="color:var(--green);">PROS</div>
-        <ul style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;padding-left:16px;">{pros_html_items if pros_html_items else "<li style='color:var(--text3);'>No specific pros identified</li>"}</ul>
+    <div class="section-title">🏢 Company Analysis · {company_name}</div>
+    <div style="display:grid;grid-template-columns:1fr;gap:14px;">
+
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--blue);">
+        <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--blue);margin-bottom:8px;">💼 BUSINESS MODEL</div>
+        <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;">{_bullets_html(biz_bullets)}</ul>
       </div>
-      <div class="col-card" style="border-left:3px solid var(--red);">
-        <div class="col-title" style="color:var(--red);">CONS</div>
-        <ul style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;padding-left:16px;">{cons_html_items if cons_html_items else "<li style='color:var(--text3);'>No specific cons identified</li>"}</ul>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--purple);">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--purple);margin-bottom:8px;">🏰 MOAT &amp; COMPETITION</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;">{_bullets_html(moat_bullets)}</ul>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--green);">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--green);margin-bottom:8px;">🚀 CATALYSTS</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;">{_bullets_html(catalyst_bullets)}</ul>
+        </div>
       </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--amber);">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--amber);margin-bottom:8px;">⚖️ ASYMMETRY CHECK</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;">{_bullets_html(asym_bullets)}</ul>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid #3d9cf5;">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:#3d9cf5;margin-bottom:8px;">🔭 FUTURE OUTLOOK</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;">{_bullets_html(outlook_bullets)}</ul>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--green);">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--green);margin-bottom:8px;">✅ PROS</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;">{"".join(f"<li style='margin-bottom:4px;color:var(--green);'>{p}</li>" for p in pros_list[:6]) or "<li style='color:var(--text3);'>None identified</li>"}</ul>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--red);">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--red);margin-bottom:8px;">❌ CONS</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;">{"".join(f"<li style='margin-bottom:4px;color:var(--red);'>{c}</li>" for c in cons_list[:6]) or "<li style='color:var(--text3);'>None identified</li>"}</ul>
+        </div>
+      </div>
+
     </div>
   </div>'''
 
@@ -2289,9 +2574,10 @@ def generate_html_report(data, scores):
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">{cards}</div>
   </div>'''
 
-    # ── PE & PB trend charts ──
+    # ── Valuation trend carousel (P/E, P/B, MCap/Sales, EPS) ──
     eps_series = screener.get("eps_series")
     bv_series = screener.get("bv_series")
+    sales_series = screener.get("sales_series")
 
     pe_chart_data = None
     if eps_series and eps_series.get("values"):
@@ -2313,18 +2599,47 @@ def generate_html_report(data, scores):
                 pb_values.append(None)
         pb_chart_data = {"headers": bv_series["headers"], "values": pb_values}
 
-    pe_svg = generate_pe_pb_chart_svg(pe_chart_data, label="P/E", color="#3d9cf5") if pe_chart_data else ""
-    pb_svg = generate_pe_pb_chart_svg(pb_chart_data, label="P/B", color="#9b7fff") if pb_chart_data else ""
+    mcap_sales_data = None
+    if sales_series and sales_series.get("values") and market_cap:
+        mcap_cr = market_cap / 1e7
+        ms_values = []
+        for v in sales_series["values"]:
+            ms_values.append(mcap_cr / v if v is not None and v > 0 else None)
+        mcap_sales_data = {"headers": sales_series["headers"], "values": ms_values}
+
+    eps_trend_data = None
+    if eps_series and eps_series.get("values"):
+        eps_trend_data = {"headers": eps_series["headers"], "values": eps_series["values"]}
+
+    unavail = '<div style="color:var(--text3);font-size:11px;text-align:center;padding:40px 0;">Data unavailable</div>'
+    carousel_charts = [
+        ("P/E", "#3d9cf5", pe_chart_data, "P/E Ratio at current CMP"),
+        ("P/B", "#9b7fff", pb_chart_data, "P/B Ratio at current CMP"),
+        ("MCap/Sales", "#f5a623", mcap_sales_data, "Market Cap to Sales at current MCap"),
+        ("EPS", "#00e5a0", eps_trend_data, "Earnings Per Share (₹)"),
+    ]
+
+    carousel_panels = ""
+    carousel_btns = ""
+    has_any_chart = False
+    for i, (lbl, clr, cdata, subtitle) in enumerate(carousel_charts):
+        svg = generate_pe_pb_chart_svg(cdata, label=lbl, color=clr) if cdata else ""
+        if svg:
+            has_any_chart = True
+        active = " active" if i == 0 else ""
+        hidden = "" if i == 0 else ' style="display:none;"'
+        carousel_btns += f'<button class="tf-btn{active}" data-idx="{i}">{lbl}</button>'
+        carousel_panels += f'<div class="vt-panel" id="vt-panel-{i}"{hidden}><div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;letter-spacing:1px;text-transform:uppercase;">{subtitle}</div>{svg if svg else unavail}</div>'
 
     pe_pb_section_html = ""
-    if pe_svg or pb_svg:
+    if has_any_chart:
         pe_pb_section_html = f'''
   <div class="section">
-    <div class="section-title">📉 P/E & P/B Trend (at current CMP)</div>
-    <div class="dual-col">
-      <div class="col-card"><div class="col-title">P/E RATIO TREND</div>{pe_svg if pe_svg else '<div style="color:var(--text3);font-size:11px;text-align:center;padding:20px;">P/E data unavailable</div>'}</div>
-      <div class="col-card"><div class="col-title">P/B RATIO TREND</div>{pb_svg if pb_svg else '<div style="color:var(--text3);font-size:11px;text-align:center;padding:20px;">P/B data unavailable</div>'}</div>
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>📉 Valuation Trends (at current CMP)</span>
+      <div class="tf-btns" id="vt-btns">{carousel_btns}</div>
     </div>
+    {carousel_panels}
   </div>'''
 
     # ── Quarterly table HTML (with QoQ %) ──
@@ -2378,6 +2693,94 @@ def generate_html_report(data, scores):
 
     if not yoy_rows_html:
         yoy_rows_html = '<tr><td colspan="7" style="text-align:center;color:var(--text3);">Annual data not available</td></tr>'
+
+    # ── Revenue vs Earnings chart data (for interactive JS chart) ──
+    fin_chart_data = {"quarterly": [], "annual": []}
+    for q in quarterly_rows:
+        entry = {"label": q.get("quarter", "?"), "rev": None, "profit": None, "eps": None}
+        if q.get("revenue_cr") is not None:
+            entry["rev"] = round(q["revenue_cr"] / 1e7, 2) if q["revenue_cr"] > 1e8 else round(q["revenue_cr"], 0)
+        if q.get("profit_cr") is not None:
+            entry["profit"] = round(q["profit_cr"] / 1e7, 2) if abs(q["profit_cr"]) > 1e8 else round(q["profit_cr"], 0)
+        # Extract quarterly EPS (raw per-share value, not in Crores)
+        qi = data.get("quarterly_income")
+        if qi is not None and not qi.empty:
+            dt = q.get("date")
+            if dt is not None and dt in qi.columns:
+                for ek in ["Diluted EPS", "Basic EPS"]:
+                    if ek in qi.index:
+                        ev = qi.loc[ek, dt]
+                        if ev is not None and not (isinstance(ev, float) and math.isnan(ev)):
+                            entry["eps"] = round(float(ev), 2)
+                            break
+        fin_chart_data["quarterly"].append(entry)
+    for a in annual_rows:
+        entry = {"label": a.get("fy", "?"), "rev": None, "profit": None, "eps": None}
+        if a.get("revenue_cr") is not None:
+            entry["rev"] = round(a["revenue_cr"] / 1e7, 2) if a["revenue_cr"] > 1e8 else round(a["revenue_cr"], 0)
+        if a.get("profit_cr") is not None:
+            entry["profit"] = round(a["profit_cr"] / 1e7, 2) if abs(a["profit_cr"]) > 1e8 else round(a["profit_cr"], 0)
+        fi = data.get("financials")
+        if fi is not None and not fi.empty:
+            dt = a.get("date")
+            if dt is not None and dt in fi.columns:
+                for ek in ["Diluted EPS", "Basic EPS"]:
+                    if ek in fi.index:
+                        ev = fi.loc[ek, dt]
+                        if ev is not None and not (isinstance(ev, float) and math.isnan(ev)):
+                            entry["eps"] = round(float(ev), 2)
+                            break
+        fin_chart_data["annual"].append(entry)
+
+    # Determine scale label
+    _any_q_rev = any(q.get("revenue_cr") and q["revenue_cr"] > 1e8 for q in quarterly_rows)
+    _any_a_rev = any(a.get("revenue_cr") and a["revenue_cr"] > 1e8 for a in annual_rows)
+    fin_chart_data["scale"] = "₹ Cr (÷ 10M)" if (_any_q_rev or _any_a_rev) else "₹ Cr"
+
+    import json as _json2
+    fin_chart_json = _json2.dumps(fin_chart_data, separators=(",", ":"))
+
+    # ── Earnings estimates vs actual (target vs achieved) ──
+    earnings_hist_data = []
+    eh = data.get("earnings_history")
+    def _safe_eps_float(v):
+        if v is None:
+            return None
+        try:
+            fv = float(v)
+            return None if math.isnan(fv) else fv
+        except (ValueError, TypeError):
+            return None
+
+    if eh is not None and hasattr(eh, 'empty') and not eh.empty:
+        for _, row in eh.iterrows():
+            try:
+                dt_val = row.name if hasattr(row.name, 'strftime') else None
+                label = dt_val.strftime("%b %Y") if dt_val else str(row.name)
+                est_f = _safe_eps_float(row.get("epsEstimate") if "epsEstimate" in row.index else None)
+                act_f = _safe_eps_float(row.get("epsActual") if "epsActual" in row.index else None)
+                sur_f = _safe_eps_float(row.get("surprisePercent") if "surprisePercent" in row.index else None)
+                if est_f is not None or act_f is not None:
+                    earnings_hist_data.append({
+                        "label": label,
+                        "estimate": round(est_f, 2) if est_f is not None else None,
+                        "actual": round(act_f, 2) if act_f is not None else None,
+                        "surprise": round(sur_f, 1) if sur_f is not None else None,
+                    })
+            except Exception:
+                continue
+    elif eh is not None and isinstance(eh, list):
+        for item in eh:
+            try:
+                earnings_hist_data.append({
+                    "label": str(item.get("date", item.get("quarter", "?"))),
+                    "estimate": round(float(item["epsEstimate"]), 2) if item.get("epsEstimate") else None,
+                    "actual": round(float(item["epsActual"]), 2) if item.get("epsActual") else None,
+                    "surprise": round(float(item["surprisePercent"]), 1) if item.get("surprisePercent") else None,
+                })
+            except Exception:
+                continue
+    earnings_hist_json = _json2.dumps(earnings_hist_data, separators=(",", ":"))
 
     # ── Shareholding section HTML (prefer Screener.in QoQ data) ──
     screener = data.get("screener") or {}
@@ -2565,24 +2968,33 @@ def generate_html_report(data, scores):
 
     upside = ((target_mean - current_price) / current_price * 100) if target_mean and current_price and current_price > 0 else 0
 
+    # Sector benchmarks for metric card evaluation
+    bench = get_sector_bench(sector)
+    _pe_cheap, _pe_fair, _pe_exp = bench["pe"]
+    _pb_cheap, _pb_fair, _pb_exp = bench["pb"]
+    _roe_mod, _roe_good = bench["roe"]
+    _margin_mod, _margin_good = bench["margin"]
+    _rg_mod, _rg_strong = bench["rev_growth"]
+    _eg_mod, _eg_strong = bench["earn_growth"]
+
     # Card status with tooltip reason
     def cs(val, good, bad, metric_name="", lower_better=False):
         if val is None:
             return "caution", f"{metric_name}: Data unavailable"
         if lower_better:
             if val <= good:
-                return "beat", f"{metric_name} at {val:.1f} is below {good} — attractive"
+                return "beat", f"{metric_name} at {val:.1f} is below {good:.1f} (sector norm) — attractive"
             elif val <= bad:
-                return "caution", f"{metric_name} at {val:.1f} is between {good} and {bad} — moderate"
+                return "caution", f"{metric_name} at {val:.1f} is between {good:.1f} and {bad:.1f} (sector norm) — moderate"
             else:
-                return "miss", f"{metric_name} at {val:.1f} exceeds {bad} — elevated"
+                return "miss", f"{metric_name} at {val:.1f} exceeds {bad:.1f} (sector norm) — elevated"
         else:
             if val >= good:
-                return "beat", f"{metric_name} at {val:.1f} exceeds {good} — strong"
+                return "beat", f"{metric_name} at {val:.1f} exceeds {good:.1f} (sector norm) — strong"
             elif val >= bad:
-                return "caution", f"{metric_name} at {val:.1f} is between {bad} and {good} — moderate"
+                return "caution", f"{metric_name} at {val:.1f} is between {bad:.1f} and {good:.1f} (sector norm) — moderate"
             else:
-                return "miss", f"{metric_name} at {val:.1f} is below {bad} — weak"
+                return "miss", f"{metric_name} at {val:.1f} is below {bad:.1f} (sector norm) — weak"
 
     # ── Industry averages from peer data ──
     def _median(vals):
@@ -2597,16 +3009,16 @@ def generate_html_report(data, scores):
     ind_roce = _median([p["roce"] for p in all_peers if p.get("roce") is not None])
     ind_dy = _median([p["div_yield"] for p in all_peers if p.get("div_yield") is not None and p["div_yield"] > 0])
 
-    # Pre-compute metric card statuses
-    pe_cls, pe_tip = cs(pe_ratio, 20, 40, "P/E", True) if pe_ratio else ("caution", "P/E: Data unavailable")
-    pb_cls, pb_tip = cs(pb_ratio, 3, 10, "P/B", True) if pb_ratio else ("caution", "P/B: Data unavailable")
-    roe_cls, roe_tip = cs(roe * 100, 15, 8, "ROE %") if roe else ("caution", "ROE: Data unavailable")
-    pm_cls, pm_tip = cs(profit_margin * 100, 10, 0, "Profit Margin %") if profit_margin else ("caution", "Profit Margin: Data unavailable")
+    # Pre-compute metric card statuses (sector-relative thresholds)
+    pe_cls, pe_tip = cs(pe_ratio, _pe_fair, _pe_exp, "P/E", True) if pe_ratio else ("caution", "P/E: Data unavailable")
+    pb_cls, pb_tip = cs(pb_ratio, _pb_fair, _pb_exp, "P/B", True) if pb_ratio else ("caution", "P/B: Data unavailable")
+    roe_cls, roe_tip = cs(roe * 100, _roe_good * 100, _roe_mod * 100, "ROE %") if roe else ("caution", "ROE: Data unavailable")
+    pm_cls, pm_tip = cs(profit_margin * 100, _margin_good * 100, _margin_mod * 100, "Profit Margin %") if profit_margin else ("caution", "Profit Margin: Data unavailable")
     opm_pct = operating_margin * 100 if operating_margin else None
-    opm_cls, opm_tip = cs(opm_pct, 15, 5, "OPM %") if opm_pct is not None else ("caution", "Operating Margin: Data unavailable")
+    opm_cls, opm_tip = cs(opm_pct, _margin_good * 100 * 0.75, _margin_mod * 100 * 0.5, "OPM %") if opm_pct is not None else ("caution", "Operating Margin: Data unavailable")
     tgt_cls = "beat" if target_mean > current_price else "miss" if target_mean else "caution"
     tgt_tip = f"Analyst target ₹{target_mean:,.0f} vs CMP ₹{current_price:,.0f} — {'upside' if target_mean > current_price else 'downside'}" if target_mean else "Analyst target: Data unavailable"
-    yahoo_analysis_url = f"https://finance.yahoo.com/quote/{ticker_symbol}.NS/analysis/"
+    yahoo_analysis_url = f"https://finance.yahoo.com/quote/{ticker_symbol}.NS/analyst-price-targets/"
     peg_cls, peg_tip = cs(peg_ratio, 1.0, 2.0, "PEG", True) if peg_ratio else ("caution", "PEG: Data unavailable")
     eve_cls, eve_tip = cs(ev_ebitda, 12, 20, "EV/EBITDA", True) if ev_ebitda else ("caution", "EV/EBITDA: Data unavailable")
     cr_cls, cr_tip = cs(current_ratio, 1.5, 1.0, "Current Ratio") if current_ratio else ("caution", "Current Ratio: Data unavailable")
@@ -2615,20 +3027,20 @@ def generate_html_report(data, scores):
     roa_cls, roa_tip = cs(roa * 100, 10, 5, "ROA %") if roa else ("caution", "ROA: Data unavailable")
     gm_cls, gm_tip = cs(gross_margin * 100, 40, 20, "Gross Margin %") if gross_margin else ("caution", "Gross Margin: Data unavailable")
 
-    # Determine catalysts and risks dynamically
+    # Determine catalysts and risks dynamically (sector-relative)
     catalysts = []
     risks = []
 
-    if rev_growth and rev_growth > 0.15:
-        catalysts.append(f"<strong>Revenue Growth {rev_growth*100:.0f}%:</strong> Strong top-line momentum indicating market demand.")
+    if rev_growth and rev_growth > _rg_strong:
+        catalysts.append(f"<strong>Revenue Growth {rev_growth*100:.0f}%:</strong> Above sector norm of {_rg_strong*100:.0f}% — strong top-line momentum.")
     elif rev_growth and rev_growth > 0:
         catalysts.append(f"<strong>Positive Revenue Growth:</strong> Revenue growing at {rev_growth*100:.1f}% YoY.")
 
-    if roe and roe > 0.15:
-        catalysts.append(f"<strong>High ROE ({roe*100:.1f}%):</strong> Strong return on equity indicating efficient capital use.")
+    if roe and roe > _roe_good:
+        catalysts.append(f"<strong>High ROE ({roe*100:.1f}%):</strong> Above sector norm of {_roe_good*100:.0f}% — efficient capital use.")
 
-    if profit_margin and profit_margin > 0.1:
-        catalysts.append(f"<strong>Healthy Margins ({profit_margin*100:.1f}%):</strong> Good profitability profile.")
+    if profit_margin and profit_margin > _margin_good:
+        catalysts.append(f"<strong>Healthy Margins ({profit_margin*100:.1f}%):</strong> Above sector norm of {_margin_good*100:.0f}%.")
 
     if upside > 10:
         catalysts.append(f"<strong>Analyst Upside ({upside:.0f}%):</strong> Mean target of ₹{target_mean:.0f} above current price.")
@@ -2636,22 +3048,23 @@ def generate_html_report(data, scores):
     if beta and beta < 1.0:
         catalysts.append(f"<strong>Low Beta ({beta:.2f}):</strong> Less volatile than market — defensive play.")
 
-    if earnings_growth and earnings_growth > 0.1:
-        catalysts.append(f"<strong>Earnings Growth ({earnings_growth*100:.0f}%):</strong> Strong profit expansion.")
+    if earnings_growth and earnings_growth > _eg_mod:
+        catalysts.append(f"<strong>Earnings Growth ({earnings_growth*100:.0f}%):</strong> Above sector norm — strong profit expansion.")
 
     if len(catalysts) < 3:
         catalysts.append(f"<strong>Sector Opportunity:</strong> {sector} / {industry} — positioned in growth sector.")
 
-    if pe_ratio and pe_ratio > 50:
-        risks.append(f"<strong>High P/E ({pe_ratio:.1f}x):</strong> Expensive valuation leaves little room for error.")
-    elif pe_ratio and pe_ratio > 30:
-        risks.append(f"<strong>Moderate P/E ({pe_ratio:.1f}x):</strong> Valuation premium to broad market.")
+    if pe_ratio and pe_ratio > _pe_exp * 1.5:
+        risks.append(f"<strong>High P/E ({pe_ratio:.1f}x):</strong> Well above sector expensive threshold of {_pe_exp:.0f}x — leaves little room for error.")
+    elif pe_ratio and pe_ratio > _pe_exp:
+        risks.append(f"<strong>Elevated P/E ({pe_ratio:.1f}x):</strong> Above sector expensive threshold of {_pe_exp:.0f}x.")
 
-    if pb_ratio and pb_ratio > 10:
-        risks.append(f"<strong>High P/B ({pb_ratio:.1f}x):</strong> Significant book value premium.")
+    if pb_ratio and pb_ratio > _pb_exp * 1.5:
+        risks.append(f"<strong>High P/B ({pb_ratio:.1f}x):</strong> Well above sector expensive threshold of {_pb_exp:.0f}x.")
 
-    if debt_equity and debt_equity > 100:
-        risks.append(f"<strong>High Debt/Equity ({debt_equity:.0f}%):</strong> Leverage could amplify downside risk.")
+    _de_ok, _de_high = bench["de"]
+    if debt_equity and debt_equity > _de_high:
+        risks.append(f"<strong>High Debt/Equity ({debt_equity:.0f}%):</strong> Above sector threshold of {_de_high:.0f}% — leverage risk.")
 
     if beta and beta > 1.3:
         risks.append(f"<strong>High Beta ({beta:.2f}):</strong> More volatile than market — higher swing risk.")
@@ -2750,17 +3163,17 @@ def generate_html_report(data, scores):
         buy_reasons.append(f"ROCE at {roce_str_dm} indicates strong capital efficiency")
     if fii_trend_str and "rising" in fii_trend_str:
         buy_reasons.append(f"{fii_trend_str} — signals institutional confidence")
-    if roe and roe > 0.15:
-        buy_reasons.append(f"ROE of {roe*100:.1f}% above sector threshold")
-    if rev_growth and rev_growth > 0.1:
-        buy_reasons.append(f"Revenue growing at {rev_growth*100:.1f}% YoY")
-    if opm_pct and opm_pct > 15:
-        buy_reasons.append(f"Operating margin of {opm_str} shows pricing power")
+    if roe and roe > _roe_good:
+        buy_reasons.append(f"ROE of {roe*100:.1f}% above sector norm of {_roe_good*100:.0f}%")
+    if rev_growth and rev_growth > _rg_mod:
+        buy_reasons.append(f"Revenue growing at {rev_growth*100:.1f}% YoY (sector norm: {_rg_mod*100:.0f}%)")
+    if opm_pct and opm_pct > _margin_good * 100:
+        buy_reasons.append(f"Operating margin of {opm_str} shows pricing power (sector norm: {_margin_good*100:.0f}%)")
 
     if pe_ratio and sector_median_pe and pe_ratio > sector_median_pe * 1.2:
         sell_reasons.append(f"P/E of {pe_ratio:.1f}x is {pe_ratio/sector_median_pe:.1f}x the sector median of {sector_median_pe:.0f}x")
-    elif pe_ratio and pe_ratio > 40:
-        sell_reasons.append(f"P/E of {pe_ratio:.1f}x is elevated — premium priced in")
+    elif pe_ratio and pe_ratio > _pe_exp:
+        sell_reasons.append(f"P/E of {pe_ratio:.1f}x exceeds sector expensive threshold of {_pe_exp:.0f}x")
     if fii_trend_str and "falling" in fii_trend_str:
         sell_reasons.append(f"{fii_trend_str} — institutional exit signal")
     if alt_peer and alt_peer.get("pe") and alt_peer.get("roce") is not None:
@@ -2972,6 +3385,8 @@ def generate_html_report(data, scores):
   .footer {{ text-align:center; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:1px; padding:24px 0; border-top:1px solid var(--border); margin-top:8px; }}
   @keyframes fadeIn {{ from {{ opacity:0; transform:translateY(10px); }} to {{ opacity:1; transform:translateY(0); }} }}
   .section, .stock-header, .gauge-kpi-row, .breakdown-grid, .verdict-card {{ animation: fadeIn 0.6s ease both; }}
+  .fade-target {{ opacity:0; transform:translateY(12px); transition:opacity 0.5s ease, transform 0.5s ease; }}
+  .fade-target.visible {{ opacity:1; transform:translateY(0); }}
   @media (max-width: 768px) {{ .stock-header {{ flex-direction:column; gap:16px; }} .gauge-kpi-row {{ grid-template-columns:1fr; }} .card-grid {{ grid-template-columns:1fr 1fr; }} .breakdown-grid {{ grid-template-columns:1fr; }} .dual-col {{ grid-template-columns:1fr; }} .kpi-strip {{ grid-template-columns:repeat(2,1fr); }} .returns-strip {{ grid-template-columns:repeat(3,1fr); }} .news-grid {{ grid-template-columns:1fr; }} }}
   .tf-btns {{ display:flex; gap:2px; }}
   .tf-btn {{ background:var(--bg4); border:1px solid var(--border); color:var(--text3); font-family:var(--mono); font-size:9px; padding:3px 9px; border-radius:4px; cursor:pointer; transition:all .15s; }}
@@ -3059,12 +3474,16 @@ def generate_html_report(data, scores):
       </div>
       <span class="tf-ret" id="tf-candle-ret"></span>
     </div>
-    <canvas id="cv-candle" style="width:100%;height:280px;display:block;"></canvas>
+    <canvas id="cv-candle" style="width:100%;height:520px;display:block;"></canvas>
   </div>
 
   <div class="section">
-    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets <a href="{yahoo_analysis_url}" target="_blank" class="src-link-header">Source: Yahoo Finance ↗</a></div>
+    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets <a href="{yahoo_analysis_url}" target="_blank" class="src-link-header">Source: Yahoo Finance Analyst Targets ↗</a></div>
     {fair_value_svg}
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:8px;line-height:1.6;">
+      Fair value zone = Analyst consensus price target range · Low ₹{fair_value_low:,.0f} · Mean ₹{fair_value_mid:,.0f} · High ₹{fair_value_high:,.0f}
+      {"" if target_mean else " · <span style='color:var(--amber);'>No analyst targets available — using ±25% of CMP as placeholder</span>"}
+    </div>
   </div>
 
   {pe_pb_section_html}
@@ -3164,6 +3583,29 @@ def generate_html_report(data, scores):
     </div>
   </div>
 
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>📈 Revenue vs Earnings</span>
+      <div class="tf-btns" id="fin-toggle">
+        <button class="tf-btn active" data-mode="quarterly">Quarterly</button>
+        <button class="tf-btn" data-mode="annual">Annual</button>
+      </div>
+    </div>
+    <canvas id="cv-fin" style="width:100%;height:280px;display:block;"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>🎯 EPS: Estimate vs Actual</span>
+      <div class="tf-btns" id="eps-toggle">
+        <button class="tf-btn active" data-mode="estimates">Estimates</button>
+        <button class="tf-btn" data-mode="quarterly">Quarterly</button>
+        <button class="tf-btn" data-mode="annual">Annual</button>
+      </div>
+    </div>
+    <canvas id="cv-eps-est" style="width:100%;height:260px;display:block;"></canvas>
+  </div>
+
   {qr_section_html}
 
   {pl_section_html}
@@ -3257,10 +3699,10 @@ function copyReport() {{
   }});
 }}
 const observer = new IntersectionObserver((entries) => {{
-  entries.forEach(entry => {{ if (entry.isIntersecting) {{ entry.target.style.opacity = '1'; entry.target.style.transform = 'translateY(0)'; }} }});
+  entries.forEach(entry => {{ if (entry.isIntersecting) {{ entry.target.classList.add('visible'); }} }});
 }}, {{ threshold: 0.1 }});
-document.querySelectorAll('.section, .breakdown-card, .metric-card').forEach(el => {{
-  el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+document.querySelectorAll('.breakdown-card, .metric-card').forEach(el => {{
+  el.classList.add('fade-target');
   observer.observe(el);
 }});
 
@@ -3273,6 +3715,7 @@ function _setupCanvas(id) {{
   const ctx = c.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const w = c.clientWidth, h = c.clientHeight;
+  if (w === 0 || h === 0) {{ console.warn('Canvas ' + id + ' has zero dimensions:', w, h); return null; }}
   c.width = w * dpr; c.height = h * dpr;
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, w, h);
@@ -3345,11 +3788,26 @@ function drawCandleChart(tf) {{
   if (!s) return;
   const {{ ctx, w, h }} = s;
   const n = d.c.length;
-  const allVals = d.h.concat(d.l);
-  const mn = Math.min(...allVals), mx = Math.max(...allVals);
-  const range = mx - mn || 1;
-  const pad = {{ t:18, b:24, l:55, r:12 }};
-  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+  const L = 55, R = 32;
+  const cw = w - L - R;
+  const hasRsi = d.rsi && d.rsi.some(v => v !== null);
+  const hasMacd = d.macd && d.macd.some(v => v !== null);
+  const panels = 1 + 1 + (hasRsi ? 1 : 0) + (hasMacd ? 1 : 0);
+  const gap = 6;
+  const totalGap = (panels - 1) * gap;
+  const usable = h - 18 - 22 - totalGap;
+  const candleH = usable * 0.50;
+  const volH = usable * 0.12;
+  const rsiH = hasRsi ? usable * (hasMacd ? 0.19 : 0.38) : 0;
+  const macdH = hasMacd ? usable * (hasRsi ? 0.19 : 0.38) : 0;
+  let yOff = 18;
+  const pCandle = {{ t: yOff, h: candleH }};
+  yOff += candleH + gap;
+  const pVol = {{ t: yOff, h: volH }};
+  yOff += volH + gap;
+  const pRsi = {{ t: yOff, h: rsiH }};
+  if (hasRsi) yOff += rsiH + gap;
+  const pMacd = {{ t: yOff, h: macdH }};
 
   const ret = ((d.c[n-1] - d.c[0]) / d.c[0] * 100);
   const retEl = document.getElementById('tf-candle-ret');
@@ -3358,30 +3816,41 @@ function drawCandleChart(tf) {{
     retEl.className = 'tf-ret ' + (ret >= 0 ? 'up' : 'dn');
   }}
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
-  for (let i = 0; i < 5; i++) {{
-    const y = pad.t + (i / 4) * ch;
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
-    const val = mx - (i / 4) * range;
-    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
-    ctx.fillText(val >= 1000 ? val.toFixed(0) : val.toFixed(2), pad.l - 6, y + 3);
+  function xPos(i) {{ return L + ((i + 0.5) / n) * cw; }}
+  function drawGrid(pt, minV, maxV, count, fmt) {{
+    const rng = maxV - minV || 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5;
+    ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'right'; ctx.fillStyle = '#5c5d6e';
+    for (let i = 0; i <= count; i++) {{
+      const y = pt.t + (i / count) * pt.h;
+      ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(w - R, y); ctx.stroke();
+      const val = maxV - (i / count) * rng;
+      ctx.fillText(fmt(val), L - 5, y + 3);
+    }}
   }}
 
-  const nLabels = Math.min(6, n);
-  ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
-  for (let i = 0; i < nLabels; i++) {{
-    const idx = Math.round(i / (nLabels - 1) * (n - 1));
-    const x = pad.l + (idx / (n - 1)) * cw;
-    ctx.fillText(d.d[idx], x, h - 4);
+  // Panel separator lines
+  function drawSep(y, label) {{
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(w - R, y); ctx.stroke();
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'left';
+    ctx.fillText(label, L + 4, y + 10);
   }}
+
+  // ── Candle panel ──
+  const allVals = d.h.concat(d.l);
+  const mn = Math.min(...allVals), mx = Math.max(...allVals);
+  const range = mx - mn || 1;
+  const fmtP = v => v >= 1000 ? v.toFixed(0) : v.toFixed(1);
+  drawGrid(pCandle, mn, mx, 4, fmtP);
 
   const barW = Math.max(1, Math.min(8, (cw / n) * 0.65));
   for (let i = 0; i < n; i++) {{
-    const x = pad.l + ((i + 0.5) / n) * cw;
-    const oY = pad.t + (1 - (d.o[i] - mn) / range) * ch;
-    const cY = pad.t + (1 - (d.c[i] - mn) / range) * ch;
-    const hY = pad.t + (1 - (d.h[i] - mn) / range) * ch;
-    const lY = pad.t + (1 - (d.l[i] - mn) / range) * ch;
+    const x = xPos(i);
+    const oY = pCandle.t + (1 - (d.o[i] - mn) / range) * pCandle.h;
+    const cY = pCandle.t + (1 - (d.c[i] - mn) / range) * pCandle.h;
+    const hY = pCandle.t + (1 - (d.h[i] - mn) / range) * pCandle.h;
+    const lY = pCandle.t + (1 - (d.l[i] - mn) / range) * pCandle.h;
     const bull = d.c[i] >= d.o[i];
     const clr = bull ? '#00e5a0' : '#ff4d6d';
     ctx.strokeStyle = clr; ctx.lineWidth = 1;
@@ -3391,13 +3860,103 @@ function drawCandleChart(tf) {{
     ctx.fillRect(x - barW/2, top, barW, bh);
   }}
 
-  if (n >= 50) {{
-    const ema50 = _calcEMA(d.c, 50);
-    _drawMA(ctx, ema50, n, mn, range, pad, cw, ch, '#f5a623', [5,3]);
+  const ema50 = d.ema50 || (n >= 50 ? _calcEMA(d.c, 50) : null);
+  const sma200 = d.sma200 || (n >= 200 ? _calcSMA(d.c, 200) : null);
+  if (ema50) _drawMA(ctx, ema50, n, mn, range, {{ t: pCandle.t, b: 0, l: L, r: R }}, cw, pCandle.h, '#9b7fff', []);
+  if (sma200) _drawMA(ctx, sma200, n, mn, range, {{ t: pCandle.t, b: 0, l: L, r: R }}, cw, pCandle.h, '#f5a623', [5, 3]);
+
+  ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'left';
+  let lx = L + 4, ly = pCandle.t + 10;
+  if (ema50) {{ const e = ema50.filter(v=>v!==null).pop(); ctx.fillStyle='#9b7fff'; ctx.fillText('── 50 EMA'+(e?' ('+e.toLocaleString('en-IN',{{maximumFractionDigits:0}})+')':''), lx, ly); ly+=11; }}
+  if (sma200) {{ const sv = sma200.filter(v=>v!==null).pop(); ctx.fillStyle='#f5a623'; ctx.fillText('╌╌ 200 DMA'+(sv?' ('+sv.toLocaleString('en-IN',{{maximumFractionDigits:0}})+')':''), lx, ly); }}
+
+  // ── Volume panel ──
+  drawSep(pVol.t, 'VOLUME');
+  const maxVol = Math.max(...d.v);
+  for (let i = 0; i < n; i++) {{
+    const x = xPos(i);
+    const vH = (d.v[i] / maxVol) * pVol.h * 0.85;
+    const bull = d.c[i] >= d.o[i];
+    ctx.fillStyle = bull ? 'rgba(0,229,160,0.3)' : 'rgba(255,77,109,0.3)';
+    ctx.fillRect(x - barW/2, pVol.t + pVol.h - vH, barW, vH);
   }}
-  if (n >= 200) {{
-    const dma200 = _calcSMA(d.c, 200);
-    _drawMA(ctx, dma200, n, mn, range, pad, cw, ch, '#a855f7', []);
+
+  // ── RSI panel ──
+  if (hasRsi) {{
+    drawSep(pRsi.t, 'RSI (14)');
+    ctx.fillStyle = 'rgba(0,229,160,0.04)';
+    const y30 = pRsi.t + (1 - 30/100) * pRsi.h;
+    const y70 = pRsi.t + (1 - 70/100) * pRsi.h;
+    ctx.fillRect(L, y70, cw, y30 - y70);
+    ctx.setLineDash([3,3]); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 0.5;
+    [30, 50, 70].forEach(lv => {{
+      const y = pRsi.t + (1 - lv/100) * pRsi.h;
+      ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(w-R, y); ctx.stroke();
+      ctx.fillStyle = '#5c5d6e'; ctx.font = '7px "Fira Code",monospace'; ctx.textAlign = 'right';
+      ctx.fillText(lv.toString(), L-4, y+3);
+    }});
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#9b7fff'; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    let started = false;
+    d.rsi.forEach((v, i) => {{
+      if (v === null) return;
+      const x = xPos(i);
+      const y = pRsi.t + (1 - v/100) * pRsi.h;
+      if (!started) {{ ctx.moveTo(x, y); started = true; }} else ctx.lineTo(x, y);
+    }});
+    ctx.stroke();
+    const lastRsi = d.rsi.filter(v=>v!==null).pop();
+    if (lastRsi) {{
+      ctx.fillStyle = lastRsi < 30 ? '#00e5a0' : lastRsi > 70 ? '#ff4d6d' : '#9b7fff';
+      ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'left';
+      ctx.fillText(lastRsi.toFixed(0), w - R + 2, pRsi.t + (1 - lastRsi/100) * pRsi.h + 3);
+    }}
+  }}
+
+  // ── MACD panel ──
+  if (hasMacd) {{
+    drawSep(pMacd.t, 'MACD');
+    const mVals = d.macd.filter(v=>v!==null);
+    const sVals = d.macd_sig.filter(v=>v!==null);
+    const hVals = d.macd_hist.filter(v=>v!==null);
+    const allM = mVals.concat(sVals).concat(hVals);
+    if (allM.length) {{
+      const mMn = Math.min(...allM), mMx = Math.max(...allM);
+      const mRng = Math.max(Math.abs(mMn), Math.abs(mMx)) || 1;
+      const mScale = v => pMacd.t + pMacd.h/2 - (v / mRng) * pMacd.h * 0.45;
+      // zero line
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(L, pMacd.t + pMacd.h/2); ctx.lineTo(w-R, pMacd.t + pMacd.h/2); ctx.stroke();
+      // histogram
+      for (let i = 0; i < n; i++) {{
+        const hv = d.macd_hist[i];
+        if (hv === null) continue;
+        const x = xPos(i);
+        const zY = pMacd.t + pMacd.h/2;
+        const bY = mScale(hv);
+        ctx.fillStyle = hv >= 0 ? 'rgba(0,229,160,0.35)' : 'rgba(255,77,109,0.35)';
+        ctx.fillRect(x - barW/2, Math.min(zY, bY), barW, Math.abs(bY - zY));
+      }}
+      // MACD line
+      ctx.strokeStyle = '#3d9cf5'; ctx.lineWidth = 1.2; ctx.beginPath();
+      let ms = false;
+      d.macd.forEach((v,i) => {{ if (v===null) return; const x=xPos(i), y=mScale(v); if(!ms){{ctx.moveTo(x,y);ms=true;}}else ctx.lineTo(x,y); }});
+      ctx.stroke();
+      // Signal line
+      ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 1; ctx.setLineDash([3,2]); ctx.beginPath();
+      let ss = false;
+      d.macd_sig.forEach((v,i) => {{ if (v===null) return; const x=xPos(i), y=mScale(v); if(!ss){{ctx.moveTo(x,y);ss=true;}}else ctx.lineTo(x,y); }});
+      ctx.stroke(); ctx.setLineDash([]);
+    }}
+  }}
+
+  // Date labels at bottom
+  const nLabels = Math.min(6, n);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < nLabels; i++) {{
+    const idx = Math.round(i / (nLabels - 1) * (n - 1));
+    ctx.fillText(d.d[idx], xPos(idx), h - 4);
   }}
 }}
 
@@ -3445,8 +4004,292 @@ function _bindTF(groupId, drawFn, defaultTf) {{
   }});
   drawFn(defaultTf);
 }}
-_bindTF('tf-line', drawLineChart, '1Y');
-_bindTF('tf-candle', drawCandleChart, '6M');
+// Defer all canvas drawing until after layout is computed
+window.addEventListener('DOMContentLoaded', function() {{
+  requestAnimationFrame(function() {{
+    _bindTF('tf-line', drawLineChart, '1Y');
+    _bindTF('tf-candle', drawCandleChart, '6M');
+    if (typeof drawFinChart === 'function') drawFinChart('quarterly');
+    if (typeof drawEpsEstChart === 'function') drawEpsEstChart('estimates');
+  }});
+}});
+
+// Valuation trend carousel
+(function() {{
+  const wrap = document.getElementById('vt-btns');
+  if (!wrap) return;
+  const btns = wrap.querySelectorAll('.tf-btn');
+  btns.forEach(btn => {{
+    btn.addEventListener('click', () => {{
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.vt-panel').forEach(p => p.style.display = 'none');
+      const panel = document.getElementById('vt-panel-' + btn.dataset.idx);
+      if (panel) panel.style.display = '';
+    }});
+  }});
+}})();
+
+// Revenue vs Earnings chart
+const FIN_DATA = {fin_chart_json};
+function drawFinChart(mode) {{
+  const items = FIN_DATA[mode] || [];
+  if (!items.length) return;
+  const c = document.getElementById('cv-fin');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = c.clientHeight;
+  c.width = W * dpr; c.height = H * dpr;
+  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, W, H);
+  const pad = {{ t:24, b:28, l:60, r:50 }};
+  const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
+  const n = items.length;
+  const revs = items.map(d => d.rev || 0);
+  const profs = items.map(d => d.profit || 0);
+  const epsList = items.map(d => d.eps);
+  const hasEps = epsList.some(v => v !== null);
+  const allBars = revs.concat(profs);
+  const barMn = Math.min(0, ...allBars), barMx = Math.max(...allBars);
+  const barRng = barMx - barMn || 1;
+  const yBar = v => pad.t + (1 - (v - barMn) / barRng) * ch;
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5;
+  ctx.font = '8px "Fira Code",monospace'; ctx.fillStyle = '#5c5d6e'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {{
+    const val = barMx - (i / 4) * barRng;
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillText(val >= 1000 ? (val/1000).toFixed(0)+'K' : val.toFixed(0), pad.l - 5, y + 3);
+  }}
+  // zero line
+  if (barMn < 0) {{
+    const zy = yBar(0);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(pad.l, zy); ctx.lineTo(W - pad.r, zy); ctx.stroke();
+  }}
+  // bars
+  const groupW = cw / n;
+  const bw = Math.max(4, groupW * 0.3);
+  for (let i = 0; i < n; i++) {{
+    const cx = pad.l + (i + 0.5) * groupW;
+    // Revenue bar
+    const ry1 = yBar(revs[i]), ry0 = yBar(0);
+    ctx.fillStyle = 'rgba(61,156,245,0.55)';
+    ctx.fillRect(cx - bw - 1, Math.min(ry0, ry1), bw, Math.abs(ry1 - ry0));
+    // Profit bar
+    const py1 = yBar(profs[i]), py0 = yBar(0);
+    ctx.fillStyle = profs[i] >= 0 ? 'rgba(0,229,160,0.55)' : 'rgba(255,77,109,0.55)';
+    ctx.fillRect(cx + 1, Math.min(py0, py1), bw, Math.abs(py1 - py0));
+    // Label
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'center';
+    ctx.fillText(items[i].label, cx, H - 6);
+  }}
+  // EPS line (right axis)
+  if (hasEps) {{
+    const epsVals = epsList.filter(v => v !== null);
+    const eMn = Math.min(...epsVals), eMx = Math.max(...epsVals);
+    const eRng = eMx - eMn || 1;
+    ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 1.5; ctx.setLineDash([4,2]);
+    ctx.beginPath();
+    let started = false;
+    items.forEach((d, i) => {{
+      if (d.eps === null) return;
+      const x = pad.l + (i + 0.5) * groupW;
+      const y = pad.t + (1 - (d.eps - eMn) / eRng) * ch;
+      if (!started) {{ ctx.moveTo(x, y); started = true; }} else ctx.lineTo(x, y);
+    }});
+    ctx.stroke(); ctx.setLineDash([]);
+    // right axis labels
+    ctx.fillStyle = '#f5a623'; ctx.font = '7px "Fira Code",monospace'; ctx.textAlign = 'left';
+    for (let i = 0; i <= 3; i++) {{
+      const val = eMx - (i / 3) * eRng;
+      const y = pad.t + (i / 3) * ch;
+      ctx.fillText('₹'+val.toFixed(1), W - pad.r + 4, y + 3);
+    }}
+  }}
+  // Legend
+  ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'left';
+  let lgx = pad.l + 4;
+  ctx.fillStyle = 'rgba(61,156,245,0.7)'; ctx.fillRect(lgx, pad.t - 14, 10, 8); lgx += 13;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Revenue', lgx, pad.t - 7); lgx += 56;
+  ctx.fillStyle = 'rgba(0,229,160,0.7)'; ctx.fillRect(lgx, pad.t - 14, 10, 8); lgx += 13;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Net Profit', lgx, pad.t - 7); lgx += 66;
+  if (hasEps) {{
+    ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 1.5; ctx.setLineDash([4,2]);
+    ctx.beginPath(); ctx.moveTo(lgx, pad.t - 10); ctx.lineTo(lgx + 14, pad.t - 10); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#9899a8'; ctx.fillText('EPS (right)', lgx + 17, pad.t - 7);
+  }}
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '7px "Fira Code",monospace'; ctx.textAlign = 'left';
+  ctx.fillText(FIN_DATA.scale || '', pad.l, H - 16);
+}}
+// fin-toggle button binding (drawing is triggered from DOMContentLoaded)
+(function() {{
+  const btns = document.querySelectorAll('#fin-toggle .tf-btn');
+  btns.forEach(btn => {{
+    btn.addEventListener('click', () => {{
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      drawFinChart(btn.dataset.mode);
+    }});
+  }});
+}})();
+// eps-toggle button binding
+(function() {{
+  const btns = document.querySelectorAll('#eps-toggle .tf-btn');
+  btns.forEach(btn => {{
+    btn.addEventListener('click', () => {{
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      drawEpsEstChart(btn.dataset.mode);
+    }});
+  }});
+}})();
+
+// EPS Estimate vs Actual chart
+const EPS_EST = {earnings_hist_json};
+function drawEpsEstChart(mode) {{
+  const c = document.getElementById('cv-eps-est');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = c.clientHeight;
+  if (W === 0 || H === 0) return;
+  c.width = W * dpr; c.height = H * dpr;
+  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, W, H);
+
+  if (mode === 'quarterly' || mode === 'annual') {{
+    // EPS trend from financial data
+    const items = FIN_DATA[mode] || [];
+    const epsItems = items.filter(d => d.eps !== null);
+    if (!epsItems.length) {{
+      ctx.fillStyle = '#5c5d6e'; ctx.font = '12px "Fira Code",monospace'; ctx.textAlign = 'center';
+      ctx.fillText('EPS data not available for ' + mode, W/2, H/2);
+      return;
+    }}
+    const pad = {{ t:30, b:34, l:55, r:20 }};
+    const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
+    const n = epsItems.length;
+    const vals = epsItems.map(d => d.eps);
+    const mn = Math.min(...vals) * (Math.min(...vals) > 0 ? 0.8 : 1.2);
+    const mx = Math.max(...vals) * 1.15;
+    const rng = mx - mn || 1;
+    const yV = v => pad.t + (1 - (v - mn) / rng) * ch;
+    // grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5;
+    ctx.font = '8px "Fira Code",monospace'; ctx.fillStyle = '#5c5d6e'; ctx.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) {{
+      const val = mx - (i / 4) * rng;
+      const y = pad.t + (i / 4) * ch;
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+      ctx.fillText('₹'+val.toFixed(1), pad.l - 5, y + 3);
+    }}
+    const groupW = cw / n;
+    const barW = Math.max(12, Math.min(40, groupW * 0.5));
+    const zeroY = yV(0);
+    // bars + value labels
+    epsItems.forEach((d, i) => {{
+      const x = pad.l + (i + 0.5) * groupW;
+      const ey = yV(d.eps);
+      const barTop = Math.min(zeroY, ey);
+      const barH = Math.abs(ey - zeroY);
+      ctx.fillStyle = d.eps >= 0 ? 'rgba(0,229,160,0.5)' : 'rgba(255,77,109,0.5)';
+      ctx.strokeStyle = d.eps >= 0 ? '#00e5a0' : '#ff4d6d';
+      ctx.lineWidth = 1;
+      ctx.fillRect(x - barW/2, barTop, barW, barH);
+      ctx.strokeRect(x - barW/2, barTop, barW, barH);
+      // EPS value above bar
+      ctx.fillStyle = '#e8e9f0'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+      ctx.fillText('₹' + d.eps.toFixed(1), x, ey - 8);
+      // x-axis quarter/year label
+      ctx.fillStyle = '#9899a8'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+      ctx.fillText(d.label, x, H - 10);
+    }});
+    // Legend
+    ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#9899a8';
+    ctx.fillText(mode === 'quarterly' ? 'Quarterly EPS (₹/share)' : 'Annual EPS (₹/share)', pad.l + 4, pad.t - 14);
+    return;
+  }}
+
+  // Estimates mode (default)
+  if (!EPS_EST.length) {{
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '12px "Fira Code",monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Earnings estimate data not available', W/2, H/2);
+    return;
+  }}
+  const pad = {{ t:30, b:34, l:55, r:20 }};
+  const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
+  const n = EPS_EST.length;
+  const allV = EPS_EST.flatMap(d => [d.estimate, d.actual]).filter(v => v !== null);
+  if (!allV.length) return;
+  const mn = Math.min(...allV) * 0.8, mx = Math.max(...allV) * 1.2;
+  const rng = mx - mn || 1;
+  const yV = v => pad.t + (1 - (v - mn) / rng) * ch;
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5;
+  ctx.font = '8px "Fira Code",monospace'; ctx.fillStyle = '#5c5d6e'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {{
+    const val = mx - (i / 4) * rng;
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillText('₹'+val.toFixed(1), pad.l - 5, y + 3);
+  }}
+  const groupW = cw / n;
+  const dotR = 6;
+  // Thin vertical connector between estimate and actual
+  EPS_EST.forEach((d, i) => {{
+    if (d.estimate === null || d.actual === null) return;
+    const x = pad.l + (i + 0.5) * groupW;
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, yV(d.estimate)); ctx.lineTo(x, yV(d.actual)); ctx.stroke();
+  }});
+  // Dots + EPS values + surprise %
+  EPS_EST.forEach((d, i) => {{
+    const x = pad.l + (i + 0.5) * groupW;
+    const hasEst = d.estimate !== null;
+    const hasAct = d.actual !== null;
+    const beat = hasAct && hasEst && d.actual >= d.estimate;
+    // Estimate dot (left offset)
+    if (hasEst) {{
+      const ex = x - 8;
+      const ey = yV(d.estimate);
+      ctx.beginPath(); ctx.arc(ex, ey, dotR, 0, Math.PI*2);
+      ctx.fillStyle = '#9b7fff'; ctx.fill();
+      ctx.strokeStyle = '#08090d'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = '#9b7fff'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'right';
+      ctx.fillText('₹' + d.estimate.toFixed(1), ex - 9, ey + 3);
+    }}
+    // Actual dot (right offset)
+    if (hasAct) {{
+      const ax = x + 8;
+      const ay = yV(d.actual);
+      ctx.beginPath(); ctx.arc(ax, ay, dotR, 0, Math.PI*2);
+      ctx.fillStyle = beat ? '#00e5a0' : '#ff4d6d'; ctx.fill();
+      ctx.strokeStyle = '#08090d'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = beat ? '#00e5a0' : '#ff4d6d'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'left';
+      ctx.fillText('₹' + d.actual.toFixed(1), ax + 9, ay + 3);
+    }}
+    // Surprise % below the pair
+    if (d.surprise !== null) {{
+      ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = d.surprise >= 0 ? '#00e5a0' : '#ff4d6d';
+      const bottomY = Math.max(hasEst ? yV(d.estimate) : 0, hasAct ? yV(d.actual) : 0);
+      ctx.fillText((d.surprise >= 0 ? '+' : '') + d.surprise.toFixed(1) + '%', x, bottomY + 18);
+    }}
+    // x label
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '7px "Fira Code",monospace'; ctx.textAlign = 'center';
+    ctx.fillText(d.label, x, H - 8);
+  }});
+  // Legend
+  ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'left';
+  let lx2 = pad.l + 4;
+  ctx.beginPath(); ctx.arc(lx2 + 4, pad.t - 16, 4, 0, Math.PI*2); ctx.fillStyle = '#9b7fff'; ctx.fill(); lx2 += 12;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Estimate', lx2, pad.t - 13); lx2 += 60;
+  ctx.beginPath(); ctx.arc(lx2 + 4, pad.t - 16, 4, 0, Math.PI*2); ctx.fillStyle = '#00e5a0'; ctx.fill(); lx2 += 12;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Beat', lx2, pad.t - 13); lx2 += 38;
+  ctx.beginPath(); ctx.arc(lx2 + 4, pad.t - 16, 4, 0, Math.PI*2); ctx.fillStyle = '#ff4d6d'; ctx.fill(); lx2 += 12;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Miss', lx2, pad.t - 13);
+}}
 </script>
 </body>
 </html>'''

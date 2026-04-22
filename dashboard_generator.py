@@ -27,14 +27,15 @@ IST = ZoneInfo("Asia/Kolkata")
 
 REPORT_DIRS = {
     "nse": {"dir": "reports", "label": "NSE Stocks", "icon": "🇮🇳", "suffix": "_RiskReport.html", "color": "#3d9cf5"},
-    "us": {"dir": "us_reports", "label": "US Stocks", "icon": "🇺🇸", "suffix": "_RiskReport.html", "color": "#a855f7"},
+    "us": {"dir": "us_reports", "label": "US Stocks", "icon": "🇺🇸", "suffix": "_RiskReport.html", "color": "#9b7fff"},
     "sectors": {"dir": "sector_reports", "label": "Sector Rotation", "icon": "🔄", "file": "SectorRotation_Report.html", "color": "#f5a623"},
     "fno": {"dir": "fno_reports", "label": "F&O Index Outlook", "icon": "📊", "file": "FNO_IndexOutlook_Report.html", "color": "#00e5a0"},
+    "sp500": {"dir": "sp500_reports", "label": "S&P 500 Heatmap", "icon": "🗺️", "file": "SP500_SectorHeatmap.html", "color": "#3d9cf5"},
 }
 
 MARKET_TICKERS = [
     {"symbol": "^NSEI",  "label": "NIFTY 50",   "color": "#3d9cf5"},
-    {"symbol": "^GSPC",  "label": "S&P 500",    "color": "#a855f7"},
+    {"symbol": "^GSPC",  "label": "S&P 500",    "color": "#9b7fff"},
     {"symbol": "GC=F",   "label": "GOLD",       "color": "#f5a623"},
     {"symbol": "SI=F",   "label": "SILVER",     "color": "#9ca3af"},
     {"symbol": "^TNX",   "label": "US 10Y YIELD","color": "#ff4d6d"},
@@ -165,13 +166,13 @@ def generate_dashboard(root: str) -> str:
 
     sections: list[str] = []
 
-    for key in ("nse", "us", "sectors", "fno"):
+    for key in ("nse", "us", "sectors", "fno", "sp500"):
         cfg = REPORT_DIRS[key]
         base = os.path.join(root, cfg["dir"])
         dates = _scan_dates(base)
         color = cfg["color"]
 
-        if key in ("sectors", "fno"):
+        if key in ("sectors", "fno", "sp500"):
             latest_file = cfg["file"]
             latest_path = os.path.join(base, latest_file)
             has_latest = os.path.isfile(latest_path)
@@ -260,7 +261,11 @@ _TEMPLATE = """<!DOCTYPE html>
   --bg:#08090d; --bg2:#0d0e14; --bg3:#12131a; --bg4:#181922;
   --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
   --text:#e8e9f0; --text2:#9899a8; --text3:#5c5d6e;
-  --green:#00e5a0; --red:#ff4d6d; --amber:#f5a623; --blue:#3d9cf5; --purple:#a855f7;
+  --green:#00e5a0; --green-dim:rgba(0,229,160,0.12);
+  --red:#ff4d6d; --red-dim:rgba(255,77,109,0.12);
+  --amber:#f5a623; --amber-dim:rgba(245,166,35,0.12);
+  --blue:#3d9cf5; --blue-dim:rgba(61,156,245,0.12);
+  --purple:#9b7fff;
   --mono:'Fira Code',monospace; --sans:'DM Sans',sans-serif;
 }}
 *,*::before,*::after {{ box-sizing:border-box; margin:0; padding:0; }}
