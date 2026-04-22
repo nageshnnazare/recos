@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>S&P 500 Sector Report — 2026-04-22 14:39</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#08090d; --bg2:#0d0e14; --bg3:#12131a; --bg4:#181922;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
+  --green:#00e5a0; --green-dim:rgba(0,229,160,0.12);
+  --red:#ff4d6d; --red-dim:rgba(255,77,109,0.12);
+  --amber:#f5a623; --amber-dim:rgba(245,166,35,0.12);
+  --blue:#3d9cf5; --blue-dim:rgba(61,156,245,0.12);
+  --purple:#9b7fff;
+  --text:#e8e9f0; --text2:#9899a8; --text3:#5c5d6e;
+  --mono:'Fira Code',monospace; --sans:'DM Sans',sans-serif;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:13px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+
+.page { max-width:1200px; margin:0 auto; padding:24px 22px 60px; }
+
+/* ── Header ──────────────────────────────────────── */
+.header { background:linear-gradient(135deg,#0f1018,#131420 60%,#0d1020); border:1px solid var(--border); border-radius:16px; padding:28px 32px 22px; margin-bottom:20px; position:relative; overflow:hidden; }
+.header::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--blue),transparent); opacity:.5; }
+.header-top { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; }
+.title { font-family:var(--mono); font-size:20px; font-weight:700; color:#fff; letter-spacing:-0.5px; }
+.subtitle { font-family:var(--mono); font-size:11px; color:var(--text3); margin-top:4px; }
+.gen-badge { font-family:var(--mono); font-size:9px; color:var(--text3); background:var(--bg4); padding:4px 12px; border-radius:6px; border:1px solid var(--border); white-space:nowrap; }
+
+/* ── Index Pills ─────────────────────────────────── */
+.idx-strip { display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 6px; }
+.idx-pill { display:flex; align-items:center; gap:8px; background:var(--bg4); border:1px solid var(--border); border-radius:8px; padding:8px 14px; font-family:var(--mono); font-size:11px; }
+.idx-label { color:var(--text2); font-weight:600; font-size:10px; letter-spacing:0.5px; text-transform:uppercase; }
+.idx-price { color:#fff; font-weight:700; }
+.idx-ytd { font-weight:600; }
+.idx-ytd.up { color:var(--green); }
+.idx-ytd.dn { color:var(--red); }
+
+/* ── Sort Buttons ────────────────────────────────── */
+.controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+.controls-label { font-family:var(--mono); font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-right:4px; }
+.sort-btn { font-family:var(--mono); font-size:10px; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); background:var(--bg3); color:var(--text3); cursor:pointer; transition:all .18s; }
+.sort-btn:hover { color:var(--text); border-color:var(--border2); }
+.sort-btn.active { color:#fff; background:var(--bg4); border-color:var(--blue); box-shadow:0 0 8px rgba(61,156,245,0.15); }
+
+/* ── Legend ───────────────────────────────────────── */
+.legend { display:flex; align-items:center; gap:12px; margin-bottom:20px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:12px 18px; }
+.legend-label { font-family:var(--mono); font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; }
+.legend-bar { flex:1; height:10px; border-radius:5px; background:linear-gradient(90deg,#ff4d6d,#f5a623 40%,#4ade80 60%,#00e5a0); }
+.legend-range { display:flex; justify-content:space-between; font-family:var(--mono); font-size:9px; color:var(--text3); flex:1; }
+
+/* ── Sector Grid ─────────────────────────────────── */
+.sector-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; }
+@media(max-width:700px) { .sector-grid { grid-template-columns:1fr; } }
+
+.sector-card { background:var(--card-bg, var(--bg2)); border:1px solid var(--border); border-radius:14px; padding:18px 20px; cursor:pointer; transition:all .22s ease; position:relative; overflow:hidden; }
+.sector-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--card-accent,var(--blue)),transparent); opacity:.35; }
+.sector-card:hover { border-color:var(--card-accent,var(--border2)); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.35); }
+
+.card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+.sector-name { font-family:var(--mono); font-size:14px; font-weight:700; color:#fff; }
+.etf-ticker { font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:2px; }
+.card-desc { font-size:11px; color:var(--text3); margin-bottom:10px; line-height:1.4; }
+
+.ytd-badge { font-family:var(--mono); font-size:16px; font-weight:700; padding:4px 12px; border-radius:8px; white-space:nowrap; }
+.ytd-badge.positive { color:var(--green); background:var(--green-dim); }
+.ytd-badge.negative { color:var(--red); background:var(--red-dim); }
+.ytd-badge.neutral { color:var(--text3); background:var(--bg4); }
+
+.card-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.metric { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:8px 10px; text-align:center; }
+.metric-label { display:block; font-family:var(--mono); font-size:8px; color:var(--text3); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:2px; }
+.metric-value { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--text); }
+.metric-value.positive { color:var(--green); }
+.metric-value.negative { color:var(--red); }
+.metric.rating { border-color:var(--r-color,var(--border)); }
+.metric.rating .metric-value { color:var(--r-color,var(--text)); font-size:10px; }
+
+/* ── Expandable Section ──────────────────────────── */
+.expand-section { max-height:0; overflow:hidden; transition:max-height .4s cubic-bezier(0.4,0,0.2,1), opacity .3s ease; opacity:0; margin-top:0; }
+.sector-card.expanded .expand-section { max-height:600px; opacity:1; margin-top:14px; }
+.expand-block { margin-bottom:14px; }
+.expand-title { font-family:var(--mono); font-size:10px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid var(--border); }
+
+/* Holdings table */
+.holdings-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:10px; }
+.holdings-table th { text-align:left; color:var(--text3); font-size:8px; text-transform:uppercase; letter-spacing:0.8px; padding:4px 6px; border-bottom:1px solid var(--border); }
+.holdings-table td { padding:5px 6px; border-bottom:1px solid rgba(255,255,255,0.03); }
+.h-sym { color:#fff; font-weight:600; }
+.h-name { color:var(--text2); }
+.h-mcap { color:var(--text2); text-align:right; }
+.h-ytd { text-align:right; font-weight:600; }
+.h-ytd.positive { color:var(--green); }
+.h-ytd.negative { color:var(--red); }
+
+/* Cap breakdown bar */
+.cap-bar { display:flex; height:22px; border-radius:6px; overflow:hidden; background:var(--bg4); }
+.cap-seg { display:flex; align-items:center; justify-content:center; min-width:0; transition:width .3s; }
+.cap-seg span { font-family:var(--mono); font-size:8px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 4px; }
+.cap-seg.mega { background:var(--blue); color:#fff; }
+.cap-seg.large { background:var(--purple); color:#fff; }
+.cap-seg.mid { background:var(--amber); color:#08090d; }
+.cap-legend { display:flex; gap:12px; margin-top:6px; }
+.cap-l { font-family:var(--mono); font-size:9px; color:var(--text3); }
+.mega-l { color:var(--blue); }
+.large-l { color:var(--purple); }
+.mid-l { color:var(--amber); }
+
+/* 52-week range */
+.range-track { position:relative; height:8px; background:linear-gradient(90deg,var(--red),var(--amber),var(--green)); border-radius:4px; margin:12px 0 4px; }
+.range-fill { height:100%; border-radius:4px; }
+.range-marker { position:absolute; top:-6px; width:3px; height:20px; background:#fff; border-radius:2px; transform:translateX(-50%); box-shadow:0 0 8px rgba(255,255,255,0.4); }
+.marker-label { position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:9px; font-weight:700; color:#fff; white-space:nowrap; background:var(--bg4); padding:1px 6px; border-radius:3px; }
+.range-labels { display:flex; justify-content:space-between; font-family:var(--mono); font-size:9px; color:var(--text3); }
+
+/* ── Explainer Box ───────────────────────────────── */
+.explainer { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px 26px; margin-top:24px; position:relative; overflow:hidden; }
+.explainer::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--amber),transparent); opacity:.4; }
+.explainer-toggle { font-family:var(--mono); font-size:12px; font-weight:700; color:#fff; cursor:pointer; display:flex; align-items:center; gap:8px; }
+.explainer-toggle::after { content:'▸'; transition:transform .2s; font-size:10px; }
+.explainer.open .explainer-toggle::after { transform:rotate(90deg); }
+.explainer-body { max-height:0; overflow:hidden; transition:max-height .35s ease; }
+.explainer.open .explainer-body { max-height:800px; }
+.explainer-content { padding-top:14px; }
+.explainer-content h4 { font-family:var(--mono); font-size:11px; color:var(--amber); margin:12px 0 4px; }
+.explainer-content h4:first-child { margin-top:0; }
+.explainer-content p { font-size:12px; color:var(--text2); line-height:1.7; margin-bottom:8px; }
+.explainer-content .term { color:var(--green); font-weight:600; }
+
+/* ── Animations ──────────────────────────────────── */
+.fade-in { opacity:0; transform:translateY(20px); transition:opacity .5s ease, transform .5s ease; }
+.fade-in.visible { opacity:1; transform:translateY(0); }
+
+/* ── Footer ──────────────────────────────────────── */
+.footer { text-align:center; margin-top:40px; padding:20px; font-family:var(--mono); font-size:9px; color:var(--text3); line-height:1.8; }
+.footer a { color:var(--blue); text-decoration:none; }
+.footer a:hover { text-decoration:underline; }
+
+/* ── Back link ───────────────────────────────────── */
+.back-link { display:inline-block; font-family:var(--mono); font-size:10px; color:var(--text3); text-decoration:none; margin-bottom:16px; padding:5px 12px; border:1px solid var(--border); border-radius:6px; transition:all .15s; }
+.back-link:hover { color:var(--text); border-color:var(--border2); }
+
+/* ── Scrollbar ───────────────────────────────────── */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <a href="../index.html" class="back-link">← Dashboard</a>
+
+  <div class="header fade-in">
+    <div class="header-top">
+      <div>
+        <div class="title">S&P 500 Sector Report</div>
+        <div class="subtitle">All 11 GICS sectors · Color-coded by YTD performance</div>
+      </div>
+      <div class="gen-badge">Updated 2026-04-22 14:39</div>
+    </div>
+    <div class="idx-strip">
+      <div class="idx-pill">
+      <span class="idx-label">S&P 500</span>
+      <span class="idx-price">7,128</span>
+      <span class="idx-ytd up">+3.92%</span>
+    </div><div class="idx-pill">
+      <span class="idx-label">NASDAQ</span>
+      <span class="idx-price">24,558</span>
+      <span class="idx-ytd up">+5.69%</span>
+    </div><div class="idx-pill">
+      <span class="idx-label">DOW JONES</span>
+      <span class="idx-price">49,550</span>
+      <span class="idx-ytd up">+2.41%</span>
+    </div>
+    </div>
+  </div>
+
+  <div class="controls fade-in">
+    <span class="controls-label">Sort by</span>
+    <button class="sort-btn active" data-sort="ytd" onclick="sortCards('ytd',this)">YTD Return</button>
+    <button class="sort-btn" data-sort="weight" onclick="sortCards('weight',this)">S&P Weight</button>
+    <button class="sort-btn" data-sort="pe" onclick="sortCards('pe',this)">P/E Ratio</button>
+    <button class="sort-btn" data-sort="div" onclick="sortCards('div',this)">Div Yield</button>
+  </div>
+
+  <div class="legend fade-in">
+    <span class="legend-label">YTD Performance</span>
+    <div style="flex:1">
+      <div class="legend-bar"></div>
+      <div class="legend-range">
+        <span>−20%</span>
+        <span>0%</span>
+        <span>+20%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sector-grid" id="sector-grid">
+    
+    <div class="sector-card fade-in" data-ytd="24.31" data-weight="3.4"
+         data-pe="21.731976" data-div="2.44"
+         style="--card-bg:rgba(0,229,160,0.18);--card-accent:#00e5a0" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Energy</div>
+          <div class="etf-ticker">XLE</div>
+        </div>
+        <div class="ytd-badge positive">
+          +24.3%
+        </div>
+      </div>
+      <div class="card-desc">Oil & gas exploration, refining, equipment, pipelines</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">3.4%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+31.7%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+46.6%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">21.7x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">2.4%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#00e5a0">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Outperform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">XOM</td>
+              <td class="h-name">Exxon Mobil Corporatio</td>
+              <td class="h-mcap">$619B</td>
+              <td class="h-ytd positive">+22.3%</td>
+            </tr><tr>
+              <td class="h-sym">CVX</td>
+              <td class="h-name">Chevron Corporation</td>
+              <td class="h-mcap">$373B</td>
+              <td class="h-ytd positive">+21.3%</td>
+            </tr><tr>
+              <td class="h-sym">COP</td>
+              <td class="h-name">ConocoPhillips</td>
+              <td class="h-mcap">$149B</td>
+              <td class="h-ytd positive">+27.1%</td>
+            </tr><tr>
+              <td class="h-sym">SLB</td>
+              <td class="h-name">SLB Limited</td>
+              <td class="h-mcap">$82B</td>
+              <td class="h-ytd positive">+36.7%</td>
+            </tr><tr>
+              <td class="h-sym">EOG</td>
+              <td class="h-name">EOG Resources, Inc.</td>
+              <td class="h-mcap">$71B</td>
+              <td class="h-ytd positive">+26.1%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:76.7%"><span>Mega 76.7%</span></div>
+            <div class="cap-seg large" style="width:23.3%"><span>Large 23.3%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:73.8%">
+              <div class="marker-label">$56.38</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$39.00</span>
+            <span>$62.56</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="13.57" data-weight="2.1"
+         data-pe="27.252321" data-div="1.75"
+         style="--card-bg:rgba(0,229,160,0.10);--card-accent:#00e5a0" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Materials</div>
+          <div class="etf-ticker">XLB</div>
+        </div>
+        <div class="ytd-badge positive">
+          +13.6%
+        </div>
+      </div>
+      <div class="card-desc">Chemicals, metals, mining, packaging, construction</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">2.1%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+18.4%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+33.7%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">27.3x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">1.8%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#3d9cf5">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Market Perform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">LIN</td>
+              <td class="h-name">Linde plc</td>
+              <td class="h-mcap">$232B</td>
+              <td class="h-ytd positive">+17.1%</td>
+            </tr><tr>
+              <td class="h-sym">SHW</td>
+              <td class="h-name">Sherwin-Williams Compa</td>
+              <td class="h-mcap">$84B</td>
+              <td class="h-ytd positive">+3.8%</td>
+            </tr><tr>
+              <td class="h-sym">APD</td>
+              <td class="h-name">Air Products and Chemi</td>
+              <td class="h-mcap">$66B</td>
+              <td class="h-ytd positive">+19.4%</td>
+            </tr><tr>
+              <td class="h-sym">ECL</td>
+              <td class="h-name">Ecolab Inc.</td>
+              <td class="h-mcap">$77B</td>
+              <td class="h-ytd positive">+3.4%</td>
+            </tr><tr>
+              <td class="h-sym">FCX</td>
+              <td class="h-name">Freeport-McMoRan, Inc.</td>
+              <td class="h-mcap">$100B</td>
+              <td class="h-ytd positive">+35.1%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:41.5%"><span>Mega 41.5%</span></div>
+            <div class="cap-seg large" style="width:58.5%"><span>Large 58.5%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:90.8%">
+              <div class="marker-label">$52.15</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$39.91</span>
+            <span>$53.38</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="9.05" data-weight="8.5"
+         data-pe="30.964945" data-div="1.27"
+         style="--card-bg:rgba(0,229,160,0.10);--card-accent:#00e5a0" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Industrials</div>
+          <div class="etf-ticker">XLI</div>
+        </div>
+        <div class="ytd-badge positive">
+          +9.1%
+        </div>
+      </div>
+      <div class="card-desc">Aerospace, defense, machinery, transport, logistics</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">8.5%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+12.6%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+42.1%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">31.0x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">1.3%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#f5a623">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Underperform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">GE</td>
+              <td class="h-name">GE Aerospace</td>
+              <td class="h-mcap">$286B</td>
+              <td class="h-ytd negative">-14.5%</td>
+            </tr><tr>
+              <td class="h-sym">CAT</td>
+              <td class="h-name">Caterpillar, Inc.</td>
+              <td class="h-mcap">$380B</td>
+              <td class="h-ytd positive">+36.4%</td>
+            </tr><tr>
+              <td class="h-sym">UNP</td>
+              <td class="h-name">Union Pacific Corporat</td>
+              <td class="h-mcap">$150B</td>
+              <td class="h-ytd positive">+9.8%</td>
+            </tr><tr>
+              <td class="h-sym">HON</td>
+              <td class="h-name">Honeywell Internationa</td>
+              <td class="h-mcap">$140B</td>
+              <td class="h-ytd positive">+13.5%</td>
+            </tr><tr>
+              <td class="h-sym">RTX</td>
+              <td class="h-name">RTX Corporation</td>
+              <td class="h-mcap">$245B</td>
+              <td class="h-ytd negative">-2.5%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:75.8%"><span>Mega 75.8%</span></div>
+            <div class="cap-seg large" style="width:24.2%"><span>Large 24.2%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:88.1%">
+              <div class="marker-label">$171.79</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$122.97</span>
+            <span>$178.40</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="9.01" data-weight="2.2"
+         data-pe="33.395092" data-div="3.43"
+         style="--card-bg:rgba(0,229,160,0.10);--card-accent:#00e5a0" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Real Estate</div>
+          <div class="etf-ticker">XLRE</div>
+        </div>
+        <div class="ytd-badge positive">
+          +9.0%
+        </div>
+      </div>
+      <div class="card-desc">REITs — data centers, towers, industrial, healthcare</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">2.2%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+4.8%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+14.2%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">33.4x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">3.4%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#3d9cf5">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Market Perform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">PLD</td>
+              <td class="h-name">Prologis, Inc.</td>
+              <td class="h-mcap">$133B</td>
+              <td class="h-ytd positive">+11.2%</td>
+            </tr><tr>
+              <td class="h-sym">AMT</td>
+              <td class="h-name">American Tower Corpora</td>
+              <td class="h-mcap">$82B</td>
+              <td class="h-ytd positive">+1.0%</td>
+            </tr><tr>
+              <td class="h-sym">EQIX</td>
+              <td class="h-name">Equinix, Inc.</td>
+              <td class="h-mcap">$109B</td>
+              <td class="h-ytd positive">+44.9%</td>
+            </tr><tr>
+              <td class="h-sym">WELL</td>
+              <td class="h-name">Welltower Inc.</td>
+              <td class="h-mcap">$143B</td>
+              <td class="h-ytd positive">+8.7%</td>
+            </tr><tr>
+              <td class="h-sym">SPG</td>
+              <td class="h-name">Simon Property Group, </td>
+              <td class="h-mcap">$78B</td>
+              <td class="h-ytd positive">+11.2%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:0.0%"><span>Mega 0.0%</span></div>
+            <div class="cap-seg large" style="width:100.0%"><span>Large 100.0%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:83.6%">
+              <div class="marker-label">$43.72</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$39.06</span>
+            <span>$44.64</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="8.92" data-weight="31.6"
+         data-pe="37.317696" data-div="56.99999999999999"
+         style="--card-bg:rgba(0,229,160,0.10);--card-accent:#00e5a0" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Technology</div>
+          <div class="etf-ticker">XLK</div>
+        </div>
+        <div class="ytd-badge positive">
+          +8.9%
+        </div>
+      </div>
+      <div class="card-desc">Software, hardware, semiconductors, IT services</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">31.6%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+9.2%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+68.1%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">37.3x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">57.0%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#3d9cf5">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Market Perform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">AAPL</td>
+              <td class="h-name">Apple Inc.</td>
+              <td class="h-mcap">$4.0T</td>
+              <td class="h-ytd positive">+0.4%</td>
+            </tr><tr>
+              <td class="h-sym">MSFT</td>
+              <td class="h-name">Microsoft Corporation</td>
+              <td class="h-mcap">$3.2T</td>
+              <td class="h-ytd negative">-8.6%</td>
+            </tr><tr>
+              <td class="h-sym">NVDA</td>
+              <td class="h-name">NVIDIA Corporation</td>
+              <td class="h-mcap">$4.9T</td>
+              <td class="h-ytd positive">+6.4%</td>
+            </tr><tr>
+              <td class="h-sym">AVGO</td>
+              <td class="h-name">Broadcom Inc.</td>
+              <td class="h-mcap">$2.0T</td>
+              <td class="h-ytd positive">+18.8%</td>
+            </tr><tr>
+              <td class="h-sym">CRM</td>
+              <td class="h-name">Salesforce, Inc.</td>
+              <td class="h-mcap">$174B</td>
+              <td class="h-ytd negative">-25.4%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:98.8%"><span>Mega 98.8%</span></div>
+            <div class="cap-seg large" style="width:1.2%"><span>Large 1.2%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:100.0%">
+              <div class="marker-label">$156.97</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$95.68</span>
+            <span>$156.97</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="6.47" data-weight="5.9"
+         data-pe="25.898252" data-div="2.65"
+         style="--card-bg:rgba(0,229,160,0.10);--card-accent:#00e5a0" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Consumer Staples</div>
+          <div class="etf-ticker">XLP</div>
+        </div>
+        <div class="ytd-badge positive">
+          +6.5%
+        </div>
+      </div>
+      <div class="card-desc">Food, beverages, household products, tobacco</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">5.9%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+4.7%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+4.2%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">25.9x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">2.6%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#3d9cf5">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Market Perform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">PG</td>
+              <td class="h-name">Procter & Gamble Compa</td>
+              <td class="h-mcap">$334B</td>
+              <td class="h-ytd positive">+1.4%</td>
+            </tr><tr>
+              <td class="h-sym">COST</td>
+              <td class="h-name">Costco Wholesale Corpo</td>
+              <td class="h-mcap">$446B</td>
+              <td class="h-ytd positive">+17.8%</td>
+            </tr><tr>
+              <td class="h-sym">KO</td>
+              <td class="h-name">Coca-Cola Company (The</td>
+              <td class="h-mcap">$324B</td>
+              <td class="h-ytd positive">+9.6%</td>
+            </tr><tr>
+              <td class="h-sym">PEP</td>
+              <td class="h-name">Pepsico, Inc.</td>
+              <td class="h-mcap">$214B</td>
+              <td class="h-ytd positive">+10.8%</td>
+            </tr><tr>
+              <td class="h-sym">WMT</td>
+              <td class="h-name">Walmart Inc.</td>
+              <td class="h-mcap">$1.0T</td>
+              <td class="h-ytd positive">+15.1%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:100.0%"><span>Mega 100.0%</span></div>
+            <div class="cap-seg large" style="width:0.0%"><span>Large 0.0%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:51.4%">
+              <div class="marker-label">$82.25</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$74.58</span>
+            <span>$89.51</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="5.53" data-weight="2.4"
+         data-pe="22.20176" data-div="2.59"
+         style="--card-bg:rgba(0,229,160,0.10);--card-accent:#00e5a0" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Utilities</div>
+          <div class="etf-ticker">XLU</div>
+        </div>
+        <div class="ytd-badge positive">
+          +5.5%
+        </div>
+      </div>
+      <div class="card-desc">Electric, gas, water utilities, renewables</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">2.4%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+0.3%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+22.6%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">22.2x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">2.6%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#3d9cf5">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Market Perform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">NEE</td>
+              <td class="h-name">NextEra Energy, Inc.</td>
+              <td class="h-mcap">$191B</td>
+              <td class="h-ytd positive">+13.9%</td>
+            </tr><tr>
+              <td class="h-sym">SO</td>
+              <td class="h-name">Southern Company (The)</td>
+              <td class="h-mcap">$105B</td>
+              <td class="h-ytd positive">+7.2%</td>
+            </tr><tr>
+              <td class="h-sym">DUK</td>
+              <td class="h-name">Duke Energy Corporatio</td>
+              <td class="h-mcap">$98B</td>
+              <td class="h-ytd positive">+8.5%</td>
+            </tr><tr>
+              <td class="h-sym">CEG</td>
+              <td class="h-name">Constellation Energy C</td>
+              <td class="h-mcap">$103B</td>
+              <td class="h-ytd negative">-22.1%</td>
+            </tr><tr>
+              <td class="h-sym">SRE</td>
+              <td class="h-name">DBA Sempra</td>
+              <td class="h-mcap">$61B</td>
+              <td class="h-ytd positive">+4.6%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:0.0%"><span>Mega 0.0%</span></div>
+            <div class="cap-seg large" style="width:100.0%"><span>Large 100.0%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:77.3%">
+              <div class="marker-label">$45.25</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$37.92</span>
+            <span>$47.40</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="1.10" data-weight="10.2"
+         data-pe="32.20151" data-div="82.0"
+         style="--card-bg:rgba(0,229,160,0.05);--card-accent:#4ade80" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Consumer Discretionary</div>
+          <div class="etf-ticker">XLY</div>
+        </div>
+        <div class="ytd-badge positive">
+          +1.1%
+        </div>
+      </div>
+      <div class="card-desc">Retail, autos, restaurants, apparel, leisure</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">10.2%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+1.5%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+33.4%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">32.2x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">82.0%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#3d9cf5">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Market Perform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">AMZN</td>
+              <td class="h-name">Amazon.com, Inc.</td>
+              <td class="h-mcap">$2.7T</td>
+              <td class="h-ytd positive">+11.7%</td>
+            </tr><tr>
+              <td class="h-sym">TSLA</td>
+              <td class="h-name">Tesla, Inc.</td>
+              <td class="h-mcap">$1.5T</td>
+              <td class="h-ytd negative">-10.7%</td>
+            </tr><tr>
+              <td class="h-sym">HD</td>
+              <td class="h-name">Home Depot, Inc. (The)</td>
+              <td class="h-mcap">$341B</td>
+              <td class="h-ytd negative">-0.2%</td>
+            </tr><tr>
+              <td class="h-sym">MCD</td>
+              <td class="h-name">McDonald's Corporation</td>
+              <td class="h-mcap">$215B</td>
+              <td class="h-ytd positive">+0.1%</td>
+            </tr><tr>
+              <td class="h-sym">NKE</td>
+              <td class="h-name">Nike, Inc.</td>
+              <td class="h-mcap">$69B</td>
+              <td class="h-ytd negative">-26.3%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:98.6%"><span>Mega 98.6%</span></div>
+            <div class="cap-seg large" style="width:1.4%"><span>Large 1.4%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:84.8%">
+              <div class="marker-label">$119.41</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$92.35</span>
+            <span>$124.27</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="0.95" data-weight="9.1"
+         data-pe="19.044825" data-div="1.26"
+         style="--card-bg:rgba(0,229,160,0.05);--card-accent:#4ade80" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Communication Services</div>
+          <div class="etf-ticker">XLC</div>
+        </div>
+        <div class="ytd-badge positive">
+          +0.9%
+        </div>
+      </div>
+      <div class="card-desc">Social media, telecom, streaming, advertising</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">9.1%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+1.9%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+35.1%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">19.0x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">1.3%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#3d9cf5">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Market Perform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">META</td>
+              <td class="h-name">Meta Platforms, Inc.</td>
+              <td class="h-mcap">$1.7T</td>
+              <td class="h-ytd positive">+3.9%</td>
+            </tr><tr>
+              <td class="h-sym">GOOGL</td>
+              <td class="h-name">Alphabet Inc.</td>
+              <td class="h-mcap">$4.1T</td>
+              <td class="h-ytd positive">+7.3%</td>
+            </tr><tr>
+              <td class="h-sym">GOOG</td>
+              <td class="h-name">Alphabet Inc.</td>
+              <td class="h-mcap">$4.1T</td>
+              <td class="h-ytd positive">+6.5%</td>
+            </tr><tr>
+              <td class="h-sym">NFLX</td>
+              <td class="h-name">Netflix, Inc.</td>
+              <td class="h-mcap">$395B</td>
+              <td class="h-ytd positive">+2.8%</td>
+            </tr><tr>
+              <td class="h-sym">DIS</td>
+              <td class="h-name">Walt Disney Company (T</td>
+              <td class="h-mcap">$187B</td>
+              <td class="h-ytd negative">-5.9%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:98.2%"><span>Mega 98.2%</span></div>
+            <div class="cap-seg large" style="width:1.8%"><span>Large 1.8%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:93.2%">
+              <div class="marker-label">$117.64</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$89.37</span>
+            <span>$119.70</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="-4.27" data-weight="13.5"
+         data-pe="17.644163" data-div="1.6"
+         style="--card-bg:rgba(245,166,35,0.08);--card-accent:#f5a623" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Financials</div>
+          <div class="etf-ticker">XLF</div>
+        </div>
+        <div class="ytd-badge negative">
+          -4.3%
+        </div>
+      </div>
+      <div class="card-desc">Banks, insurance, asset management, fintech</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">13.5%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value negative">-0.0%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+16.4%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">17.6x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">1.6%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#3d9cf5">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Market Perform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">BRK-B</td>
+              <td class="h-name">Berkshire Hathaway Inc</td>
+              <td class="h-mcap">$1.0T</td>
+              <td class="h-ytd negative">-5.7%</td>
+            </tr><tr>
+              <td class="h-sym">JPM</td>
+              <td class="h-name">JP Morgan Chase & Co.</td>
+              <td class="h-mcap">$844B</td>
+              <td class="h-ytd negative">-2.9%</td>
+            </tr><tr>
+              <td class="h-sym">V</td>
+              <td class="h-name">Visa Inc.</td>
+              <td class="h-mcap">$596B</td>
+              <td class="h-ytd negative">-10.5%</td>
+            </tr><tr>
+              <td class="h-sym">MA</td>
+              <td class="h-name">Mastercard Incorporate</td>
+              <td class="h-mcap">$454B</td>
+              <td class="h-ytd negative">-9.3%</td>
+            </tr><tr>
+              <td class="h-sym">BAC</td>
+              <td class="h-name">Bank of America Corpor</td>
+              <td class="h-mcap">$381B</td>
+              <td class="h-ytd negative">-4.1%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:100.0%"><span>Mega 100.0%</span></div>
+            <div class="cap-seg large" style="width:0.0%"><span>Large 0.0%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:60.7%">
+              <div class="marker-label">$52.31</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$46.44</span>
+            <span>$56.11</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sector-card fade-in" data-ytd="-4.88" data-weight="11.8"
+         data-pe="25.95035" data-div="1.71"
+         style="--card-bg:rgba(245,166,35,0.08);--card-accent:#f5a623" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <div class="card-header">
+          <div class="sector-name">Health Care</div>
+          <div class="etf-ticker">XLV</div>
+        </div>
+        <div class="ytd-badge negative">
+          -4.9%
+        </div>
+      </div>
+      <div class="card-desc">Pharma, biotech, medical devices, health insurance</div>
+      <div class="card-metrics">
+        <div class="metric">
+          <span class="metric-label">S&P Wt</span>
+          <span class="metric-value">11.8%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">6M</span>
+          <span class="metric-value positive">+2.6%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">1Y</span>
+          <span class="metric-value positive">+13.1%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">P/E</span>
+          <span class="metric-value">26.0x</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Div Yld</span>
+          <span class="metric-value">1.7%</span>
+        </div>
+        <div class="metric rating" style="--r-color:#3d9cf5">
+          <span class="metric-label">Rating</span>
+          <span class="metric-value">Market Perform</span>
+        </div>
+      </div>
+
+      <div class="expand-section">
+        <div class="expand-block">
+          <div class="expand-title">Top 5 Holdings</div>
+          <table class="holdings-table">
+            <thead><tr><th>Ticker</th><th>Name</th><th>Mkt Cap</th><th>YTD</th></tr></thead>
+            <tbody><tr>
+              <td class="h-sym">UNH</td>
+              <td class="h-name">UnitedHealth Group Inc</td>
+              <td class="h-mcap">$323B</td>
+              <td class="h-ytd positive">+6.6%</td>
+            </tr><tr>
+              <td class="h-sym">LLY</td>
+              <td class="h-name">Eli Lilly and Company</td>
+              <td class="h-mcap">$823B</td>
+              <td class="h-ytd negative">-14.7%</td>
+            </tr><tr>
+              <td class="h-sym">JNJ</td>
+              <td class="h-name">Johnson & Johnson</td>
+              <td class="h-mcap">$545B</td>
+              <td class="h-ytd positive">+9.7%</td>
+            </tr><tr>
+              <td class="h-sym">ABBV</td>
+              <td class="h-name">AbbVie Inc.</td>
+              <td class="h-mcap">$361B</td>
+              <td class="h-ytd negative">-9.5%</td>
+            </tr><tr>
+              <td class="h-sym">MRK</td>
+              <td class="h-name">Merck & Company, Inc.</td>
+              <td class="h-mcap">$279B</td>
+              <td class="h-ytd positive">+6.8%</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">Market Cap Breakdown</div>
+          <div class="cap-bar">
+            <div class="cap-seg mega" style="width:100.0%"><span>Mega 100.0%</span></div>
+            <div class="cap-seg large" style="width:0.0%"><span>Large 0.0%</span></div>
+            <div class="cap-seg mid" style="width:0.0%"><span>Mid 0.0%</span></div>
+          </div>
+          <div class="cap-legend">
+            <span class="cap-l mega-l">● Mega (&gt;$200B)</span>
+            <span class="cap-l large-l">● Large ($10-200B)</span>
+            <span class="cap-l mid-l">● Mid (&lt;$10B)</span>
+          </div>
+        </div>
+
+        <div class="expand-block">
+          <div class="expand-title">52-Week Price Range</div>
+          <div class="range-track">
+            <div class="range-fill" style="width:100%"></div>
+            <div class="range-marker" style="left:63.0%">
+              <div class="marker-label">$147.31</div>
+            </div>
+          </div>
+          <div class="range-labels">
+            <span>$126.51</span>
+            <span>$159.54</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="explainer fade-in" id="explainer">
+    <div class="explainer-toggle" onclick="document.getElementById('explainer').classList.toggle('open')">
+      📖 New to Sector Investing? Read this
+    </div>
+    <div class="explainer-body">
+      <div class="explainer-content">
+        <h4>What is a GICS Sector?</h4>
+        <p>The <span class="term">Global Industry Classification Standard (GICS)</span> divides the S&P 500 into 11 sectors. Each sector groups companies in similar industries — for example, Apple and Microsoft are in <span class="term">Technology</span>, while JPMorgan and Visa are in <span class="term">Financials</span>.</p>
+        <h4>Reading the Cards</h4>
+        <p><span class="term">YTD Return</span> shows how much the sector has gained or lost since January 1st. Green cards = gains, amber/red = losses. <span class="term">S&P Weight</span> shows how much of the total S&P 500 index that sector represents — higher weight = bigger influence on the index.</p>
+        <h4>P/E Ratio & Dividend Yield</h4>
+        <p><span class="term">P/E (Price-to-Earnings)</span> compares a stock's price to its earnings — lower P/E can mean better value, but growth sectors (like Tech) often have higher P/E. <span class="term">Dividend Yield</span> is the annual dividend payment as a percentage of price — higher yield means more passive income.</p>
+        <h4>Market Cap Breakdown</h4>
+        <p><span class="term">Mega-cap</span> (&gt;$200B) are the largest companies like Apple and Amazon. <span class="term">Large-cap</span> ($10B-$200B) are well-established companies. <span class="term">Mid-cap</span> (&lt;$10B) are smaller but can offer higher growth potential.</p>
+        <h4>Forward Rating</h4>
+        <p>A composite score based on momentum, valuation, yield, and price position within the 52-week range. <span class="term">Outperform</span> = strong outlook, <span class="term">Market Perform</span> = average, <span class="term">Underperform</span> = caution.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated 2026-04-22 14:39 · Data from Yahoo Finance<br>
+    <a href="https://github.com/nageshnnazare/recos">github.com/nageshnnazare/recos</a> ·
+    Not financial advice · For informational purposes only
+  </div>
+
+</div>
+
+<script>
+function toggleExpand(card) {
+  card.classList.toggle('expanded');
+}
+
+function sortCards(key, btn) {
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const grid = document.getElementById('sector-grid');
+  const cards = Array.from(grid.querySelectorAll('.sector-card'));
+
+  cards.sort((a, b) => {
+    const av = parseFloat(a.dataset[key]) || 0;
+    const bv = parseFloat(b.dataset[key]) || 0;
+    if (key === 'pe') return av - bv;
+    return bv - av;
+  });
+
+  cards.forEach(c => grid.appendChild(c));
+}
+
+// Scroll-triggered fade-in
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

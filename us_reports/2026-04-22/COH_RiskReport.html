@@ -45,9 +45,10 @@
   .sh-range { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9px; }
   .sh-range-label { color:var(--text3); width:32px; text-align:right; letter-spacing:0.5px; flex-shrink:0; }
   .sh-range-val { color:var(--text3); width:42px; text-align:right; flex-shrink:0; }
-  .sh-range-track { flex:1; height:4px; background:var(--border); border-radius:2px; position:relative; min-width:80px; }
-  .sh-range-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--green),var(--green)); }
-  .sh-range-dot { position:absolute; top:50%; width:10px; height:10px; border-radius:50%; background:var(--green); border:2px solid var(--bg); transform:translate(-50%,-50%); box-shadow:0 0 6px rgba(0,229,160,0.5); }
+  .sh-range-track { flex:1; height:5px; background:linear-gradient(90deg,rgba(0,229,160,0.15),rgba(245,166,35,0.15),rgba(255,77,109,0.15)); border-radius:3px; position:relative; min-width:80px; }
+  .sh-range-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#00e5a0,#f5a623,#ff4d6d); }
+  .sh-range-dot { position:absolute; top:50%; width:10px; height:10px; border-radius:50%; border:2px solid var(--bg); transform:translate(-50%,-50%); }
+  .sh-range-zone { font-family:var(--mono); font-size:8px; font-weight:600; letter-spacing:0.5px; flex-shrink:0; min-width:56px; text-align:center; }
   .gauge-kpi-row { display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }
   .gauge-card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; }
   .gauge-title { font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
@@ -60,6 +61,8 @@
   .section { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:20px; }
   .section-title { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
   .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  .src-link-header { font-size:9px; letter-spacing:1px; color:var(--blue); text-decoration:none; margin-left:auto; flex-shrink:0; }
+  .src-link-header:hover { text-decoration:underline; }
   .card-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
   .metric-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:16px; position:relative; transition:transform 0.2s,box-shadow 0.2s; }
   .metric-card:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
@@ -125,6 +128,8 @@
   .footer { text-align:center; font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:1px; padding:24px 0; border-top:1px solid var(--border); margin-top:8px; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
   .section, .stock-header, .gauge-kpi-row, .breakdown-grid, .verdict-card { animation: fadeIn 0.6s ease both; }
+  .fade-target { opacity:0; transform:translateY(12px); transition:opacity 0.5s ease, transform 0.5s ease; }
+  .fade-target.visible { opacity:1; transform:translateY(0); }
   @media (max-width: 768px) { .stock-header { flex-direction:column; gap:16px; } .gauge-kpi-row { grid-template-columns:1fr; } .card-grid { grid-template-columns:1fr 1fr; } .breakdown-grid { grid-template-columns:1fr; } .dual-col { grid-template-columns:1fr; } .kpi-strip { grid-template-columns:repeat(2,1fr); } .returns-strip { grid-template-columns:repeat(3,1fr); } .news-grid { grid-template-columns:1fr; } }
   .tf-btns { display:flex; gap:2px; }
   .tf-btn { background:var(--bg4); border:1px solid var(--border); color:var(--text3); font-family:var(--mono); font-size:9px; padding:3px 9px; border-radius:4px; cursor:pointer; transition:all .15s; }
@@ -133,7 +138,16 @@
   .tf-ret { font-family:var(--mono); font-size:12px; font-weight:600; }
   .tf-ret.up { color:var(--green); }
   .tf-ret.dn { color:var(--red); }
-  @media print { .copy-btn { display:none; } .page { padding:16px; } .page-break { page-break-before:always; border:none; margin:0; } }
+  /* ── Tab Navigation ── */
+  .tab-bar { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); display:flex; gap:0; padding:0 12px; margin:-12px -12px 20px -12px; overflow-x:auto; scrollbar-width:none; }
+  .tab-bar::-webkit-scrollbar { display:none; }
+  .tab-btn { font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); background:transparent; border:none; border-bottom:2px solid transparent; padding:14px 18px; cursor:pointer; white-space:nowrap; transition:color 0.2s, border-color 0.2s; }
+  .tab-btn:hover { color:var(--text2); }
+  .tab-btn.active { color:#fff; border-bottom-color:var(--purple); }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; }
+  @media (max-width:600px) { .tab-btn { padding:12px 10px; font-size:9px; letter-spacing:1px; } }
+  @media print { .copy-btn { display:none; } .page { padding:16px; } .page-break { page-break-before:always; border:none; margin:0; } .tab-bar { display:none; } .tab-pane { display:block !important; } }
 </style>
 </head>
 <body>
@@ -150,14 +164,16 @@
         <div class="sh-range">
           <span class="sh-range-label">Day</span>
           <span class="sh-range-val">$0</span>
-          <div class="sh-range-track"><div class="sh-range-fill" style="width:50.0%"></div><div class="sh-range-dot" style="left:50.0%"></div></div>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:50.0%"></div><div class="sh-range-dot" style="left:50.0%;background:#f5a623;box-shadow:0 0 6px #f5a62380;"></div></div>
           <span class="sh-range-val">$0</span>
+          <span class="sh-range-zone" style="color:#f5a623">Neutral</span>
         </div>
         <div class="sh-range">
           <span class="sh-range-label">52W</span>
           <span class="sh-range-val">$0</span>
-          <div class="sh-range-track"><div class="sh-range-fill" style="width:50.0%"></div><div class="sh-range-dot" style="left:50.0%"></div></div>
+          <div class="sh-range-track"><div class="sh-range-fill" style="width:50.0%"></div><div class="sh-range-dot" style="left:50.0%;background:#f5a623;box-shadow:0 0 6px #f5a62380;"></div></div>
           <span class="sh-range-val">$0</span>
+          <span class="sh-range-zone" style="color:#f5a623">Neutral</span>
         </div>
       </div>
     </div>
@@ -165,7 +181,7 @@
       <div class="sh-price">$0.00</div>
       <div class="sh-change" style="color:#00e5a0">▲ $0.00 (+0.00%)</div>
       <div class="sh-volume">Vol: 0 · Avg: 0</div>
-      <div class="sh-timestamp">As of April 22, 2026 · 06:24 ET</div>
+      <div class="sh-timestamp">As of April 22, 2026 · 14:39 ET</div>
     </div>
   </div>
 
@@ -214,70 +230,43 @@
     </div>
   </div>
 
+  <div class="tab-bar" id="main-tabs">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="technical">Technical</button>
+    <button class="tab-btn" data-tab="financials">Financials</button>
+    <button class="tab-btn" data-tab="analysis">Analysis</button>
+    <button class="tab-btn" data-tab="verdict">Verdict</button>
+  </div>
+
+  <!-- ═══════ TAB 1: OVERVIEW ═══════ -->
+  <div class="tab-pane active" id="tab-overview">
+  
   <div class="section">
-    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-      <span>📈 Price Movement</span>
-      <div class="tf-btns" id="tf-line">
-        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
-        <button class="tf-btn" data-tf="6M">6M</button><button class="tf-btn active" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+    <div class="section-title">🏢 Company Analysis · 2048819</div>
+    <div style="display:grid;grid-template-columns:1fr;gap:14px;">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--blue);">
+        <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--blue);margin-bottom:8px;">💼 BUSINESS MODEL</div>
+        <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;"><li style="margin-bottom:6px;">Company business description not available.</li></ul>
       </div>
-      <span class="tf-ret" id="tf-line-ret"></span>
-    </div>
-    <canvas id="cv-line" style="width:100%;height:280px;display:block;"></canvas>
-  </div>
-
-  <div class="section">
-    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-      <span>🕯 Candlestick Chart</span>
-      <div class="tf-btns" id="tf-candle">
-        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
-        <button class="tf-btn active" data-tf="6M">6M</button><button class="tf-btn" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--purple);">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--purple);margin-bottom:8px;">🏰 MOAT &amp; COMPETITION</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;"><li style="margin-bottom:6px;">Small-cap ($0M) — higher risk/reward profile.</li></ul>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--green);">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--green);margin-bottom:8px;">🚀 CATALYSTS</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;"><li style="margin-bottom:6px;">No specific near-term catalysts identified from available data.</li></ul>
+        </div>
       </div>
-      <span class="tf-ret" id="tf-candle-ret"></span>
-    </div>
-    <canvas id="cv-candle" style="width:100%;height:280px;display:block;"></canvas>
-  </div>
-
-  <div class="section">
-    <div class="section-title">🎯 Fair Value Analysis · CMP vs Analyst Targets</div>
-    <svg viewBox="0 0 480 90" xmlns="http://www.w3.org/2000/svg" style="width:100%;">
-  <rect x="60.0" y="25" width="0.0" height="30" rx="4" fill="rgba(0,229,160,0.08)" stroke="rgba(0,229,160,0.2)" stroke-width="1" stroke-dasharray="4,2"/>
-  <text x="60.0" y="20" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#00e5a0">FAIR VALUE ZONE</text>
-  <line x1="60.0" y1="22" x2="60.0" y2="58" stroke="#00e5a0" stroke-width="2"/>
-  <text x="60.0" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="9" fill="#00e5a0">$0</text>
-  <text x="60.0" y="82" text-anchor="middle" font-family="Fira Code,monospace" font-size="7" fill="#5c5d6e">FAIR VALUE</text>
-  <text x="60.0" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$0</text>
-  <text x="60.0" y="72" text-anchor="middle" font-family="Fira Code,monospace" font-size="8" fill="#5c5d6e">$0</text>
-  <line x1="60.0" y1="22" x2="60.0" y2="58" stroke="#00e5a0" stroke-width="3"/>
-  <polygon points="60.0,20 55.0,12 65.0,12" fill="#00e5a0"/>
-  <text x="60.0" y="8" text-anchor="middle" font-family="Fira Code,monospace" font-size="10" font-weight="700" fill="#00e5a0">$0 CMP</text>
-</svg>
-  </div>
-
-  <div class="section">
-    <div class="section-title">💎 Valuation & Financial Metrics</div>
-    <div class="card-grid">
-      <div class="metric-card caution" data-tip="P/E: Data unavailable"><div class="mc-label">P/E RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Trailing twelve months</div></div>
-      <div class="metric-card caution" data-tip="P/B: Data unavailable"><div class="mc-label">P/B RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Price to Book value</div></div>
-      <div class="metric-card caution" data-tip="ROE: Data unavailable"><div class="mc-label">ROE</div><div class="mc-value">N/A</div><div class="mc-bench">Return on Equity</div></div>
-      <div class="metric-card caution" data-tip="Profit Margin: Data unavailable"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">0.0%</div><div class="mc-bench">Net profit margin</div></div>
-      <div class="metric-card caution" data-tip="Operating Margin: Data unavailable"><div class="mc-label">OPM</div><div class="mc-value">N/A</div><div class="mc-bench">Operating profit margin</div></div>
-      <div class="metric-card caution" data-tip="Analyst target: Data unavailable"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">N/A</div><div class="mc-bench">Range: N/A</div></div>
-      <div class="metric-card caution" data-tip="PEG: Data unavailable"><div class="mc-label">PEG RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Price/Earnings to Growth</div></div>
-      <div class="metric-card caution" data-tip="EV/EBITDA: Data unavailable"><div class="mc-label">EV/EBITDA</div><div class="mc-value">N/A</div><div class="mc-bench">Enterprise value ratio</div></div>
-      <div class="metric-card caution" data-tip="Current Ratio: Data unavailable"><div class="mc-label">CURRENT RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Liquidity measure</div></div>
-      <div class="metric-card caution" data-tip="Dividend Yield: Data unavailable"><div class="mc-label">DIVIDEND YIELD</div><div class="mc-value">N/A</div><div class="mc-bench">Annual yield</div></div>
-      <div class="metric-card caution" data-tip="ROA: Data unavailable"><div class="mc-label">ROA</div><div class="mc-value">N/A</div><div class="mc-bench">Return on Assets</div></div>
-      <div class="metric-card caution" data-tip="Gross Margin: Data unavailable"><div class="mc-label">GROSS MARGIN</div><div class="mc-value">N/A</div><div class="mc-bench">Gross profit margin</div></div>
-    </div>
-    <div style="margin-top:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:8px;">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px;">SECTOR BENCHMARKS — N/A</div>
-      <div style="display:flex;flex-wrap:wrap;gap:20px;">
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/E (fair)</span> <span style="color:#fff;font-weight:600;">25.0x</span> <span style="color:var(--text3);font-size:9px;">(sector mid)</span></div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/B (fair)</span> <span style="color:#fff;font-weight:600;">5.0x</span> <span style="color:var(--text3);font-size:9px;">(sector mid)</span></div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROE (good)</span> <span style="color:#fff;font-weight:600;">18%</span> <span style="color:var(--text3);font-size:9px;">(sector target)</span></div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">OPM (good)</span> <span style="color:#fff;font-weight:600;">18%</span> <span style="color:var(--text3);font-size:9px;">(sector target)</span></div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">D/E comfort</span> <span style="color:#fff;font-weight:600;">&lt;40</span> <span style="color:var(--text3);font-size:9px;">(sector)</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--amber);">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--amber);margin-bottom:8px;">⚖️ ASYMMETRY CHECK</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;"><li style="margin-bottom:6px;">Insufficient analyst data for asymmetry assessment.</li></ul>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-left:3px solid var(--blue);">
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--blue);margin-bottom:8px;">🔭 FUTURE OUTLOOK</div>
+          <ul style="font-size:11px;color:var(--text2);line-height:1.75;padding-left:16px;margin:0;"><li style="margin-bottom:6px;">Limited forward-looking data available.</li></ul>
+        </div>
       </div>
     </div>
   </div>
@@ -324,8 +313,71 @@
       </ul>
     </div>
   </div>
+  </div>
 
-  <hr class="page-break">
+  <!-- ═══════ TAB 2: TECHNICAL ═══════ -->
+  <div class="tab-pane" id="tab-technical">
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>📈 Price Movement</span>
+      <div class="tf-btns" id="tf-line">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn" data-tf="6M">6M</button><button class="tf-btn active" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-line-ret"></span>
+    </div>
+    <canvas id="cv-line" style="width:100%;height:280px;display:block;"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>🕯 Candlestick Chart</span>
+      <div class="tf-btns" id="tf-candle">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn active" data-tf="6M">6M</button><button class="tf-btn" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-candle-ret"></span>
+    </div>
+    <canvas id="cv-candle" style="width:100%;height:520px;display:block;"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎯 Price Prediction · Analyst Target Cone</div>
+    <canvas id="cv-prediction" style="width:100%;height:360px;display:block;"></canvas>
+  </div>
+
+  
+  </div>
+
+  <!-- ═══════ TAB 3: FINANCIALS ═══════ -->
+  <div class="tab-pane" id="tab-financials">
+  <div class="section">
+    <div class="section-title">💎 Valuation & Financial Metrics</div>
+    <div class="card-grid">
+      <div class="metric-card caution" data-tip="P/E: Data unavailable"><div class="mc-label">P/E RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Trailing twelve months</div></div>
+      <div class="metric-card caution" data-tip="P/B: Data unavailable"><div class="mc-label">P/B RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Price to Book value</div></div>
+      <div class="metric-card caution" data-tip="ROE: Data unavailable"><div class="mc-label">ROE</div><div class="mc-value">N/A</div><div class="mc-bench">Return on Equity</div></div>
+      <div class="metric-card caution" data-tip="Profit Margin: Data unavailable"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">0.0%</div><div class="mc-bench">Net profit margin</div></div>
+      <div class="metric-card caution" data-tip="Operating Margin: Data unavailable"><div class="mc-label">OPM</div><div class="mc-value">N/A</div><div class="mc-bench">Operating profit margin</div></div>
+      <div class="metric-card caution" data-tip="Analyst target: Data unavailable"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">N/A</div><div class="mc-bench">Range: N/A</div></div>
+      <div class="metric-card caution" data-tip="PEG: Data unavailable"><div class="mc-label">PEG RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Price/Earnings to Growth</div></div>
+      <div class="metric-card caution" data-tip="EV/EBITDA: Data unavailable"><div class="mc-label">EV/EBITDA</div><div class="mc-value">N/A</div><div class="mc-bench">Enterprise value ratio</div></div>
+      <div class="metric-card caution" data-tip="Current Ratio: Data unavailable"><div class="mc-label">CURRENT RATIO</div><div class="mc-value">N/A</div><div class="mc-bench">Liquidity measure</div></div>
+      <div class="metric-card caution" data-tip="Dividend Yield: Data unavailable"><div class="mc-label">DIVIDEND YIELD</div><div class="mc-value">N/A</div><div class="mc-bench">Annual yield</div></div>
+      <div class="metric-card caution" data-tip="ROA: Data unavailable"><div class="mc-label">ROA</div><div class="mc-value">N/A</div><div class="mc-bench">Return on Assets</div></div>
+      <div class="metric-card caution" data-tip="Gross Margin: Data unavailable"><div class="mc-label">GROSS MARGIN</div><div class="mc-value">N/A</div><div class="mc-bench">Gross profit margin</div></div>
+    </div>
+    <div style="margin-top:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:8px;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px;">SECTOR BENCHMARKS — N/A</div>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;">
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/E (fair)</span> <span style="color:#fff;font-weight:600;">25.0x</span> <span style="color:var(--text3);font-size:9px;">(sector mid)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/B (fair)</span> <span style="color:#fff;font-weight:600;">5.0x</span> <span style="color:var(--text3);font-size:9px;">(sector mid)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROE (good)</span> <span style="color:#fff;font-weight:600;">18%</span> <span style="color:var(--text3);font-size:9px;">(sector target)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">OPM (good)</span> <span style="color:#fff;font-weight:600;">18%</span> <span style="color:var(--text3);font-size:9px;">(sector target)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">D/E comfort</span> <span style="color:#fff;font-weight:600;">&lt;40</span> <span style="color:var(--text3);font-size:9px;">(sector)</span></div>
+      </div>
+    </div>
+  </div>
 
   <div class="section">
     <div class="section-title">📋 Quarterly Performance Trend</div>
@@ -347,6 +399,45 @@
     </div>
   </div>
 
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>📈 Revenue vs Earnings</span>
+      <div class="tf-btns" id="fin-toggle">
+        <button class="tf-btn active" data-mode="quarterly">Quarterly</button>
+        <button class="tf-btn" data-mode="annual">Annual</button>
+      </div>
+    </div>
+    <canvas id="cv-fin" style="width:100%;height:280px;display:block;"></canvas>
+  </div>
+
+  
+  
+  
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>🎯 EPS: Estimate vs Actual</span>
+      <div class="tf-btns" id="eps-toggle">
+        <button class="tf-btn active" data-mode="estimates">Estimates</button>
+        <button class="tf-btn" data-mode="quarterly">Quarterly</button>
+        <button class="tf-btn" data-mode="annual">Annual</button>
+      </div>
+    </div>
+    <canvas id="cv-eps-est" style="width:100%;height:260px;display:block;"></canvas>
+  </div>
+
+  
+  
+  
+  
+  
+  
+
+  
+  </div>
+
+  <!-- ═══════ TAB 4: ANALYSIS ═══════ -->
+  <div class="tab-pane" id="tab-analysis">
   <div class="section">
     <div class="section-title">🏛 Shareholding Pattern</div>
     
@@ -442,7 +533,10 @@
     <div class="section-title">📰 Latest News</div>
     <div class="news-grid"><div style="color:var(--text3);font-size:11px;text-align:center;padding:20px 0;">No recent news available for this stock</div></div>
   </div>
+  </div>
 
+  <!-- ═══════ TAB 5: VERDICT ═══════ -->
+  <div class="tab-pane" id="tab-verdict">
   <div class="verdict-card">
     <div class="verdict-header">
       <div><div class="verdict-rec">RECOMMENDATION</div><div class="verdict-rating" style="color:#ff4d6d">SELL</div></div>
@@ -461,8 +555,10 @@
     <div class="verdict-tags"></div>
   </div>
 
+  </div>
+
   <div class="footer">
-    RISK SCORE REPORT · COH · GENERATED APR 22, 2026 06:24 ET · DATA VIA YAHOO FINANCE<br>
+    RISK SCORE REPORT · COH · GENERATED APR 22, 2026 14:39 ET · DATA VIA YAHOO FINANCE<br>
     DISCLAIMER: THIS IS NOT FINANCIAL ADVICE. DATA MAY BE DELAYED. ALWAYS VERIFY WITH OFFICIAL SOURCES BEFORE INVESTING.
   </div>
 
@@ -481,14 +577,37 @@ function copyReport() {
   });
 }
 const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => { if (entry.isIntersecting) { entry.target.style.opacity = '1'; entry.target.style.transform = 'translateY(0)'; } });
+  entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); } });
 }, { threshold: 0.1 });
-document.querySelectorAll('.section, .breakdown-card, .metric-card').forEach(el => {
-  el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+document.querySelectorAll('.breakdown-card, .metric-card').forEach(el => {
+  el.classList.add('fade-target');
   observer.observe(el);
 });
 
-/* ── Interactive price & candlestick charts ────────────────────── */
+// ── Tab navigation ──
+(function() {
+  const tabBar = document.getElementById('main-tabs');
+  if (!tabBar) return;
+  const btns = tabBar.querySelectorAll('.tab-btn');
+  const panes = document.querySelectorAll('.tab-pane');
+  const canvasRedrawers = [];
+
+  function switchTab(tabId) {
+    btns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+    panes.forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabId));
+    // Canvases inside hidden panes have zero dimensions; redraw all visible ones
+    requestAnimationFrame(() => {
+      canvasRedrawers.forEach(fn => fn());
+    });
+    window.scrollTo({top: 0});
+  }
+
+  btns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+  // Expose registration for canvas redraw functions
+  window._registerCanvasRedraw = function(fn) { canvasRedrawers.push(fn); };
+})();
+
 const CHART_DATA = {};
 
 function _setupCanvas(id) {
@@ -497,6 +616,7 @@ function _setupCanvas(id) {
   const ctx = c.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const w = c.clientWidth, h = c.clientHeight;
+  if (w === 0 || h === 0) return null;
   c.width = w * dpr; c.height = h * dpr;
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, w, h);
@@ -512,7 +632,7 @@ function drawLineChart(tf) {
   const closes = d.c, n = closes.length;
   const mn = Math.min(...closes), mx = Math.max(...closes);
   const range = mx - mn || 1;
-  const pad = { t:18, b:24, l:55, r:12 };
+  const pad = { t:18, b:24, l:55, r:32 };
   const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
 
   const ret = ((closes[n-1] - closes[0]) / closes[0] * 100);
@@ -522,8 +642,7 @@ function drawLineChart(tf) {
     retEl.className = 'tf-ret ' + (ret >= 0 ? 'up' : 'dn');
   }
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
   for (let i = 0; i < 5; i++) {
     const y = pad.t + (i / 4) * ch;
     ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
@@ -541,9 +660,7 @@ function drawLineChart(tf) {
   }
 
   const color = ret >= 0 ? '#00e5a0' : '#ff4d6d';
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.8;
-  ctx.lineJoin = 'round';
+  ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.lineJoin = 'round';
   ctx.beginPath();
   closes.forEach((v, i) => {
     const x = pad.l + (i / (n - 1 || 1)) * cw;
@@ -569,11 +686,26 @@ function drawCandleChart(tf) {
   if (!s) return;
   const { ctx, w, h } = s;
   const n = d.c.length;
-  const allVals = d.h.concat(d.l);
-  const mn = Math.min(...allVals), mx = Math.max(...allVals);
-  const range = mx - mn || 1;
-  const pad = { t:18, b:24, l:55, r:12 };
-  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+  const L = 55, R = 32;
+  const cw = w - L - R;
+  const hasRsi = d.rsi && d.rsi.some(v => v !== null);
+  const hasMacd = d.macd && d.macd.some(v => v !== null);
+  const panels = 1 + 1 + (hasRsi ? 1 : 0) + (hasMacd ? 1 : 0);
+  const gap = 6;
+  const totalGap = (panels - 1) * gap;
+  const usable = h - 18 - 22 - totalGap;
+  const candleH = usable * 0.50;
+  const volH = usable * 0.12;
+  const rsiH = hasRsi ? usable * (hasMacd ? 0.19 : 0.38) : 0;
+  const macdH = hasMacd ? usable * (hasRsi ? 0.19 : 0.38) : 0;
+  let yOff = 18;
+  const pCandle = { t: yOff, h: candleH };
+  yOff += candleH + gap;
+  const pVol = { t: yOff, h: volH };
+  yOff += volH + gap;
+  const pRsi = { t: yOff, h: rsiH };
+  if (hasRsi) yOff += rsiH + gap;
+  const pMacd = { t: yOff, h: macdH };
 
   const ret = ((d.c[n-1] - d.c[0]) / d.c[0] * 100);
   const retEl = document.getElementById('tf-candle-ret');
@@ -582,30 +714,39 @@ function drawCandleChart(tf) {
     retEl.className = 'tf-ret ' + (ret >= 0 ? 'up' : 'dn');
   }
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
-  for (let i = 0; i < 5; i++) {
-    const y = pad.t + (i / 4) * ch;
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
-    const val = mx - (i / 4) * range;
-    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
-    ctx.fillText(val >= 1000 ? val.toFixed(0) : val.toFixed(2), pad.l - 6, y + 3);
+  function xPos(i) { return L + ((i + 0.5) / n) * cw; }
+  function drawGrid(pt, minV, maxV, count, fmt) {
+    const rng = maxV - minV || 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5;
+    ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'right'; ctx.fillStyle = '#5c5d6e';
+    for (let i = 0; i <= count; i++) {
+      const y = pt.t + (i / count) * pt.h;
+      ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(w - R, y); ctx.stroke();
+      const val = maxV - (i / count) * rng;
+      ctx.fillText(fmt(val), L - 5, y + 3);
+    }
   }
 
-  const nLabels = Math.min(6, n);
-  ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
-  for (let i = 0; i < nLabels; i++) {
-    const idx = Math.round(i / (nLabels - 1) * (n - 1));
-    const x = pad.l + (idx / (n - 1)) * cw;
-    ctx.fillText(d.d[idx], x, h - 4);
+  function drawSep(y, label) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(w - R, y); ctx.stroke();
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'left';
+    ctx.fillText(label, L + 4, y + 10);
   }
+
+  const allVals = d.h.concat(d.l);
+  const mn = Math.min(...allVals), mx = Math.max(...allVals);
+  const range = mx - mn || 1;
+  const fmtP = v => v >= 1000 ? v.toFixed(0) : v.toFixed(1);
+  drawGrid(pCandle, mn, mx, 4, fmtP);
 
   const barW = Math.max(1, Math.min(8, (cw / n) * 0.65));
   for (let i = 0; i < n; i++) {
-    const x = pad.l + ((i + 0.5) / n) * cw;
-    const oY = pad.t + (1 - (d.o[i] - mn) / range) * ch;
-    const cY = pad.t + (1 - (d.c[i] - mn) / range) * ch;
-    const hY = pad.t + (1 - (d.h[i] - mn) / range) * ch;
-    const lY = pad.t + (1 - (d.l[i] - mn) / range) * ch;
+    const x = xPos(i);
+    const oY = pCandle.t + (1 - (d.o[i] - mn) / range) * pCandle.h;
+    const cY = pCandle.t + (1 - (d.c[i] - mn) / range) * pCandle.h;
+    const hY = pCandle.t + (1 - (d.h[i] - mn) / range) * pCandle.h;
+    const lY = pCandle.t + (1 - (d.l[i] - mn) / range) * pCandle.h;
     const bull = d.c[i] >= d.o[i];
     const clr = bull ? '#00e5a0' : '#ff4d6d';
     ctx.strokeStyle = clr; ctx.lineWidth = 1;
@@ -615,13 +756,95 @@ function drawCandleChart(tf) {
     ctx.fillRect(x - barW/2, top, barW, bh);
   }
 
-  if (n >= 50) {
-    const ema50 = _calcEMA(d.c, 50);
-    _drawMA(ctx, ema50, n, mn, range, pad, cw, ch, '#f5a623', [5,3]);
+  const ema50 = d.ema50 || (n >= 50 ? _calcEMA(d.c, 50) : null);
+  const sma200 = d.sma200 || (n >= 200 ? _calcSMA(d.c, 200) : null);
+  if (ema50) _drawMA(ctx, ema50, n, mn, range, { t: pCandle.t, b: 0, l: L, r: R }, cw, pCandle.h, '#9b7fff', []);
+  if (sma200) _drawMA(ctx, sma200, n, mn, range, { t: pCandle.t, b: 0, l: L, r: R }, cw, pCandle.h, '#f5a623', [5, 3]);
+
+  ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'left';
+  let lx = L + 4, ly = pCandle.t + 10;
+  if (ema50) { const e = ema50.filter(v=>v!==null).pop(); ctx.fillStyle='#9b7fff'; ctx.fillText('── 50 EMA'+(e?' ('+e.toLocaleString('en-US',{maximumFractionDigits:0})+')':''), lx, ly); ly+=11; }
+  if (sma200) { const sv = sma200.filter(v=>v!==null).pop(); ctx.fillStyle='#f5a623'; ctx.fillText('╌╌ 200 DMA'+(sv?' ('+sv.toLocaleString('en-US',{maximumFractionDigits:0})+')':''), lx, ly); }
+
+  drawSep(pVol.t, 'VOLUME');
+  const maxVol = Math.max(...d.v);
+  for (let i = 0; i < n; i++) {
+    const x = xPos(i);
+    const vH = (d.v[i] / maxVol) * pVol.h * 0.85;
+    const bull = d.c[i] >= d.o[i];
+    ctx.fillStyle = bull ? 'rgba(0,229,160,0.3)' : 'rgba(255,77,109,0.3)';
+    ctx.fillRect(x - barW/2, pVol.t + pVol.h - vH, barW, vH);
   }
-  if (n >= 200) {
-    const dma200 = _calcSMA(d.c, 200);
-    _drawMA(ctx, dma200, n, mn, range, pad, cw, ch, '#a855f7', []);
+
+  if (hasRsi) {
+    drawSep(pRsi.t, 'RSI (14)');
+    ctx.fillStyle = 'rgba(0,229,160,0.04)';
+    const y30 = pRsi.t + (1 - 30/100) * pRsi.h;
+    const y70 = pRsi.t + (1 - 70/100) * pRsi.h;
+    ctx.fillRect(L, y70, cw, y30 - y70);
+    ctx.setLineDash([3,3]); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 0.5;
+    [30, 50, 70].forEach(lv => {
+      const y = pRsi.t + (1 - lv/100) * pRsi.h;
+      ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(w-R, y); ctx.stroke();
+      ctx.fillStyle = '#5c5d6e'; ctx.font = '7px "Fira Code",monospace'; ctx.textAlign = 'right';
+      ctx.fillText(lv.toString(), L-4, y+3);
+    });
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#9b7fff'; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    let started = false;
+    d.rsi.forEach((v, i) => {
+      if (v === null) return;
+      const x = xPos(i);
+      const y = pRsi.t + (1 - v/100) * pRsi.h;
+      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    const lastRsi = d.rsi.filter(v=>v!==null).pop();
+    if (lastRsi) {
+      ctx.fillStyle = lastRsi < 30 ? '#00e5a0' : lastRsi > 70 ? '#ff4d6d' : '#9b7fff';
+      ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'left';
+      ctx.fillText(lastRsi.toFixed(0), w - R + 2, pRsi.t + (1 - lastRsi/100) * pRsi.h + 3);
+    }
+  }
+
+  if (hasMacd) {
+    drawSep(pMacd.t, 'MACD');
+    const mVals = d.macd.filter(v=>v!==null);
+    const sVals = d.macd_sig.filter(v=>v!==null);
+    const hVals = d.macd_hist.filter(v=>v!==null);
+    const allM = mVals.concat(sVals).concat(hVals);
+    if (allM.length) {
+      const mMn = Math.min(...allM), mMx = Math.max(...allM);
+      const mRng = Math.max(Math.abs(mMn), Math.abs(mMx)) || 1;
+      const mScale = v => pMacd.t + pMacd.h/2 - (v / mRng) * pMacd.h * 0.45;
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(L, pMacd.t + pMacd.h/2); ctx.lineTo(w-R, pMacd.t + pMacd.h/2); ctx.stroke();
+      for (let i = 0; i < n; i++) {
+        const hv = d.macd_hist[i];
+        if (hv === null) continue;
+        const x = xPos(i);
+        const zY = pMacd.t + pMacd.h/2;
+        const bY = mScale(hv);
+        ctx.fillStyle = hv >= 0 ? 'rgba(0,229,160,0.35)' : 'rgba(255,77,109,0.35)';
+        ctx.fillRect(x - barW/2, Math.min(zY, bY), barW, Math.abs(bY - zY));
+      }
+      ctx.strokeStyle = '#3d9cf5'; ctx.lineWidth = 1.2; ctx.beginPath();
+      let ms = false;
+      d.macd.forEach((v,i) => { if (v===null) return; const x=xPos(i), y=mScale(v); if(!ms){ctx.moveTo(x,y);ms=true;}else ctx.lineTo(x,y); });
+      ctx.stroke();
+      ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 1; ctx.setLineDash([3,2]); ctx.beginPath();
+      let ss = false;
+      d.macd_sig.forEach((v,i) => { if (v===null) return; const x=xPos(i), y=mScale(v); if(!ss){ctx.moveTo(x,y);ss=true;}else ctx.lineTo(x,y); });
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+
+  const nLabels = Math.min(6, n);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < nLabels; i++) {
+    const idx = Math.round(i / (nLabels - 1) * (n - 1));
+    ctx.fillText(d.d[idx], xPos(idx), h - 4);
   }
 }
 
@@ -669,8 +892,537 @@ function _bindTF(groupId, drawFn, defaultTf) {
   });
   drawFn(defaultTf);
 }
-_bindTF('tf-line', drawLineChart, '1Y');
-_bindTF('tf-candle', drawCandleChart, '6M');
+
+window._lastLineTF = '1Y'; window._lastCandleTF = '6M';
+window._lastFinMode = 'quarterly'; window._lastEpsMode = 'estimates';
+window.addEventListener('DOMContentLoaded', function() {
+  requestAnimationFrame(function() {
+    _bindTF('tf-line', function(tf) { window._lastLineTF = tf; drawLineChart(tf); }, '1Y');
+    _bindTF('tf-candle', function(tf) { window._lastCandleTF = tf; drawCandleChart(tf); }, '6M');
+    if (typeof drawFinChart === 'function') drawFinChart('quarterly');
+    if (typeof drawEpsEstChart === 'function') drawEpsEstChart('estimates');
+    if (typeof drawPredictionChart === 'function') drawPredictionChart();
+  });
+  if (window._registerCanvasRedraw) {
+    window._registerCanvasRedraw(function() {
+      if (document.getElementById('tab-technical').classList.contains('active')) {
+        drawLineChart(window._lastLineTF);
+        drawCandleChart(window._lastCandleTF);
+        if (typeof drawPredictionChart === 'function') drawPredictionChart();
+      }
+      if (document.getElementById('tab-financials').classList.contains('active')) {
+        if (typeof drawFinChart === 'function') drawFinChart(window._lastFinMode);
+        if (typeof drawEpsEstChart === 'function') drawEpsEstChart(window._lastEpsMode);
+      }
+    });
+  }
+});
+
+// Valuation trend carousel
+(function() {
+  const wrap = document.getElementById('vt-btns');
+  if (!wrap) return;
+  const btns = wrap.querySelectorAll('.tf-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.vt-panel').forEach(p => p.style.display = 'none');
+      const panel = document.getElementById('vt-panel-' + btn.dataset.idx);
+      if (panel) panel.style.display = '';
+    });
+  });
+})();
+
+// Revenue vs Earnings chart
+const FIN_DATA = {"quarterly":[],"annual":[],"scale":"$"};
+function drawFinChart(mode) {
+  const items = FIN_DATA[mode] || [];
+  if (!items.length) return;
+  const c = document.getElementById('cv-fin');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = c.clientHeight;
+  if (W === 0 || H === 0) return;
+  c.width = W * dpr; c.height = H * dpr;
+  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, W, H);
+  const pad = { t:24, b:28, l:60, r:50 };
+  const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
+  const n = items.length;
+  const revs = items.map(d => d.rev || 0);
+  const profs = items.map(d => d.profit || 0);
+  const epsList = items.map(d => d.eps);
+  const hasEps = epsList.some(v => v !== null);
+  const allBars = revs.concat(profs);
+  const barMn = Math.min(0, ...allBars), barMx = Math.max(...allBars);
+  const barRng = barMx - barMn || 1;
+  const yBar = v => pad.t + (1 - (v - barMn) / barRng) * ch;
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5;
+  ctx.font = '8px "Fira Code",monospace'; ctx.fillStyle = '#5c5d6e'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const val = barMx - (i / 4) * barRng;
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillText(val >= 1000 ? (val/1000).toFixed(0)+'K' : val.toFixed(0), pad.l - 5, y + 3);
+  }
+  if (barMn < 0) {
+    const zy = yBar(0);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(pad.l, zy); ctx.lineTo(W - pad.r, zy); ctx.stroke();
+  }
+  const groupW = cw / n;
+  const bw = Math.max(4, groupW * 0.3);
+  for (let i = 0; i < n; i++) {
+    const cx = pad.l + (i + 0.5) * groupW;
+    const ry1 = yBar(revs[i]), ry0 = yBar(0);
+    ctx.fillStyle = 'rgba(61,156,245,0.55)';
+    ctx.fillRect(cx - bw - 1, Math.min(ry0, ry1), bw, Math.abs(ry1 - ry0));
+    const py1 = yBar(profs[i]), py0 = yBar(0);
+    ctx.fillStyle = profs[i] >= 0 ? 'rgba(0,229,160,0.55)' : 'rgba(255,77,109,0.55)';
+    ctx.fillRect(cx + 1, Math.min(py0, py1), bw, Math.abs(py1 - py0));
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'center';
+    ctx.fillText(items[i].label, cx, H - 6);
+  }
+  if (hasEps) {
+    const epsVals = epsList.filter(v => v !== null);
+    const eMn = Math.min(...epsVals), eMx = Math.max(...epsVals);
+    const eRng = eMx - eMn || 1;
+    ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 1.5; ctx.setLineDash([4,2]);
+    ctx.beginPath();
+    let started = false;
+    items.forEach((d, i) => {
+      if (d.eps === null) return;
+      const x = pad.l + (i + 0.5) * groupW;
+      const y = pad.t + (1 - (d.eps - eMn) / eRng) * ch;
+      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#f5a623'; ctx.font = '7px "Fira Code",monospace'; ctx.textAlign = 'left';
+    for (let i = 0; i <= 3; i++) {
+      const val = eMx - (i / 3) * eRng;
+      const y = pad.t + (i / 3) * ch;
+      ctx.fillText('$'+val.toFixed(1), W - pad.r + 4, y + 3);
+    }
+  }
+  ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'left';
+  let lgx = pad.l + 4;
+  ctx.fillStyle = 'rgba(61,156,245,0.7)'; ctx.fillRect(lgx, pad.t - 14, 10, 8); lgx += 13;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Revenue', lgx, pad.t - 7); lgx += 56;
+  ctx.fillStyle = 'rgba(0,229,160,0.7)'; ctx.fillRect(lgx, pad.t - 14, 10, 8); lgx += 13;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Net Profit', lgx, pad.t - 7); lgx += 66;
+  if (hasEps) {
+    ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 1.5; ctx.setLineDash([4,2]);
+    ctx.beginPath(); ctx.moveTo(lgx, pad.t - 10); ctx.lineTo(lgx + 14, pad.t - 10); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#9899a8'; ctx.fillText('EPS (right)', lgx + 17, pad.t - 7);
+  }
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '7px "Fira Code",monospace'; ctx.textAlign = 'left';
+  ctx.fillText(FIN_DATA.scale || '', pad.l, H - 16);
+}
+(function() {
+  const btns = document.querySelectorAll('#fin-toggle .tf-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._lastFinMode = btn.dataset.mode;
+      drawFinChart(btn.dataset.mode);
+    });
+  });
+})();
+(function() {
+  const btns = document.querySelectorAll('#eps-toggle .tf-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._lastEpsMode = btn.dataset.mode;
+      drawEpsEstChart(btn.dataset.mode);
+    });
+  });
+})();
+
+// Prediction cone chart
+const PRED = {"dates": [], "prices": [], "current": 0, "targetLow": 0.0, "targetMid": 0, "targetHigh": 0.0, "nAnalysts": 0, "hasTargets": false, "currency": "$"};
+function drawPredictionChart() {
+  const c = document.getElementById('cv-prediction');
+  if (!c || !PRED.dates.length) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  const W = rect.width * dpr, H = rect.height * dpr;
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const prices = PRED.prices;
+  const cur = PRED.current;
+  const tLow = PRED.targetLow, tMid = PRED.targetMid, tHigh = PRED.targetHigh;
+  const curr = PRED.currency;
+  const hasTgt = PRED.hasTargets;
+  const nA = PRED.nAnalysts;
+
+  const pad = { l: 60, r: 130, t: 30, b: 40 };
+  // History takes ~65% of width, projection takes ~35%
+  const histW = (w - pad.l - pad.r) * 0.65;
+  const projW = (w - pad.l - pad.r) * 0.35;
+  const chartH = h - pad.t - pad.b;
+
+  // Price range: include history + targets
+  const allVals = prices.concat([tLow, tMid, tHigh]);
+  let pMin = Math.min(...allVals) * 0.95;
+  let pMax = Math.max(...allVals) * 1.05;
+  if (pMax === pMin) { pMax = pMin * 1.2; pMin = pMin * 0.8; }
+  const yScale = v => pad.t + chartH - ((v - pMin) / (pMax - pMin)) * chartH;
+
+  const n = prices.length;
+  const xHist = i => pad.l + (i / (n - 1)) * histW;
+  const histEnd = pad.l + histW;
+  const projEnd = histEnd + projW;
+
+  // Gridlines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 0.5;
+  const nGrid = 6;
+  for (let i = 0; i <= nGrid; i++) {
+    const v = pMin + (pMax - pMin) * i / nGrid;
+    const y = yScale(v);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'right';
+    ctx.fillText(curr + v.toLocaleString(undefined, {maximumFractionDigits: 0}), pad.l - 6, y + 3);
+  }
+
+  // X-axis labels for history
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'center';
+  const dates = PRED.dates;
+  const labelStep = Math.max(1, Math.floor(n / 5));
+  for (let i = 0; i < n; i += labelStep) {
+    const d = new Date(dates[i]);
+    ctx.fillText(d.toLocaleDateString('en', {month:'short', year:'2-digit'}), xHist(i), h - pad.b + 14);
+  }
+  ctx.fillText('12M Target', histEnd + projW * 0.5, h - pad.b + 14);
+
+  // Projection cone (shaded area)
+  const curY = yScale(cur);
+  const highY = yScale(tHigh);
+  const lowY = yScale(tLow);
+  const midY = yScale(tMid);
+
+  // Full cone gradient (high to low)
+  const grad = ctx.createLinearGradient(0, highY, 0, lowY);
+  grad.addColorStop(0, 'rgba(0,229,160,0.08)');
+  grad.addColorStop(0.5, 'rgba(245,166,35,0.04)');
+  grad.addColorStop(1, 'rgba(255,77,109,0.08)');
+  ctx.beginPath();
+  ctx.moveTo(histEnd, curY);
+  ctx.lineTo(projEnd, highY);
+  ctx.lineTo(projEnd, lowY);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Upper cone half (green tint)
+  const gradUp = ctx.createLinearGradient(0, highY, 0, curY);
+  gradUp.addColorStop(0, 'rgba(0,229,160,0.12)');
+  gradUp.addColorStop(1, 'rgba(0,229,160,0.02)');
+  ctx.beginPath();
+  ctx.moveTo(histEnd, curY);
+  ctx.lineTo(projEnd, highY);
+  ctx.lineTo(projEnd, midY);
+  ctx.closePath();
+  ctx.fillStyle = gradUp;
+  ctx.fill();
+
+  // Lower cone half (red tint)
+  const gradDn = ctx.createLinearGradient(0, curY, 0, lowY);
+  gradDn.addColorStop(0, 'rgba(255,77,109,0.02)');
+  gradDn.addColorStop(1, 'rgba(255,77,109,0.12)');
+  ctx.beginPath();
+  ctx.moveTo(histEnd, curY);
+  ctx.lineTo(projEnd, midY);
+  ctx.lineTo(projEnd, lowY);
+  ctx.closePath();
+  ctx.fillStyle = gradDn;
+  ctx.fill();
+
+  // Draw history line
+  ctx.beginPath();
+  ctx.moveTo(xHist(0), yScale(prices[0]));
+  for (let i = 1; i < n; i++) ctx.lineTo(xHist(i), yScale(prices[i]));
+  ctx.strokeStyle = '#3d9cf5'; ctx.lineWidth = 1.8; ctx.stroke();
+
+  // History area fill
+  const gradHist = ctx.createLinearGradient(0, pad.t, 0, pad.t + chartH);
+  gradHist.addColorStop(0, 'rgba(61,156,245,0.15)');
+  gradHist.addColorStop(1, 'rgba(61,156,245,0.01)');
+  ctx.lineTo(xHist(n - 1), pad.t + chartH);
+  ctx.lineTo(xHist(0), pad.t + chartH);
+  ctx.closePath();
+  ctx.fillStyle = gradHist;
+  ctx.fill();
+
+  // Dotted line: high target (green)
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(histEnd, curY); ctx.lineTo(projEnd, highY);
+  ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 1.8; ctx.stroke();
+  // Dashed line: mean target (amber)
+  ctx.setLineDash([8, 4]);
+  ctx.beginPath(); ctx.moveTo(histEnd, curY); ctx.lineTo(projEnd, midY);
+  ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 2; ctx.stroke();
+  // Dotted line: low target (red)
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(histEnd, curY); ctx.lineTo(projEnd, lowY);
+  ctx.strokeStyle = '#ff4d6d'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Current price marker — vertical line + triangle
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(histEnd, pad.t); ctx.lineTo(histEnd, pad.t + chartH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#3d9cf5';
+  ctx.beginPath();
+  ctx.moveTo(histEnd, curY - 5); ctx.lineTo(histEnd - 6, curY - 12); ctx.lineTo(histEnd + 6, curY - 12);
+  ctx.closePath(); ctx.fill();
+  ctx.font = 'bold 10px "Fira Code",monospace'; ctx.textAlign = 'center';
+  ctx.fillText(curr + cur.toLocaleString(undefined, {maximumFractionDigits: 2}), histEnd, curY - 16);
+  ctx.fillStyle = '#5c5d6e'; ctx.font = '7px "Fira Code",monospace';
+  ctx.fillText('NOW', histEnd, curY - 26);
+
+  // Target labels with triangles on the right
+  const fmtPct = (t) => { const p = ((t - cur) / cur * 100); return (p >= 0 ? '+' : '') + p.toFixed(1) + '%'; };
+  // High target
+  ctx.fillStyle = '#00e5a0'; ctx.font = 'bold 10px "Fira Code",monospace'; ctx.textAlign = 'left';
+  ctx.beginPath(); ctx.moveTo(projEnd + 2, highY); ctx.lineTo(projEnd + 8, highY - 5); ctx.lineTo(projEnd + 8, highY + 5); ctx.closePath(); ctx.fill();
+  ctx.fillText(curr + tHigh.toLocaleString(undefined, {maximumFractionDigits: 0}), projEnd + 11, highY + 4);
+  ctx.fillStyle = 'rgba(0,229,160,0.7)'; ctx.font = '8px "Fira Code",monospace';
+  ctx.fillText(fmtPct(tHigh), projEnd + 11, highY + 14);
+
+  // Mean target
+  ctx.fillStyle = '#f5a623'; ctx.font = 'bold 10px "Fira Code",monospace';
+  ctx.beginPath(); ctx.moveTo(projEnd + 2, midY); ctx.lineTo(projEnd + 8, midY - 5); ctx.lineTo(projEnd + 8, midY + 5); ctx.closePath(); ctx.fill();
+  ctx.fillText(curr + tMid.toLocaleString(undefined, {maximumFractionDigits: 0}), projEnd + 11, midY + 4);
+  ctx.fillStyle = 'rgba(245,166,35,0.7)'; ctx.font = '8px "Fira Code",monospace';
+  ctx.fillText(fmtPct(tMid) + (nA ? ' (' + nA + ' analysts)' : ''), projEnd + 11, midY + 14);
+
+  // Low target
+  ctx.fillStyle = '#ff4d6d'; ctx.font = 'bold 10px "Fira Code",monospace';
+  ctx.beginPath(); ctx.moveTo(projEnd + 2, lowY); ctx.lineTo(projEnd + 8, lowY - 5); ctx.lineTo(projEnd + 8, lowY + 5); ctx.closePath(); ctx.fill();
+  ctx.fillText(curr + tLow.toLocaleString(undefined, {maximumFractionDigits: 0}), projEnd + 11, lowY + 4);
+  ctx.fillStyle = 'rgba(255,77,109,0.7)'; ctx.font = '8px "Fira Code",monospace';
+  ctx.fillText(fmtPct(tLow), projEnd + 11, lowY + 14);
+
+  // Legend
+  ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'left';
+  let lx = pad.l;
+  ctx.strokeStyle = '#3d9cf5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx, pad.t - 10); ctx.lineTo(lx + 20, pad.t - 10); ctx.stroke();
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Historical', lx + 24, pad.t - 6); lx += 80;
+  ctx.setLineDash([6, 4]); ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(lx, pad.t - 10); ctx.lineTo(lx + 20, pad.t - 10); ctx.stroke();
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Upside', lx + 24, pad.t - 6); lx += 64;
+  ctx.setLineDash([8, 4]); ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(lx, pad.t - 10); ctx.lineTo(lx + 20, pad.t - 10); ctx.stroke();
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Mean Target', lx + 24, pad.t - 6); lx += 90;
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = '#ff4d6d'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(lx, pad.t - 10); ctx.lineTo(lx + 20, pad.t - 10); ctx.stroke();
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Drawdown', lx + 24, pad.t - 6);
+  ctx.setLineDash([]);
+
+  if (!hasTgt) {
+    ctx.fillStyle = 'rgba(245,166,35,0.7)'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+    ctx.fillText('No analyst targets available — using ±25% estimate', histEnd + projW * 0.5, pad.t + chartH / 2);
+  }
+}
+drawPredictionChart();
+window.addEventListener('resize', drawPredictionChart);
+
+// Sankey carousel wiring
+function _initSankeyCarousel(id) {
+  const modeWrap = document.getElementById(id + '-mode');
+  const periodWrap = document.getElementById(id + '-periods');
+  if (!modeWrap) return;
+  const modeBtns = modeWrap.querySelectorAll('.tf-btn');
+
+  function showPanel(mode, idx) {
+    document.querySelectorAll('.' + id + '-panel').forEach(p => p.style.display = 'none');
+    const targets = document.querySelectorAll('.' + id + '-' + mode);
+    if (!targets.length) return;
+    targets.forEach((p, i) => p.style.display = i === idx ? '' : 'none');
+  }
+
+  function buildPeriodTabs(mode) {
+    if (!periodWrap) return;
+    periodWrap.innerHTML = '';
+    const targets = document.querySelectorAll('.' + id + '-' + mode);
+    targets.forEach((p, i) => {
+      const b = document.createElement('button');
+      b.className = 'tf-btn' + (i === 0 ? ' active' : '');
+      const svg = p.querySelector('svg');
+      const texts = svg ? svg.querySelectorAll('text') : [];
+      let label = 'Period ' + (i + 1);
+      if (texts.length) {
+        const last = texts[texts.length - 1].textContent;
+        const m = last.match(/([A-Z][a-z]{2} \d{4}|FY\d{4}|As of .+?·)/);
+        if (m) label = m[1].replace('As of ','').replace(' ·','');
+      }
+      b.textContent = label;
+      b.addEventListener('click', () => {
+        periodWrap.querySelectorAll('.tf-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        showPanel(mode, i);
+      });
+      periodWrap.appendChild(b);
+    });
+  }
+
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      modeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.dataset.mode;
+      buildPeriodTabs(mode);
+      showPanel(mode, 0);
+    });
+  });
+  const activeBtn = modeWrap.querySelector('.tf-btn.active');
+  if (activeBtn) {
+    const mode = activeBtn.dataset.mode;
+    buildPeriodTabs(mode);
+    showPanel(mode, 0);
+  }
+}
+_initSankeyCarousel('sk-inc');
+_initSankeyCarousel('sk-bs');
+_initSankeyCarousel('sk-cf');
+
+const EPS_EST = [];
+function drawEpsEstChart(mode) {
+  const c = document.getElementById('cv-eps-est');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = c.clientHeight;
+  if (W === 0 || H === 0) return;
+  c.width = W * dpr; c.height = H * dpr;
+  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, W, H);
+
+  if (mode === 'quarterly' || mode === 'annual') {
+    const items = FIN_DATA[mode] || [];
+    const epsItems = items.filter(d => d.eps !== null);
+    if (!epsItems.length) {
+      ctx.fillStyle = '#5c5d6e'; ctx.font = '12px "Fira Code",monospace'; ctx.textAlign = 'center';
+      ctx.fillText('EPS data not available for ' + mode, W/2, H/2);
+      return;
+    }
+    const pad = { t:30, b:34, l:55, r:20 };
+    const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
+    const n = epsItems.length;
+    const vals = epsItems.map(d => d.eps);
+    const mn = Math.min(...vals) * (Math.min(...vals) > 0 ? 0.8 : 1.2);
+    const mx = Math.max(...vals) * 1.15;
+    const rng = mx - mn || 1;
+    const yV = v => pad.t + (1 - (v - mn) / rng) * ch;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5;
+    ctx.font = '8px "Fira Code",monospace'; ctx.fillStyle = '#5c5d6e'; ctx.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) {
+      const val = mx - (i / 4) * rng;
+      const y = pad.t + (i / 4) * ch;
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+      ctx.fillText('$'+val.toFixed(1), pad.l - 5, y + 3);
+    }
+    const groupW = cw / n;
+    const barW = Math.max(12, Math.min(40, groupW * 0.5));
+    const zeroY = yV(0);
+    epsItems.forEach((d, i) => {
+      const x = pad.l + (i + 0.5) * groupW;
+      const ey = yV(d.eps);
+      const barTop = Math.min(zeroY, ey);
+      const barH = Math.abs(ey - zeroY);
+      ctx.fillStyle = d.eps >= 0 ? 'rgba(0,229,160,0.5)' : 'rgba(255,77,109,0.5)';
+      ctx.strokeStyle = d.eps >= 0 ? '#00e5a0' : '#ff4d6d';
+      ctx.lineWidth = 1;
+      ctx.fillRect(x - barW/2, barTop, barW, barH);
+      ctx.strokeRect(x - barW/2, barTop, barW, barH);
+      ctx.fillStyle = '#e8e9f0'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+      ctx.fillText('$' + d.eps.toFixed(1), x, ey - 8);
+      ctx.fillStyle = '#9899a8'; ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+      ctx.fillText(d.label, x, H - 10);
+    });
+    ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#9899a8';
+    ctx.fillText(mode === 'quarterly' ? 'Quarterly EPS ($/share)' : 'Annual EPS ($/share)', pad.l + 4, pad.t - 14);
+    return;
+  }
+
+  if (!EPS_EST.length) {
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '12px "Fira Code",monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Earnings estimate data not available', W/2, H/2);
+    return;
+  }
+  const pad = { t:30, b:34, l:55, r:20 };
+  const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
+  const n = EPS_EST.length;
+  const allV = EPS_EST.flatMap(d => [d.estimate, d.actual]).filter(v => v !== null);
+  if (!allV.length) return;
+  const mn = Math.min(...allV) * 0.8, mx = Math.max(...allV) * 1.2;
+  const rng = mx - mn || 1;
+  const yV = v => pad.t + (1 - (v - mn) / rng) * ch;
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5;
+  ctx.font = '8px "Fira Code",monospace'; ctx.fillStyle = '#5c5d6e'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const val = mx - (i / 4) * rng;
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillText('$'+val.toFixed(1), pad.l - 5, y + 3);
+  }
+  const groupW = cw / n;
+  const dotR = 6;
+  EPS_EST.forEach((d, i) => {
+    if (d.estimate === null || d.actual === null) return;
+    const x = pad.l + (i + 0.5) * groupW;
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, yV(d.estimate)); ctx.lineTo(x, yV(d.actual)); ctx.stroke();
+  });
+  EPS_EST.forEach((d, i) => {
+    const x = pad.l + (i + 0.5) * groupW;
+    const hasEst = d.estimate !== null;
+    const hasAct = d.actual !== null;
+    const beat = hasAct && hasEst && d.actual >= d.estimate;
+    if (hasEst) {
+      const ex = x - 8;
+      const ey = yV(d.estimate);
+      ctx.beginPath(); ctx.arc(ex, ey, dotR, 0, Math.PI*2);
+      ctx.fillStyle = '#9b7fff'; ctx.fill();
+      ctx.strokeStyle = '#08090d'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = '#9b7fff'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'right';
+      ctx.fillText('$' + d.estimate.toFixed(1), ex - 9, ey + 3);
+    }
+    if (hasAct) {
+      const ax = x + 8;
+      const ay = yV(d.actual);
+      ctx.beginPath(); ctx.arc(ax, ay, dotR, 0, Math.PI*2);
+      ctx.fillStyle = beat ? '#00e5a0' : '#ff4d6d'; ctx.fill();
+      ctx.strokeStyle = '#08090d'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = beat ? '#00e5a0' : '#ff4d6d'; ctx.font = '8px "Fira Code",monospace'; ctx.textAlign = 'left';
+      ctx.fillText('$' + d.actual.toFixed(1), ax + 9, ay + 3);
+    }
+    if (d.surprise !== null) {
+      ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = d.surprise >= 0 ? '#00e5a0' : '#ff4d6d';
+      const bottomY = Math.max(hasEst ? yV(d.estimate) : 0, hasAct ? yV(d.actual) : 0);
+      ctx.fillText((d.surprise >= 0 ? '+' : '') + d.surprise.toFixed(1) + '%', x, bottomY + 18);
+    }
+    ctx.fillStyle = '#5c5d6e'; ctx.font = '7px "Fira Code",monospace'; ctx.textAlign = 'center';
+    ctx.fillText(d.label, x, H - 8);
+  });
+  ctx.font = '9px "Fira Code",monospace'; ctx.textAlign = 'left';
+  let lx2 = pad.l + 4;
+  ctx.beginPath(); ctx.arc(lx2 + 4, pad.t - 16, 4, 0, Math.PI*2); ctx.fillStyle = '#9b7fff'; ctx.fill(); lx2 += 12;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Estimate', lx2, pad.t - 13); lx2 += 60;
+  ctx.beginPath(); ctx.arc(lx2 + 4, pad.t - 16, 4, 0, Math.PI*2); ctx.fillStyle = '#00e5a0'; ctx.fill(); lx2 += 12;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Beat', lx2, pad.t - 13); lx2 += 38;
+  ctx.beginPath(); ctx.arc(lx2 + 4, pad.t - 16, 4, 0, Math.PI*2); ctx.fillStyle = '#ff4d6d'; ctx.fill(); lx2 += 12;
+  ctx.fillStyle = '#9899a8'; ctx.fillText('Miss', lx2, pad.t - 13);
+}
+
+
 </script>
 </body>
 </html>
