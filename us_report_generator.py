@@ -1471,6 +1471,469 @@ def calculate_factor_scores(data, scores, returns):
     return factor_scores, reasons
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# SANKEY FLOW DIAGRAM SVG GENERATORS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _fmt_money(val, currency="$"):
+    """Format a value in millions to a readable string."""
+    if val is None:
+        return "—"
+    av = abs(val)
+    if av >= 1e6:
+        return f"{currency}{val/1e6:,.1f}T"
+    if av >= 1e3:
+        return f"{currency}{val/1e3:,.1f}B"
+    if av >= 1:
+        return f"{currency}{val:,.0f}M"
+    return f"{currency}{val:,.1f}M"
+
+
+def _sankey_band(x0, y0_top, y0_bot, x1, y1_top, y1_bot, color, opacity=0.45):
+    """Cubic-bezier ribbon between two vertical spans."""
+    mx = (x0 + x1) / 2
+    return (f'<path d="M{x0:.1f},{y0_top:.1f} C{mx:.1f},{y0_top:.1f} {mx:.1f},{y1_top:.1f} {x1:.1f},{y1_top:.1f}'
+            f' L{x1:.1f},{y1_bot:.1f} C{mx:.1f},{y1_bot:.1f} {mx:.1f},{y0_bot:.1f} {x0:.1f},{y0_bot:.1f} Z"'
+            f' fill="{color}" opacity="{opacity}"/>\n')
+
+
+def generate_income_sankey_svg(data, width=1040, height=480):
+    """Generate a left-to-right Sankey flow diagram for the income statement."""
+    fi = data.get("financials")
+    qi = data.get("quarterly_income")
+    src = fi if fi is not None and not fi.empty else qi
+    if src is None or src.empty:
+        return "", {}
+
+    col = src.columns[0]
+    def _v(keys):
+        for k in keys:
+            if k in src.index:
+                v = src.loc[k, col]
+                if v is not None and not (isinstance(v, float) and math.isnan(v)):
+                    return float(v) / 1e6
+        return 0
+
+    rev = _v(["Total Revenue", "Operating Revenue", "Revenue"])
+    cogs = _v(["Cost Of Revenue", "Reconciled Cost Of Revenue"])
+    gross = _v(["Gross Profit"])
+    if not gross and rev and cogs: gross = rev - cogs
+    if not cogs and rev and gross: cogs = rev - gross
+    rd = _v(["Research And Development"])
+    sga = _v(["Selling General And Administration"])
+    opex = rd + sga if (rd or sga) else _v(["Operating Expense", "Total Operating Expenses"])
+    op_inc = _v(["Operating Income", "EBIT"])
+    if not op_inc and gross and opex: op_inc = gross - opex
+    tax = _v(["Tax Provision", "Income Tax Expense"])
+    interest = abs(_v(["Interest Expense"]))
+    other = abs(_v(["Other Income Expense", "Other Non Operating Income Expenses"]))
+    net = _v(["Net Income", "Net Income Common Stockholders"])
+
+    if not rev or rev <= 0:
+        return "", {}
+
+    try:
+        dt = col.to_pydatetime() if hasattr(col, 'to_pydatetime') else col
+        period_label = dt.strftime("%b %Y")
+    except Exception:
+        period_label = str(col)
+
+    # Column x positions (4 columns: Revenue | Gross split | OpInc split | Net split)
+    pad = {"l": 100, "r": 120, "t": 25, "b": 25}
+    usable_w = width - pad["l"] - pad["r"]
+    node_w = 16
+    cols_x = [pad["l"], pad["l"] + usable_w * 0.28, pad["l"] + usable_w * 0.56, pad["l"] + usable_w * 0.84]
+    chart_h = height - pad["t"] - pad["b"]
+
+    # Scale: all values proportional to revenue
+    def _h(val):
+        return max(3, (abs(val) / rev) * chart_h * 0.92)
+
+    # Nodes: (col_idx, label, value, color, y_offset set later)
+    nodes = []
+    # Col 0: Revenue
+    nodes.append({"col": 0, "label": f"Revenue\n{_fmt_money(rev)}", "val": rev, "color": "#3d9cf5"})
+    # Col 1: COGS + Gross Profit
+    nodes.append({"col": 1, "label": f"Cost of Revenue\n{_fmt_money(cogs)}", "val": cogs, "color": "#ff4d6d"})
+    nodes.append({"col": 1, "label": f"Gross Profit\n{_fmt_money(gross)}", "val": gross, "color": "#00e5a0"})
+    # Col 2: OpEx + Operating Income
+    col2_items = []
+    if rd:
+        col2_items.append({"label": f"R&D\n{_fmt_money(rd)}", "val": rd, "color": "#ff4d6d"})
+    if sga:
+        col2_items.append({"label": f"SG&A\n{_fmt_money(sga)}", "val": sga, "color": "#f5a623"})
+    if not rd and not sga and opex:
+        col2_items.append({"label": f"Op. Expenses\n{_fmt_money(opex)}", "val": opex, "color": "#ff4d6d"})
+    col2_items.append({"label": f"Operating Inc.\n{_fmt_money(op_inc)}", "val": op_inc, "color": "#00e5a0"})
+    for item in col2_items:
+        item["col"] = 2
+        nodes.append(item)
+    # Col 3: Tax + Interest + Net Income
+    col3_items = []
+    if tax and tax > rev * 0.005:
+        col3_items.append({"label": f"Tax\n{_fmt_money(tax)}", "val": tax, "color": "#f5a623"})
+    if interest and interest > rev * 0.005:
+        col3_items.append({"label": f"Interest\n{_fmt_money(interest)}", "val": interest, "color": "#9b7fff"})
+    if other and other > rev * 0.005:
+        col3_items.append({"label": f"Other\n{_fmt_money(other)}", "val": other, "color": "#5c5d6e"})
+    col3_items.append({"label": f"Net Income\n{_fmt_money(net)}\n({net/rev*100:.1f}% margin)", "val": net, "color": "#00e5a0"})
+    for item in col3_items:
+        item["col"] = 3
+        nodes.append(item)
+
+    # Layout: position each node vertically within its column
+    for ci in range(4):
+        col_nodes = [n for n in nodes if n["col"] == ci]
+        total_val = sum(abs(n["val"]) for n in col_nodes)
+        gap_total = max(0, (len(col_nodes) - 1) * 8)
+        avail_h = chart_h - gap_total
+        y_cursor = pad["t"]
+        for n in col_nodes:
+            h = max(14, (abs(n["val"]) / rev) * avail_h)
+            n["y"] = y_cursor
+            n["h"] = h
+            n["x"] = cols_x[ci]
+            y_cursor += h + 8
+
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" style="width:100%;height:auto;font-family:\'DM Sans\',Fira Code,monospace;">\n'
+    svg += f'  <rect width="{width}" height="{height}" fill="#0d0e14" rx="10"/>\n'
+
+    # Draw bands (links)
+    # Revenue → COGS, Gross Profit
+    rev_node = [n for n in nodes if n["col"] == 0][0]
+    cogs_node = [n for n in nodes if n["col"] == 1 and "Cost" in n["label"]][0]
+    gross_node = [n for n in nodes if n["col"] == 1 and "Gross" in n["label"]][0]
+
+    rx = rev_node["x"] + node_w
+    cogs_frac = cogs / rev if rev else 0.5
+    cogs_src_h = cogs_frac * rev_node["h"]
+    svg += _sankey_band(rx, rev_node["y"], rev_node["y"] + cogs_src_h, cogs_node["x"], cogs_node["y"], cogs_node["y"] + cogs_node["h"], cogs_node["color"], 0.35)
+    svg += _sankey_band(rx, rev_node["y"] + cogs_src_h, rev_node["y"] + rev_node["h"], gross_node["x"], gross_node["y"], gross_node["y"] + gross_node["h"], gross_node["color"], 0.35)
+
+    # Gross Profit → OpEx items + Operating Income
+    gx = gross_node["x"] + node_w
+    col2_nodes = [n for n in nodes if n["col"] == 2]
+    col2_total = sum(abs(c["val"]) for c in col2_nodes)
+    g_cursor = gross_node["y"]
+    for cn in col2_nodes:
+        src_h = (abs(cn["val"]) / col2_total) * gross_node["h"] if col2_total else cn["h"]
+        svg += _sankey_band(gx, g_cursor, g_cursor + src_h, cn["x"], cn["y"], cn["y"] + cn["h"], cn["color"], 0.35)
+        g_cursor += src_h
+
+    # Operating Income → Tax, Interest, Net Income
+    oi_node = [n for n in nodes if n["col"] == 2 and "Operating Inc" in n["label"]]
+    if oi_node:
+        oi_node = oi_node[0]
+        ox = oi_node["x"] + node_w
+        col3_nodes = [n for n in nodes if n["col"] == 3]
+        col3_total = sum(abs(c["val"]) for c in col3_nodes)
+        o_cursor = oi_node["y"]
+        for cn in col3_nodes:
+            src_h = (abs(cn["val"]) / col3_total) * oi_node["h"] if col3_total else cn["h"]
+            svg += _sankey_band(ox, o_cursor, o_cursor + src_h, cn["x"], cn["y"], cn["y"] + cn["h"], cn["color"], 0.35)
+            o_cursor += src_h
+
+    # Draw nodes (rounded rects)
+    for n in nodes:
+        svg += f'  <rect x="{n["x"]:.1f}" y="{n["y"]:.1f}" width="{node_w}" height="{n["h"]:.1f}" rx="4" fill="{n["color"]}" opacity="0.95"/>\n'
+
+    # Draw labels: col 0 labels on left, all others on the right of node
+    for n in nodes:
+        lines = n["label"].split("\n")
+        if n["col"] == 0:
+            tx = n["x"] - 6
+            anchor = "end"
+        else:
+            tx = n["x"] + node_w + 6
+            anchor = "start"
+        ty = n["y"] + n["h"] / 2 - (len(lines) - 1) * 6
+        for li, line in enumerate(lines):
+            fw = "700" if li == 0 else "500"
+            fs = "10" if li == 0 else "9"
+            fc = "#e8e9f0" if li == 0 else n["color"]
+            svg += f'  <text x="{tx}" y="{ty + li * 13:.1f}" text-anchor="{anchor}" font-size="{fs}" fill="{fc}" font-weight="{fw}">{line}</text>\n'
+
+    svg += f'  <text x="{width/2}" y="{height - 6}" text-anchor="middle" font-size="9" fill="#5c5d6e">{period_label} · All values in $ Millions</text>\n'
+    svg += '</svg>'
+    return svg, {"period": period_label, "revenue": rev, "net_income": net}
+
+
+def generate_balance_sheet_sankey_svg(data, width=1040, height=500):
+    """Generate a Sankey flow: Total Assets → sub-items, Total L+E → sub-items."""
+    bs = data.get("annual_balance_sheet")
+    qbs = data.get("balance_sheet")
+    src = bs if bs is not None and not bs.empty else qbs
+    if src is None or src.empty:
+        return ""
+
+    col = src.columns[0]
+    def _v(keys):
+        for k in keys:
+            if k in src.index:
+                v = src.loc[k, col]
+                if v is not None and not (isinstance(v, float) and math.isnan(v)):
+                    return float(v) / 1e6
+        return 0
+
+    total_assets = _v(["Total Assets"])
+    cash = _v(["Cash And Cash Equivalents", "Cash Cash Equivalents And Short Term Investments"])
+    receivables = _v(["Accounts Receivable", "Net Receivables", "Receivables"])
+    inventory = _v(["Inventory"])
+    current_assets = _v(["Current Assets"])
+    ppe = _v(["Net PPE", "Gross PPE"])
+    goodwill = _v(["Goodwill"])
+    # "Intangible Assets" / "Net Intangible Assets" are exclusive of goodwill;
+    # "Goodwill And Other Intangible Assets" INCLUDES goodwill — subtract it.
+    intangibles = _v(["Intangible Assets", "Net Intangible Assets"])
+    if not intangibles:
+        goia = _v(["Goodwill And Other Intangible Assets"])
+        intangibles = max(0, goia - goodwill) if (goia and goodwill) else (goia or 0)
+    total_liab = _v(["Total Liabilities Net Minority Interest", "Total Liabilities"])
+    current_liab = _v(["Current Liabilities"])
+    long_debt = _v(["Long Term Debt", "Long Term Debt And Capital Lease Obligation"])
+    total_equity = _v(["Total Equity Gross Minority Interest", "Stockholders Equity", "Total Stockholders Equity"])
+
+    if not total_assets or total_assets <= 0:
+        return ""
+
+    try:
+        dt = col.to_pydatetime() if hasattr(col, 'to_pydatetime') else col
+        period_label = dt.strftime("%b %Y")
+    except Exception:
+        period_label = str(col)
+
+    pad = {"l": 100, "r": 140, "t": 30, "b": 25}
+    usable_w = width - pad["l"] - pad["r"]
+    node_w = 16
+    cx = [pad["l"], pad["l"] + usable_w * 0.45, pad["l"] + usable_w * 0.80]
+    half_h = (height - pad["t"] - pad["b"] - 20) / 2
+
+    # ── Assets side (top half) ──
+    asset_detail = []
+    if cash: asset_detail.append(("Cash & Equiv.", cash, "#00e5a0"))
+    if receivables: asset_detail.append(("Receivables", receivables, "#3d9cf5"))
+    if inventory: asset_detail.append(("Inventory", inventory, "#f5a623"))
+    other_ca = max(0, current_assets - cash - receivables - inventory)
+    if other_ca > total_assets * 0.01: asset_detail.append(("Other Current", other_ca, "#5c5d6e"))
+    if ppe: asset_detail.append(("PP&E", ppe, "#9b7fff"))
+    if goodwill: asset_detail.append(("Goodwill", goodwill, "#3d9cf5"))
+    if intangibles > total_assets * 0.01: asset_detail.append(("Other Intangibles", intangibles, "#f5a623"))
+    non_current_other = max(0, total_assets - current_assets - ppe - goodwill - intangibles)
+    if non_current_other > total_assets * 0.02: asset_detail.append(("Other Non-Curr.", non_current_other, "#5c5d6e"))
+
+    # ── Liabilities + Equity side (bottom half) ──
+    le_detail = []
+    if current_liab: le_detail.append(("Current Liab.", current_liab, "#ff4d6d"))
+    if long_debt: le_detail.append(("Long-Term Debt", long_debt, "#f5a623"))
+    other_liab = max(0, total_liab - current_liab - long_debt)
+    if other_liab > total_assets * 0.02: le_detail.append(("Other Liab.", other_liab, "#5c5d6e"))
+    if total_equity: le_detail.append(("Equity", abs(total_equity), "#00e5a0" if total_equity >= 0 else "#ff4d6d"))
+
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" style="width:100%;height:auto;font-family:\'DM Sans\',Fira Code,monospace;">\n'
+    svg += f'  <rect width="{width}" height="{height}" fill="#0d0e14" rx="10"/>\n'
+
+    def _layout_col(items, y_start, avail_h, col_x):
+        nodes_out = []
+        total_val = sum(v for _, v, _ in items)
+        n = len(items)
+        if not n or not total_val:
+            return nodes_out
+        gap = 6
+        gap_total = max(0, (n - 1) * gap)
+        bar_space = avail_h - gap_total
+        min_h = 14
+        # Two-pass to prevent min-height items causing overflow
+        raw = [(val / total_val) * bar_space for _, val, _ in items]
+        heights = [max(min_h, r) for r in raw]
+        if sum(heights) > bar_space:
+            fixed = sum(h for h in heights if h <= min_h)
+            remain = bar_space - fixed
+            large_sum = sum(h for h in heights if h > min_h)
+            scale = remain / large_sum if large_sum > 0 else 1
+            heights = [h if h <= min_h else h * scale for h in heights]
+        y_cur = y_start
+        for i, (lbl, val, clr) in enumerate(items):
+            h = heights[i]
+            nodes_out.append({"x": col_x, "y": y_cur, "h": h, "val": val, "label": lbl, "color": clr})
+            y_cur += h + gap
+        return nodes_out
+
+    # Assets section
+    a_y0 = pad["t"]
+    a_root = [{"x": cx[0], "y": a_y0, "h": half_h - 5, "val": total_assets, "label": "Total Assets", "color": "#3d9cf5"}]
+    a_subs = _layout_col([(n, v, c) for n, v, c in asset_detail], a_y0, half_h - 5, cx[2])
+
+    svg += f'  <text x="{cx[0] - 6}" y="{a_y0 + half_h / 2:.1f}" text-anchor="end" font-size="10" fill="#e8e9f0" font-weight="700">Total Assets</text>\n'
+    svg += f'  <text x="{cx[0] - 6}" y="{a_y0 + half_h / 2 + 14:.1f}" text-anchor="end" font-size="9" fill="#3d9cf5" font-weight="600">{_fmt_money(total_assets)}</text>\n'
+
+    # Draw root → detail bands (proportional to detail column total)
+    a_detail_total = sum(d["val"] for d in a_subs)
+    a_cursor = a_root[0]["y"]
+    for d in a_subs:
+        bh_src = (d["val"] / a_detail_total) * a_root[0]["h"] if a_detail_total else d["h"]
+        svg += _sankey_band(cx[0] + node_w, a_cursor, a_cursor + bh_src, d["x"], d["y"], d["y"] + d["h"], d["color"], 0.30)
+        a_cursor += bh_src
+
+    # Asset nodes
+    svg += f'  <rect x="{a_root[0]["x"]}" y="{a_root[0]["y"]:.1f}" width="{node_w}" height="{a_root[0]["h"]:.1f}" rx="4" fill="#3d9cf5" opacity="0.95"/>\n'
+    for d in a_subs:
+        svg += f'  <rect x="{d["x"]}" y="{d["y"]:.1f}" width="{node_w}" height="{d["h"]:.1f}" rx="4" fill="{d["color"]}" opacity="0.9"/>\n'
+        pct = f" ({d['val']/total_assets*100:.1f}%)" if total_assets else ""
+        svg += f'  <text x="{d["x"] + node_w + 6}" y="{d["y"] + d["h"]/2 + 4:.1f}" font-size="9" fill="{d["color"]}" font-weight="500">{d["label"]}: {_fmt_money(d["val"])}{pct}</text>\n'
+
+    # Divider
+    div_y = a_y0 + half_h + 4
+    svg += f'  <line x1="20" y1="{div_y}" x2="{width - 20}" y2="{div_y}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>\n'
+
+    # Liabilities + Equity section
+    le_y0 = a_y0 + half_h + 10
+    le_total = total_liab + total_equity
+    le_root = [{"x": cx[0], "y": le_y0, "h": half_h - 5, "val": le_total, "label": "Liab. + Equity", "color": "#f5a623"}]
+    le_subs = _layout_col([(n, v, c) for n, v, c in le_detail], le_y0, half_h - 5, cx[2])
+
+    svg += f'  <text x="{cx[0] - 6}" y="{le_y0 + (half_h - 5) / 2:.1f}" text-anchor="end" font-size="10" fill="#e8e9f0" font-weight="700">Liab. + Equity</text>\n'
+    svg += f'  <text x="{cx[0] - 6}" y="{le_y0 + (half_h - 5) / 2 + 14:.1f}" text-anchor="end" font-size="9" fill="#f5a623" font-weight="600">{_fmt_money(le_total)}</text>\n'
+
+    le_detail_total = sum(d["val"] for d in le_subs)
+    le_cursor = le_root[0]["y"]
+    for d in le_subs:
+        bh_src = (d["val"] / le_detail_total) * le_root[0]["h"] if le_detail_total else d["h"]
+        svg += _sankey_band(cx[0] + node_w, le_cursor, le_cursor + bh_src, d["x"], d["y"], d["y"] + d["h"], d["color"], 0.30)
+        le_cursor += bh_src
+
+    svg += f'  <rect x="{le_root[0]["x"]}" y="{le_root[0]["y"]:.1f}" width="{node_w}" height="{le_root[0]["h"]:.1f}" rx="4" fill="#f5a623" opacity="0.95"/>\n'
+    for d in le_subs:
+        svg += f'  <rect x="{d["x"]}" y="{d["y"]:.1f}" width="{node_w}" height="{d["h"]:.1f}" rx="4" fill="{d["color"]}" opacity="0.9"/>\n'
+        pct = f" ({d['val']/le_total*100:.1f}%)" if le_total else ""
+        svg += f'  <text x="{d["x"] + node_w + 6}" y="{d["y"] + d["h"]/2 + 4:.1f}" font-size="9" fill="{d["color"]}" font-weight="500">{d["label"]}: {_fmt_money(d["val"])}{pct}</text>\n'
+
+    svg += f'  <text x="{width/2}" y="{height - 6}" text-anchor="middle" font-size="9" fill="#5c5d6e">As of {period_label} · All values in $ Millions</text>\n'
+    svg += '</svg>'
+    return svg
+
+
+def generate_cashflow_sankey_svg(data, width=1040, height=420):
+    """Generate a Sankey flow for cash flow: OpCF → CapEx/FCF → uses → net change."""
+    cf = data.get("annual_cash_flow")
+    qcf = data.get("quarterly_cash_flow")
+    src = cf if cf is not None and not cf.empty else qcf
+    if src is None or src.empty:
+        return ""
+
+    col = src.columns[0]
+    def _v(keys):
+        for k in keys:
+            if k in src.index:
+                v = src.loc[k, col]
+                if v is not None and not (isinstance(v, float) and math.isnan(v)):
+                    return float(v) / 1e6
+        return 0
+
+    op_cf = _v(["Operating Cash Flow", "Cash Flow From Continuing Operating Activities"])
+    capex = abs(_v(["Capital Expenditure"]))
+    fcf = op_cf - capex if capex else abs(_v(["Free Cash Flow"]))
+    dividends = abs(_v(["Common Stock Dividend Paid", "Cash Dividends Paid"]))
+    buybacks = abs(_v(["Repurchase Of Capital Stock", "Common Stock Payments"]))
+    debt_repaid = abs(_v(["Long Term Debt Payments", "Repayment Of Debt"]))
+    debt_issued = _v(["Long Term Debt Issuance", "Issuance Of Debt"])
+    other_fin = abs(_v(["Financing Cash Flow", "Cash Flow From Continuing Financing Activities"])) - dividends - buybacks - debt_repaid + debt_issued
+    net_change = _v(["Changes In Cash", "Change In Cash Supplemental As Reported"])
+
+    if not op_cf or op_cf <= 0:
+        return ""
+
+    try:
+        dt = col.to_pydatetime() if hasattr(col, 'to_pydatetime') else col
+        period_label = dt.strftime("FY%Y")
+    except Exception:
+        period_label = str(col)
+
+    pad = {"l": 100, "r": 120, "t": 25, "b": 25}
+    usable_w = width - pad["l"] - pad["r"]
+    node_w = 16
+    cx = [pad["l"], pad["l"] + usable_w * 0.36, pad["l"] + usable_w * 0.72]
+    chart_h = height - pad["t"] - pad["b"]
+
+    # Col 0: Operating CF
+    col0 = [{"label": f"Operating CF\n{_fmt_money(op_cf)}", "val": op_cf, "color": "#00e5a0"}]
+    # Col 1: CapEx (outflow) + FCF
+    col1 = []
+    if capex > op_cf * 0.01:
+        col1.append({"label": f"Capital Exp.\n{_fmt_money(capex)}", "val": capex, "color": "#ff4d6d"})
+    col1.append({"label": f"Free Cash Flow\n{_fmt_money(fcf)}", "val": fcf, "color": "#3d9cf5"})
+    # Col 2: Uses of FCF
+    col2 = []
+    if dividends > op_cf * 0.01:
+        col2.append({"label": f"Dividends\n{_fmt_money(dividends)}", "val": dividends, "color": "#f5a623"})
+    if buybacks > op_cf * 0.01:
+        col2.append({"label": f"Buybacks\n{_fmt_money(buybacks)}", "val": buybacks, "color": "#9b7fff"})
+    if debt_repaid > op_cf * 0.01:
+        col2.append({"label": f"Debt Repaid\n{_fmt_money(debt_repaid)}", "val": debt_repaid, "color": "#ff4d6d"})
+    remaining = max(0, fcf - dividends - buybacks - debt_repaid)
+    if remaining > op_cf * 0.01:
+        col2.append({"label": f"Retained / Other\n{_fmt_money(remaining)}", "val": remaining, "color": "#00e5a0"})
+
+    all_cols = [col0, col1, col2]
+
+    # Position nodes
+    for ci, col_nodes in enumerate(all_cols):
+        total_val = sum(n["val"] for n in col_nodes)
+        gap = 8
+        gap_total = max(0, (len(col_nodes) - 1) * gap)
+        avail_h = chart_h - gap_total
+        y_cur = pad["t"]
+        for n in col_nodes:
+            h = max(16, (n["val"] / op_cf) * avail_h) if op_cf else 20
+            n["x"] = cx[ci]
+            n["y"] = y_cur
+            n["h"] = h
+            y_cur += h + gap
+
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" style="width:100%;height:auto;font-family:\'DM Sans\',Fira Code,monospace;">\n'
+    svg += f'  <rect width="{width}" height="{height}" fill="#0d0e14" rx="10"/>\n'
+
+    # Bands: col0 → col1
+    src_node = col0[0]
+    s_cursor = src_node["y"]
+    for dn in col1:
+        bh = (dn["val"] / op_cf) * src_node["h"] if op_cf else dn["h"]
+        svg += _sankey_band(src_node["x"] + node_w, s_cursor, s_cursor + bh, dn["x"], dn["y"], dn["y"] + dn["h"], dn["color"], 0.35)
+        s_cursor += bh
+
+    # Bands: FCF node → col2
+    fcf_node = [n for n in col1 if "Free" in n["label"]]
+    if fcf_node and col2:
+        fn = fcf_node[0]
+        f_cursor = fn["y"]
+        for dn in col2:
+            bh = (dn["val"] / fcf) * fn["h"] if fcf else dn["h"]
+            svg += _sankey_band(fn["x"] + node_w, f_cursor, f_cursor + bh, dn["x"], dn["y"], dn["y"] + dn["h"], dn["color"], 0.35)
+            f_cursor += bh
+
+    # Draw nodes and labels
+    max_ci = len(all_cols) - 1
+    for ci, col_nodes in enumerate(all_cols):
+        for n in col_nodes:
+            svg += f'  <rect x="{n["x"]:.1f}" y="{n["y"]:.1f}" width="{node_w}" height="{n["h"]:.1f}" rx="4" fill="{n["color"]}" opacity="0.95"/>\n'
+            lines = n["label"].split("\n")
+            if ci == 0:
+                tx = n["x"] - 6
+                anchor = "end"
+            else:
+                tx = n["x"] + node_w + 6
+                anchor = "start"
+            ty = n["y"] + n["h"] / 2 - (len(lines) - 1) * 6
+            for li, line in enumerate(lines):
+                fw = "700" if li == 0 else "500"
+                fs = "10" if li == 0 else "9"
+                fc = "#e8e9f0" if li == 0 else n["color"]
+                svg += f'  <text x="{tx}" y="{ty + li * 13:.1f}" text-anchor="{anchor}" font-size="{fs}" fill="{fc}" font-weight="{fw}">{line}</text>\n'
+
+    svg += f'  <text x="{width/2}" y="{height - 6}" text-anchor="middle" font-size="9" fill="#5c5d6e">{period_label} · All values in $ Millions</text>\n'
+    svg += '</svg>'
+    return svg
+
+
 def generate_pe_pb_chart_svg(series, label="P/E", color="#3d9cf5", width=520, height=200):
     """Generate a trend line chart SVG for PE, PB, or other valuation ratio."""
     headers = series.get("headers", [])
@@ -2104,6 +2567,13 @@ def generate_html_report(data, scores):
 
     import json as _json2
     fin_chart_json = _json2.dumps(fin_chart_data, separators=(",", ":"))
+
+    # ── Sankey flow SVGs (income, balance sheet, cash flow) ──
+    income_sankey_svg, _iw_meta = generate_income_sankey_svg(data)
+    balance_sheet_sankey_svg = generate_balance_sheet_sankey_svg(data)
+    cashflow_sankey_svg = generate_cashflow_sankey_svg(data)
+
+    _iw_period = _iw_meta.get("period", "Latest")
 
     # ── Earnings estimates vs actual ──
     earnings_hist_data = []
@@ -2958,6 +3428,21 @@ def generate_html_report(data, scores):
     <canvas id="cv-fin" style="width:100%;height:280px;display:block;"></canvas>
   </div>
 
+  {"" if not income_sankey_svg else f'''<div class="section">
+    <div class="section-title">💰 How {company_name} Makes Its Money ({_iw_period})</div>
+    {income_sankey_svg}
+  </div>'''}
+
+  {"" if not balance_sheet_sankey_svg else f'''<div class="section">
+    <div class="section-title">🏦 Snapshot of {company_name}'s Balance Sheet</div>
+    {balance_sheet_sankey_svg}
+  </div>'''}
+
+  {"" if not cashflow_sankey_svg else f'''<div class="section">
+    <div class="section-title">💸 Looking into {company_name}'s Cash Flow</div>
+    {cashflow_sankey_svg}
+  </div>'''}
+
   <div class="section">
     <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
       <span>🎯 EPS: Estimate vs Actual</span>
@@ -3600,6 +4085,8 @@ function drawEpsEstChart(mode) {{
   ctx.beginPath(); ctx.arc(lx2 + 4, pad.t - 16, 4, 0, Math.PI*2); ctx.fillStyle = '#ff4d6d'; ctx.fill(); lx2 += 12;
   ctx.fillStyle = '#9899a8'; ctx.fillText('Miss', lx2, pad.t - 13);
 }}
+
+
 </script>
 </body>
 </html>'''
