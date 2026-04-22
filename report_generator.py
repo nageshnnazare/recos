@@ -3852,7 +3852,16 @@ def generate_html_report(data, scores):
   .tf-ret {{ font-family:var(--mono); font-size:12px; font-weight:600; }}
   .tf-ret.up {{ color:var(--green); }}
   .tf-ret.dn {{ color:var(--red); }}
-  @media print {{ .copy-btn {{ display:none; }} .page {{ padding:16px; }} .page-break {{ page-break-before:always; border:none; margin:0; }} }}
+  /* ── Tab Navigation ── */
+  .tab-bar {{ position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); display:flex; gap:0; padding:0 12px; margin:-12px -12px 20px -12px; overflow-x:auto; scrollbar-width:none; }}
+  .tab-bar::-webkit-scrollbar {{ display:none; }}
+  .tab-btn {{ font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); background:transparent; border:none; border-bottom:2px solid transparent; padding:14px 18px; cursor:pointer; white-space:nowrap; transition:color 0.2s, border-color 0.2s; }}
+  .tab-btn:hover {{ color:var(--text2); }}
+  .tab-btn.active {{ color:#fff; border-bottom-color:var(--purple); }}
+  .tab-pane {{ display:none; }}
+  .tab-pane.active {{ display:block; }}
+  @media (max-width:600px) {{ .tab-btn {{ padding:12px 10px; font-size:9px; letter-spacing:1px; }} }}
+  @media print {{ .copy-btn {{ display:none; }} .page {{ padding:16px; }} .page-break {{ page-break-before:always; border:none; margin:0; }} .tab-bar {{ display:none; }} .tab-pane {{ display:block !important; }} }}
 </style>
 </head>
 <body>
@@ -3908,68 +3917,17 @@ def generate_html_report(data, scores):
     </div>
   </div>
 
+  <div class="tab-bar" id="main-tabs">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="technical">Technical</button>
+    <button class="tab-btn" data-tab="financials">Financials</button>
+    <button class="tab-btn" data-tab="analysis">Analysis</button>
+    <button class="tab-btn" data-tab="verdict">Verdict</button>
+  </div>
+
+  <!-- ═══════ TAB 1: OVERVIEW ═══════ -->
+  <div class="tab-pane active" id="tab-overview">
   {company_overview_html}
-
-  <div class="section">
-    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-      <span>📈 Price Movement</span>
-      <div class="tf-btns" id="tf-line">
-        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
-        <button class="tf-btn" data-tf="6M">6M</button><button class="tf-btn active" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
-      </div>
-      <span class="tf-ret" id="tf-line-ret"></span>
-    </div>
-    <canvas id="cv-line" style="width:100%;height:280px;display:block;"></canvas>
-  </div>
-
-  <div class="section">
-    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-      <span>🕯 Candlestick Chart</span>
-      <div class="tf-btns" id="tf-candle">
-        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
-        <button class="tf-btn active" data-tf="6M">6M</button><button class="tf-btn" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
-      </div>
-      <span class="tf-ret" id="tf-candle-ret"></span>
-    </div>
-    <canvas id="cv-candle" style="width:100%;height:520px;display:block;"></canvas>
-  </div>
-
-  <div class="section">
-    <div class="section-title">🎯 Price Prediction · Analyst Target Cone <a href="{yahoo_analysis_url}" target="_blank" class="src-link-header">Source: Yahoo Finance Analyst Targets ↗</a></div>
-    <canvas id="cv-prediction" style="width:100%;height:360px;display:block;"></canvas>
-  </div>
-
-  {pe_pb_section_html}
-
-  <div class="section">
-    <div class="section-title">💎 Valuation & Financial Metrics</div>
-    <div class="card-grid">
-      <div class="metric-card {pe_cls}" data-tip="{pe_tip}"><div class="mc-label">P/E RATIO</div><div class="mc-value">{pe_ratio:.1f}x</div><div class="mc-bench">Trailing twelve months</div></div>
-      <div class="metric-card {pb_cls}" data-tip="{pb_tip}"><div class="mc-label">P/B RATIO</div><div class="mc-value">{pb_ratio:.1f}x</div><div class="mc-bench">Price to Book value</div></div>
-      <div class="metric-card {roe_cls}" data-tip="{roe_tip}"><div class="mc-label">ROE</div><div class="mc-value">{roe*100:.1f}%</div><div class="mc-bench">Return on Equity</div></div>
-      <div class="metric-card {pm_cls}" data-tip="{pm_tip}"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">{profit_margin*100:.1f}%</div><div class="mc-bench">Net profit margin</div></div>
-      <div class="metric-card {opm_cls}" data-tip="{opm_tip}"><div class="mc-label">OPM</div><div class="mc-value">{f"{opm_pct:.1f}%" if opm_pct is not None else "N/A"}</div><div class="mc-bench">Operating profit margin</div></div>
-      <div class="metric-card {tgt_cls}" data-tip="{tgt_tip}"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">₹{target_mean:,.0f}</div><div class="mc-bench">Range: ₹{fair_value_low:,.0f} - ₹{fair_value_high:,.0f}</div><a href="{yahoo_analysis_url}" target="_blank" class="src-link">Yahoo Finance ↗</a></div>
-      <div class="metric-card {peg_cls}" data-tip="{peg_tip}"><div class="mc-label">PEG RATIO</div><div class="mc-value">{f"{peg_ratio:.2f}" if peg_ratio else "N/A"}</div><div class="mc-bench">Price/Earnings to Growth</div></div>
-      <div class="metric-card {eve_cls}" data-tip="{eve_tip}"><div class="mc-label">EV/EBITDA</div><div class="mc-value">{f"{ev_ebitda:.1f}x" if ev_ebitda else "N/A"}</div><div class="mc-bench">Enterprise value ratio</div></div>
-      <div class="metric-card {cr_cls}" data-tip="{cr_tip}"><div class="mc-label">CURRENT RATIO</div><div class="mc-value">{f"{current_ratio:.2f}" if current_ratio else "N/A"}</div><div class="mc-bench">Liquidity measure</div></div>
-      <div class="metric-card {dy_cls}" data-tip="{dy_tip}"><div class="mc-label">DIVIDEND YIELD</div><div class="mc-value">{f"{dy_pct:.2f}%" if dy_pct is not None else "N/A"}</div><div class="mc-bench">Annual yield</div></div>
-      <div class="metric-card {roa_cls}" data-tip="{roa_tip}"><div class="mc-label">ROA</div><div class="mc-value">{f"{roa*100:.1f}%" if roa else "N/A"}</div><div class="mc-bench">Return on Assets</div></div>
-      <div class="metric-card {gm_cls}" data-tip="{gm_tip}"><div class="mc-label">GROSS MARGIN</div><div class="mc-value">{f"{gross_margin*100:.1f}%" if gross_margin else "N/A"}</div><div class="mc-bench">Gross profit margin</div></div>
-    </div>
-    {"" if not industry_name else f"""<div style="margin-top:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:8px;">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px;">INDUSTRY AVERAGES — {industry_name.upper()}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:20px;">
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/E</span> <span style="color:#fff;font-weight:600;">{f'{ind_pe:.1f}x' if ind_pe else '—'}</span>{f' <span style="color:{"#00e5a0" if pe_ratio and ind_pe and pe_ratio < ind_pe else "#ff4d6d" if pe_ratio and ind_pe and pe_ratio > ind_pe * 1.1 else "#f5a623"};font-size:9px;">({("below" if pe_ratio < ind_pe else "above")} avg)</span>' if pe_ratio and ind_pe else ''}</div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/B</span> <span style="color:#fff;font-weight:600;">{f'{bench["pb"][1]:.1f}x' if bench else '—'}</span> <span style="color:var(--text3);font-size:9px;">(sector fair)</span></div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROCE</span> <span style="color:#fff;font-weight:600;">{f'{ind_roce:.1f}%' if ind_roce else '—'}</span>{f' <span style="color:{"#00e5a0" if roce_val and ind_roce and roce_val > ind_roce else "#ff4d6d" if roce_val and ind_roce and roce_val < ind_roce * 0.8 else "#f5a623"};font-size:9px;">({("above" if roce_val > ind_roce else "below")} avg)</span>' if roce_val and ind_roce else ''}</div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROE</span> <span style="color:#fff;font-weight:600;">{f'{bench["roe"][1]*100:.0f}%' if bench else '—'}</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">OPM</span> <span style="color:#fff;font-weight:600;">{f'{bench["margin"][1]*100:.0f}%' if bench else '—'}</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">Div Yield</span> <span style="color:#fff;font-weight:600;">{f'{ind_dy:.2f}%' if ind_dy else '—'}</span></div>
-        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">D/E</span> <span style="color:#fff;font-weight:600;">&lt;{bench["de"][0]:.0f}</span> <span style="color:var(--text3);font-size:9px;">(sector comfort)</span></div>
-      </div>
-    </div>"""}
-  </div>
 
   <div class="breakdown-grid">
     <div class="breakdown-card">
@@ -4013,8 +3971,73 @@ def generate_html_report(data, scores):
       </ul>
     </div>
   </div>
+  </div>
 
-  <hr class="page-break">
+  <!-- ═══════ TAB 2: TECHNICAL ═══════ -->
+  <div class="tab-pane" id="tab-technical">
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>📈 Price Movement</span>
+      <div class="tf-btns" id="tf-line">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn" data-tf="6M">6M</button><button class="tf-btn active" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-line-ret"></span>
+    </div>
+    <canvas id="cv-line" style="width:100%;height:280px;display:block;"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span>🕯 Candlestick Chart</span>
+      <div class="tf-btns" id="tf-candle">
+        <button class="tf-btn" data-tf="1D">1D</button><button class="tf-btn" data-tf="1W">1W</button><button class="tf-btn" data-tf="1M">1M</button>
+        <button class="tf-btn active" data-tf="6M">6M</button><button class="tf-btn" data-tf="1Y">1Y</button><button class="tf-btn" data-tf="3Y">3Y</button><button class="tf-btn" data-tf="5Y">5Y</button>
+      </div>
+      <span class="tf-ret" id="tf-candle-ret"></span>
+    </div>
+    <canvas id="cv-candle" style="width:100%;height:520px;display:block;"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎯 Price Prediction · Analyst Target Cone <a href="{yahoo_analysis_url}" target="_blank" class="src-link-header">Source: Yahoo Finance Analyst Targets ↗</a></div>
+    <canvas id="cv-prediction" style="width:100%;height:360px;display:block;"></canvas>
+  </div>
+
+  {pe_pb_section_html}
+  </div>
+
+  <!-- ═══════ TAB 3: FINANCIALS ═══════ -->
+  <div class="tab-pane" id="tab-financials">
+  <div class="section">
+    <div class="section-title">💎 Valuation & Financial Metrics</div>
+    <div class="card-grid">
+      <div class="metric-card {pe_cls}" data-tip="{pe_tip}"><div class="mc-label">P/E RATIO</div><div class="mc-value">{pe_ratio:.1f}x</div><div class="mc-bench">Trailing twelve months</div></div>
+      <div class="metric-card {pb_cls}" data-tip="{pb_tip}"><div class="mc-label">P/B RATIO</div><div class="mc-value">{pb_ratio:.1f}x</div><div class="mc-bench">Price to Book value</div></div>
+      <div class="metric-card {roe_cls}" data-tip="{roe_tip}"><div class="mc-label">ROE</div><div class="mc-value">{roe*100:.1f}%</div><div class="mc-bench">Return on Equity</div></div>
+      <div class="metric-card {pm_cls}" data-tip="{pm_tip}"><div class="mc-label">PROFIT MARGIN</div><div class="mc-value">{profit_margin*100:.1f}%</div><div class="mc-bench">Net profit margin</div></div>
+      <div class="metric-card {opm_cls}" data-tip="{opm_tip}"><div class="mc-label">OPM</div><div class="mc-value">{f"{opm_pct:.1f}%" if opm_pct is not None else "N/A"}</div><div class="mc-bench">Operating profit margin</div></div>
+      <div class="metric-card {tgt_cls}" data-tip="{tgt_tip}"><div class="mc-label">ANALYST TARGET</div><div class="mc-value">₹{target_mean:,.0f}</div><div class="mc-bench">Range: ₹{fair_value_low:,.0f} - ₹{fair_value_high:,.0f}</div><a href="{yahoo_analysis_url}" target="_blank" class="src-link">Yahoo Finance ↗</a></div>
+      <div class="metric-card {peg_cls}" data-tip="{peg_tip}"><div class="mc-label">PEG RATIO</div><div class="mc-value">{f"{peg_ratio:.2f}" if peg_ratio else "N/A"}</div><div class="mc-bench">Price/Earnings to Growth</div></div>
+      <div class="metric-card {eve_cls}" data-tip="{eve_tip}"><div class="mc-label">EV/EBITDA</div><div class="mc-value">{f"{ev_ebitda:.1f}x" if ev_ebitda else "N/A"}</div><div class="mc-bench">Enterprise value ratio</div></div>
+      <div class="metric-card {cr_cls}" data-tip="{cr_tip}"><div class="mc-label">CURRENT RATIO</div><div class="mc-value">{f"{current_ratio:.2f}" if current_ratio else "N/A"}</div><div class="mc-bench">Liquidity measure</div></div>
+      <div class="metric-card {dy_cls}" data-tip="{dy_tip}"><div class="mc-label">DIVIDEND YIELD</div><div class="mc-value">{f"{dy_pct:.2f}%" if dy_pct is not None else "N/A"}</div><div class="mc-bench">Annual yield</div></div>
+      <div class="metric-card {roa_cls}" data-tip="{roa_tip}"><div class="mc-label">ROA</div><div class="mc-value">{f"{roa*100:.1f}%" if roa else "N/A"}</div><div class="mc-bench">Return on Assets</div></div>
+      <div class="metric-card {gm_cls}" data-tip="{gm_tip}"><div class="mc-label">GROSS MARGIN</div><div class="mc-value">{f"{gross_margin*100:.1f}%" if gross_margin else "N/A"}</div><div class="mc-bench">Gross profit margin</div></div>
+    </div>
+    {"" if not industry_name else f"""<div style="margin-top:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--border2);border-radius:8px;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px;">INDUSTRY AVERAGES — {industry_name.upper()}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;">
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/E</span> <span style="color:#fff;font-weight:600;">{f'{ind_pe:.1f}x' if ind_pe else '—'}</span>{f' <span style="color:{"#00e5a0" if pe_ratio and ind_pe and pe_ratio < ind_pe else "#ff4d6d" if pe_ratio and ind_pe and pe_ratio > ind_pe * 1.1 else "#f5a623"};font-size:9px;">({("below" if pe_ratio < ind_pe else "above")} avg)</span>' if pe_ratio and ind_pe else ''}</div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">P/B</span> <span style="color:#fff;font-weight:600;">{f'{bench["pb"][1]:.1f}x' if bench else '—'}</span> <span style="color:var(--text3);font-size:9px;">(sector fair)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROCE</span> <span style="color:#fff;font-weight:600;">{f'{ind_roce:.1f}%' if ind_roce else '—'}</span>{f' <span style="color:{"#00e5a0" if roce_val and ind_roce and roce_val > ind_roce else "#ff4d6d" if roce_val and ind_roce and roce_val < ind_roce * 0.8 else "#f5a623"};font-size:9px;">({("above" if roce_val > ind_roce else "below")} avg)</span>' if roce_val and ind_roce else ''}</div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">ROE</span> <span style="color:#fff;font-weight:600;">{f'{bench["roe"][1]*100:.0f}%' if bench else '—'}</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">OPM</span> <span style="color:#fff;font-weight:600;">{f'{bench["margin"][1]*100:.0f}%' if bench else '—'}</span> <span style="color:var(--text3);font-size:9px;">(sector good)</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">Div Yield</span> <span style="color:#fff;font-weight:600;">{f'{ind_dy:.2f}%' if ind_dy else '—'}</span></div>
+        <div style="font-family:var(--mono);font-size:11px;"><span style="color:var(--text3);">D/E</span> <span style="color:#fff;font-weight:600;">&lt;{bench["de"][0]:.0f}</span> <span style="color:var(--text3);font-size:9px;">(sector comfort)</span></div>
+      </div>
+    </div>"""}
+  </div>
 
   <div class="section">
     <div class="section-title">📋 Quarterly Performance Trend</div>
@@ -4075,6 +4098,15 @@ def generate_html_report(data, scores):
 
   {growth_html}
 
+  {"" if not peers_html else f"""<div class="section">
+    <div class="section-title">🏭 Industry Peers — {industry_name}</div>
+    {peers_html}
+    {peers_note_html}
+  </div>"""}
+  </div>
+
+  <!-- ═══════ TAB 4: ANALYSIS ═══════ -->
+  <div class="tab-pane" id="tab-analysis">
   <div class="section">
     <div class="section-title">🏛 Shareholding Pattern</div>
     {shareholding_section_html}
@@ -4103,12 +4135,6 @@ def generate_html_report(data, scores):
     </div>
   </div>
 
-  {"" if not peers_html else f"""<div class="section">
-    <div class="section-title">🏭 Industry Peers — {industry_name}</div>
-    {peers_html}
-    {peers_note_html}
-  </div>"""}
-
   <div class="section">
     <div class="section-title">🎯 Decision Matrix</div>
     {decision_matrix_html}
@@ -4118,7 +4144,10 @@ def generate_html_report(data, scores):
     <div class="section-title">📰 Latest News</div>
     <div class="news-grid">{news_html}</div>
   </div>
+  </div>
 
+  <!-- ═══════ TAB 5: VERDICT ═══════ -->
+  <div class="tab-pane" id="tab-verdict">
   <div class="verdict-card">
     <div class="verdict-header">
       <div><div class="verdict-rec">RECOMMENDATION</div><div class="verdict-rating" style="color:{rec_color}">{recommendation}</div></div>
@@ -4127,6 +4156,8 @@ def generate_html_report(data, scores):
     <div class="rating-bar-track"><div class="rating-needle" style="left:{needle_pct}%;"></div></div>
     <div class="verdict-text">{verdict_text}</div>
     <div class="verdict-tags">{tags_html}</div>
+  </div>
+
   </div>
 
   <div class="footer">
@@ -4162,6 +4193,27 @@ document.querySelectorAll('.breakdown-card, .metric-card').forEach(el => {{
   el.classList.add('fade-target');
   observer.observe(el);
 }});
+
+// ── Tab navigation ──
+(function() {{
+  const tabBar = document.getElementById('main-tabs');
+  if (!tabBar) return;
+  const btns = tabBar.querySelectorAll('.tab-btn');
+  const panes = document.querySelectorAll('.tab-pane');
+  const canvasRedrawers = [];
+
+  function switchTab(tabId) {{
+    btns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+    panes.forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabId));
+    requestAnimationFrame(() => {{
+      canvasRedrawers.forEach(fn => fn());
+    }});
+    window.scrollTo({{top: 0}});
+  }}
+
+  btns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+  window._registerCanvasRedraw = function(fn) {{ canvasRedrawers.push(fn); }};
+}})();
 
 /* ── Interactive price & candlestick charts ────────────────────── */
 const CHART_DATA = {chart_json};
@@ -4462,13 +4514,29 @@ function _bindTF(groupId, drawFn, defaultTf) {{
   drawFn(defaultTf);
 }}
 // Defer all canvas drawing until after layout is computed
+window._lastLineTF = '1Y'; window._lastCandleTF = '6M';
+window._lastFinMode = 'quarterly'; window._lastEpsMode = 'estimates';
 window.addEventListener('DOMContentLoaded', function() {{
   requestAnimationFrame(function() {{
-    _bindTF('tf-line', drawLineChart, '1Y');
-    _bindTF('tf-candle', drawCandleChart, '6M');
+    _bindTF('tf-line', function(tf) {{ window._lastLineTF = tf; drawLineChart(tf); }}, '1Y');
+    _bindTF('tf-candle', function(tf) {{ window._lastCandleTF = tf; drawCandleChart(tf); }}, '6M');
     if (typeof drawFinChart === 'function') drawFinChart('quarterly');
     if (typeof drawEpsEstChart === 'function') drawEpsEstChart('estimates');
+    if (typeof drawPredictionChart === 'function') drawPredictionChart();
   }});
+  if (window._registerCanvasRedraw) {{
+    window._registerCanvasRedraw(function() {{
+      if (document.getElementById('tab-technical').classList.contains('active')) {{
+        drawLineChart(window._lastLineTF);
+        drawCandleChart(window._lastCandleTF);
+        if (typeof drawPredictionChart === 'function') drawPredictionChart();
+      }}
+      if (document.getElementById('tab-financials').classList.contains('active')) {{
+        if (typeof drawFinChart === 'function') drawFinChart(window._lastFinMode);
+        if (typeof drawEpsEstChart === 'function') drawEpsEstChart(window._lastEpsMode);
+      }}
+    }});
+  }}
 }});
 
 // Valuation trend carousel
@@ -4587,6 +4655,7 @@ function drawFinChart(mode) {{
     btn.addEventListener('click', () => {{
       btns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      window._lastFinMode = btn.dataset.mode;
       drawFinChart(btn.dataset.mode);
     }});
   }});
@@ -4598,6 +4667,7 @@ function drawFinChart(mode) {{
     btn.addEventListener('click', () => {{
       btns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      window._lastEpsMode = btn.dataset.mode;
       drawEpsEstChart(btn.dataset.mode);
     }});
   }});
