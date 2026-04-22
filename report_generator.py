@@ -1845,6 +1845,408 @@ def calculate_factor_scores(data, scores, returns):
     return factor_scores, reasons
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# SANKEY FLOW DIAGRAM SVG GENERATORS (NSE — values in ₹ Crores)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _fmt_money_inr(val, currency="₹"):
+    """Format a value in Crores to readable string."""
+    if val is None:
+        return "—"
+    sign = "-" if val < 0 else ""
+    av = abs(val)
+    if av >= 1e5:
+        return f"{sign}{currency}{av/1e5:,.1f}L Cr"
+    if av >= 1e3:
+        return f"{sign}{currency}{av/1e3:,.1f}K Cr"
+    if av >= 1:
+        return f"{sign}{currency}{av:,.0f} Cr"
+    return f"{sign}{currency}{av:,.1f} Cr"
+
+
+def _sankey_band_nse(x0, y0_top, y0_bot, x1, y1_top, y1_bot, color, opacity=0.45):
+    """Cubic-bezier ribbon between two vertical spans."""
+    mx = (x0 + x1) / 2
+    return (f'<path d="M{x0:.1f},{y0_top:.1f} C{mx:.1f},{y0_top:.1f} {mx:.1f},{y1_top:.1f} {x1:.1f},{y1_top:.1f}'
+            f' L{x1:.1f},{y1_bot:.1f} C{mx:.1f},{y1_bot:.1f} {mx:.1f},{y0_bot:.1f} {x0:.1f},{y0_bot:.1f} Z"'
+            f' fill="{color}" opacity="{opacity}"/>\n')
+
+
+def _build_income_sankey_svg_nse(src, col, width=1040, height=480):
+    """Build a single income-statement Sankey for one NSE period column (₹ Crores)."""
+    fm = _fmt_money_inr
+    divisor = 1e7
+
+    def _v(keys):
+        for k in keys:
+            if k in src.index:
+                v = src.loc[k, col]
+                if v is not None and not (isinstance(v, float) and math.isnan(v)):
+                    return float(v) / divisor
+        return 0
+
+    rev = _v(["Total Revenue", "Operating Revenue", "Revenue"])
+    cogs = _v(["Cost Of Revenue", "Reconciled Cost Of Revenue"])
+    gross = _v(["Gross Profit"])
+    if not gross and rev and cogs: gross = rev - cogs
+    if not cogs and rev and gross: cogs = rev - gross
+    rd = _v(["Research And Development"])
+    sga = _v(["Selling General And Administration"])
+    opex = rd + sga if (rd or sga) else _v(["Operating Expense", "Total Operating Expenses"])
+    op_inc = _v(["Operating Income", "EBIT"])
+    if not op_inc and gross and opex: op_inc = gross - opex
+    tax = _v(["Tax Provision", "Income Tax Expense"])
+    interest = abs(_v(["Interest Expense"]))
+    other = abs(_v(["Other Income Expense", "Other Non Operating Income Expenses"]))
+    net = _v(["Net Income", "Net Income Common Stockholders"])
+
+    if not rev or rev <= 0:
+        return "", {}
+
+    try:
+        dt = col.to_pydatetime() if hasattr(col, 'to_pydatetime') else col
+        period_label = dt.strftime("%b %Y")
+    except Exception:
+        period_label = str(col)
+
+    pad = {"l": 100, "r": 120, "t": 25, "b": 25}
+    usable_w = width - pad["l"] - pad["r"]
+    node_w = 16
+    cols_x = [pad["l"], pad["l"] + usable_w * 0.28, pad["l"] + usable_w * 0.56, pad["l"] + usable_w * 0.84]
+    chart_h = height - pad["t"] - pad["b"]
+
+    nodes = []
+    nodes.append({"col": 0, "label": f"Revenue\n{fm(rev)}", "val": rev, "color": "#3d9cf5"})
+    nodes.append({"col": 1, "label": f"Cost of Revenue\n{fm(cogs)}", "val": cogs, "color": "#ff4d6d"})
+    nodes.append({"col": 1, "label": f"Gross Profit\n{fm(gross)}", "val": gross, "color": "#00e5a0"})
+    col2_items = []
+    if rd: col2_items.append({"label": f"R&D\n{fm(rd)}", "val": rd, "color": "#ff4d6d"})
+    if sga: col2_items.append({"label": f"SG&A\n{fm(sga)}", "val": sga, "color": "#f5a623"})
+    if not rd and not sga and opex:
+        col2_items.append({"label": f"Op. Expenses\n{fm(opex)}", "val": opex, "color": "#ff4d6d"})
+    col2_items.append({"label": f"Operating Inc.\n{fm(op_inc)}", "val": op_inc, "color": "#00e5a0"})
+    for item in col2_items: item["col"] = 2; nodes.append(item)
+    col3_items = []
+    if tax and tax > rev * 0.005:
+        col3_items.append({"label": f"Tax\n{fm(tax)}", "val": tax, "color": "#f5a623"})
+    if interest and interest > rev * 0.005:
+        col3_items.append({"label": f"Interest\n{fm(interest)}", "val": interest, "color": "#9b7fff"})
+    if other and other > rev * 0.005:
+        col3_items.append({"label": f"Other\n{fm(other)}", "val": other, "color": "#5c5d6e"})
+    margin_str = f"\n({net/rev*100:.1f}% margin)" if rev else ""
+    col3_items.append({"label": f"Net Income\n{fm(net)}{margin_str}", "val": net, "color": "#00e5a0" if net >= 0 else "#ff4d6d"})
+    for item in col3_items: item["col"] = 3; nodes.append(item)
+
+    for ci in range(4):
+        cn_list = [n for n in nodes if n["col"] == ci]
+        if not cn_list:
+            continue
+        gap = 8; gap_total = max(0, (len(cn_list) - 1) * gap)
+        bar_space = chart_h - gap_total
+        raw = [(abs(n["val"]) / rev) * bar_space for n in cn_list]
+        heights = [max(14, r) for r in raw]
+        if sum(heights) > bar_space:
+            fixed = sum(h for h in heights if h <= 14)
+            remain = bar_space - fixed
+            large_sum = sum(h for h in heights if h > 14)
+            scale = remain / large_sum if large_sum > 0 else 1
+            heights = [h if h <= 14 else h * scale for h in heights]
+        y_cursor = pad["t"]
+        for i, n in enumerate(cn_list):
+            n["y"] = y_cursor; n["h"] = heights[i]; n["x"] = cols_x[ci]
+            y_cursor += heights[i] + gap
+
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" style="width:100%;height:auto;font-family:\'DM Sans\',Fira Code,monospace;">\n'
+    svg += f'  <rect width="{width}" height="{height}" fill="#0d0e14" rx="10"/>\n'
+
+    rev_node = [n for n in nodes if n["col"] == 0][0]
+    cogs_node = [n for n in nodes if n["col"] == 1 and "Cost" in n["label"]][0]
+    gross_node = [n for n in nodes if n["col"] == 1 and "Gross" in n["label"]][0]
+    rx = rev_node["x"] + node_w
+    cogs_src_h = (cogs / rev if rev else 0.5) * rev_node["h"]
+    svg += _sankey_band_nse(rx, rev_node["y"], rev_node["y"] + cogs_src_h, cogs_node["x"], cogs_node["y"], cogs_node["y"] + cogs_node["h"], cogs_node["color"], 0.35)
+    svg += _sankey_band_nse(rx, rev_node["y"] + cogs_src_h, rev_node["y"] + rev_node["h"], gross_node["x"], gross_node["y"], gross_node["y"] + gross_node["h"], gross_node["color"], 0.35)
+
+    gx = gross_node["x"] + node_w
+    col2_nodes = [n for n in nodes if n["col"] == 2]
+    col2_total = sum(abs(c["val"]) for c in col2_nodes)
+    g_cursor = gross_node["y"]
+    for cn in col2_nodes:
+        src_h = (abs(cn["val"]) / col2_total) * gross_node["h"] if col2_total else cn["h"]
+        svg += _sankey_band_nse(gx, g_cursor, g_cursor + src_h, cn["x"], cn["y"], cn["y"] + cn["h"], cn["color"], 0.35)
+        g_cursor += src_h
+
+    oi_node = [n for n in nodes if n["col"] == 2 and "Operating Inc" in n["label"]]
+    if oi_node:
+        oi_node = oi_node[0]; ox = oi_node["x"] + node_w
+        col3_nodes = [n for n in nodes if n["col"] == 3]
+        col3_total = sum(abs(c["val"]) for c in col3_nodes)
+        o_cursor = oi_node["y"]
+        for cn in col3_nodes:
+            src_h = (abs(cn["val"]) / col3_total) * oi_node["h"] if col3_total else cn["h"]
+            svg += _sankey_band_nse(ox, o_cursor, o_cursor + src_h, cn["x"], cn["y"], cn["y"] + cn["h"], cn["color"], 0.35)
+            o_cursor += src_h
+
+    for n in nodes:
+        svg += f'  <rect x="{n["x"]:.1f}" y="{n["y"]:.1f}" width="{node_w}" height="{n["h"]:.1f}" rx="4" fill="{n["color"]}" opacity="0.95"/>\n'
+    for n in nodes:
+        lines = n["label"].split("\n")
+        tx = (n["x"] - 6) if n["col"] == 0 else (n["x"] + node_w + 6)
+        anchor = "end" if n["col"] == 0 else "start"
+        ty = n["y"] + n["h"] / 2 - (len(lines) - 1) * 6
+        for li, line in enumerate(lines):
+            fw = "700" if li == 0 else "500"; fs = "10" if li == 0 else "9"
+            fc = "#e8e9f0" if li == 0 else n["color"]
+            svg += f'  <text x="{tx}" y="{ty + li * 13:.1f}" text-anchor="{anchor}" font-size="{fs}" fill="{fc}" font-weight="{fw}">{line}</text>\n'
+
+    svg += f'  <text x="{width/2}" y="{height - 6}" text-anchor="middle" font-size="9" fill="#5c5d6e">{period_label} · All values in ₹ Crores</text>\n'
+    svg += '</svg>'
+    return svg, {"period": period_label, "revenue": rev, "net_income": net}
+
+
+def _build_bs_sankey_svg_nse(src, col, width=1040, height=500):
+    """Build a single balance-sheet Sankey for one NSE period column (₹ Crores)."""
+    fm = _fmt_money_inr
+    divisor = 1e7
+
+    def _v(keys):
+        for k in keys:
+            if k in src.index:
+                v = src.loc[k, col]
+                if v is not None and not (isinstance(v, float) and math.isnan(v)):
+                    return float(v) / divisor
+        return 0
+
+    total_assets = _v(["Total Assets"])
+    cash = _v(["Cash And Cash Equivalents", "Cash Cash Equivalents And Short Term Investments"])
+    receivables = _v(["Accounts Receivable", "Net Receivables", "Receivables"])
+    inventory = _v(["Inventory"])
+    current_assets = _v(["Current Assets"])
+    ppe = _v(["Net PPE", "Gross PPE"])
+    goodwill = _v(["Goodwill"])
+    intangibles = _v(["Intangible Assets", "Net Intangible Assets"])
+    if not intangibles:
+        goia = _v(["Goodwill And Other Intangible Assets"])
+        intangibles = max(0, goia - goodwill) if (goia and goodwill) else (goia or 0)
+    total_liab = _v(["Total Liabilities Net Minority Interest", "Total Liabilities"])
+    current_liab = _v(["Current Liabilities"])
+    long_debt = _v(["Long Term Debt", "Long Term Debt And Capital Lease Obligation"])
+    total_equity = _v(["Total Equity Gross Minority Interest", "Stockholders Equity", "Total Stockholders Equity"])
+
+    if not total_assets or total_assets <= 0:
+        return "", {}
+
+    try:
+        dt = col.to_pydatetime() if hasattr(col, 'to_pydatetime') else col
+        period_label = dt.strftime("%b %Y")
+    except Exception:
+        period_label = str(col)
+
+    pad = {"l": 100, "r": 140, "t": 30, "b": 25}
+    usable_w = width - pad["l"] - pad["r"]; node_w = 16
+    cx = [pad["l"], pad["l"] + usable_w * 0.45, pad["l"] + usable_w * 0.80]
+    half_h = (height - pad["t"] - pad["b"] - 20) / 2
+
+    asset_detail = []
+    if cash: asset_detail.append(("Cash & Equiv.", cash, "#00e5a0"))
+    if receivables: asset_detail.append(("Receivables", receivables, "#3d9cf5"))
+    if inventory: asset_detail.append(("Inventory", inventory, "#f5a623"))
+    other_ca = max(0, current_assets - cash - receivables - inventory)
+    if other_ca > total_assets * 0.01: asset_detail.append(("Other Current", other_ca, "#5c5d6e"))
+    if ppe: asset_detail.append(("PP&E", ppe, "#9b7fff"))
+    if goodwill: asset_detail.append(("Goodwill", goodwill, "#3d9cf5"))
+    if intangibles > total_assets * 0.01: asset_detail.append(("Other Intangibles", intangibles, "#f5a623"))
+    nca_other = max(0, total_assets - current_assets - ppe - goodwill - intangibles)
+    if nca_other > total_assets * 0.02: asset_detail.append(("Other Non-Curr.", nca_other, "#5c5d6e"))
+
+    le_detail = []
+    if current_liab: le_detail.append(("Current Liab.", current_liab, "#ff4d6d"))
+    if long_debt: le_detail.append(("Long-Term Debt", long_debt, "#f5a623"))
+    other_liab = max(0, total_liab - current_liab - long_debt)
+    if other_liab > total_assets * 0.02: le_detail.append(("Other Liab.", other_liab, "#5c5d6e"))
+    if total_equity: le_detail.append(("Equity", abs(total_equity), "#00e5a0" if total_equity >= 0 else "#ff4d6d"))
+
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" style="width:100%;height:auto;font-family:\'DM Sans\',Fira Code,monospace;">\n'
+    svg += f'  <rect width="{width}" height="{height}" fill="#0d0e14" rx="10"/>\n'
+
+    def _layout(items, y0, ah, col_x):
+        out = []; tv = sum(v for _, v, _ in items); n = len(items)
+        if not n or not tv: return out
+        gap = 6; gt = max(0, (n - 1) * gap); bs = ah - gt; mh = 14
+        raw = [(v / tv) * bs for _, v, _ in items]; hs = [max(mh, r) for r in raw]
+        if sum(hs) > bs:
+            fx = sum(h for h in hs if h <= mh); rm = bs - fx; lg = sum(h for h in hs if h > mh)
+            sc = rm / lg if lg > 0 else 1; hs = [h if h <= mh else h * sc for h in hs]
+        yc = y0
+        for i, (l, v, c) in enumerate(items):
+            out.append({"x": col_x, "y": yc, "h": hs[i], "val": v, "label": l, "color": c}); yc += hs[i] + gap
+        return out
+
+    a_y0 = pad["t"]; root_h = half_h - 5
+    a_subs = _layout(asset_detail, a_y0, root_h, cx[2])
+    svg += f'  <text x="{cx[0] - 6}" y="{a_y0 + half_h / 2:.1f}" text-anchor="end" font-size="10" fill="#e8e9f0" font-weight="700">Total Assets</text>\n'
+    svg += f'  <text x="{cx[0] - 6}" y="{a_y0 + half_h / 2 + 14:.1f}" text-anchor="end" font-size="9" fill="#3d9cf5" font-weight="600">{fm(total_assets)}</text>\n'
+    if a_subs:
+        at = sum(d["val"] for d in a_subs); ac = a_y0
+        for d in a_subs:
+            bh = (d["val"] / at) * root_h if at > 0 else root_h / len(a_subs)
+            svg += _sankey_band_nse(cx[0] + node_w, ac, ac + bh, d["x"], d["y"], d["y"] + d["h"], d["color"], 0.30); ac += bh
+    svg += f'  <rect x="{cx[0]}" y="{a_y0:.1f}" width="{node_w}" height="{root_h:.1f}" rx="4" fill="#3d9cf5" opacity="0.95"/>\n'
+    for d in a_subs:
+        svg += f'  <rect x="{d["x"]}" y="{d["y"]:.1f}" width="{node_w}" height="{d["h"]:.1f}" rx="4" fill="{d["color"]}" opacity="0.9"/>\n'
+        pct = f" ({d['val']/total_assets*100:.1f}%)" if total_assets else ""
+        svg += f'  <text x="{d["x"] + node_w + 6}" y="{d["y"] + d["h"]/2 + 4:.1f}" font-size="9" fill="{d["color"]}" font-weight="500">{d["label"]}: {fm(d["val"])}{pct}</text>\n'
+
+    svg += f'  <line x1="20" y1="{a_y0 + half_h + 4}" x2="{width - 20}" y2="{a_y0 + half_h + 4}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>\n'
+
+    le_y0 = a_y0 + half_h + 10; le_tv = total_liab + total_equity
+    le_subs = _layout(le_detail, le_y0, root_h, cx[2])
+    svg += f'  <text x="{cx[0] - 6}" y="{le_y0 + root_h / 2:.1f}" text-anchor="end" font-size="10" fill="#e8e9f0" font-weight="700">Liab. + Equity</text>\n'
+    svg += f'  <text x="{cx[0] - 6}" y="{le_y0 + root_h / 2 + 14:.1f}" text-anchor="end" font-size="9" fill="#f5a623" font-weight="600">{fm(le_tv)}</text>\n'
+    if le_subs:
+        lt = sum(d["val"] for d in le_subs); lc = le_y0
+        for d in le_subs:
+            bh = (d["val"] / lt) * root_h if lt > 0 else root_h / len(le_subs)
+            svg += _sankey_band_nse(cx[0] + node_w, lc, lc + bh, d["x"], d["y"], d["y"] + d["h"], d["color"], 0.30); lc += bh
+    svg += f'  <rect x="{cx[0]}" y="{le_y0:.1f}" width="{node_w}" height="{root_h:.1f}" rx="4" fill="#f5a623" opacity="0.95"/>\n'
+    for d in le_subs:
+        svg += f'  <rect x="{d["x"]}" y="{d["y"]:.1f}" width="{node_w}" height="{d["h"]:.1f}" rx="4" fill="{d["color"]}" opacity="0.9"/>\n'
+        pct = f" ({d['val']/le_tv*100:.1f}%)" if le_tv else ""
+        svg += f'  <text x="{d["x"] + node_w + 6}" y="{d["y"] + d["h"]/2 + 4:.1f}" font-size="9" fill="{d["color"]}" font-weight="500">{d["label"]}: {fm(d["val"])}{pct}</text>\n'
+
+    svg += f'  <text x="{width/2}" y="{height - 6}" text-anchor="middle" font-size="9" fill="#5c5d6e">As of {period_label} · All values in ₹ Crores</text>\n'
+    svg += '</svg>'
+    return svg, {"period": period_label}
+
+
+def _build_cf_sankey_svg_nse(src, col, width=1040, height=420):
+    """Build a single cash-flow Sankey for one NSE period column (₹ Crores)."""
+    fm = _fmt_money_inr
+    divisor = 1e7
+
+    def _v(keys):
+        for k in keys:
+            if k in src.index:
+                v = src.loc[k, col]
+                if v is not None and not (isinstance(v, float) and math.isnan(v)):
+                    return float(v) / divisor
+        return 0
+
+    op_cf = _v(["Operating Cash Flow", "Cash Flow From Continuing Operating Activities"])
+    capex = abs(_v(["Capital Expenditure"]))
+    fcf = op_cf - capex if capex else _v(["Free Cash Flow"])
+    dividends = abs(_v(["Common Stock Dividend Paid", "Cash Dividends Paid"]))
+    buybacks = abs(_v(["Repurchase Of Capital Stock", "Common Stock Payments"]))
+    debt_repaid = abs(_v(["Long Term Debt Payments", "Repayment Of Debt"]))
+
+    if not op_cf or op_cf <= 0:
+        return "", {}
+
+    if fcf < 0:
+        fcf = 0
+
+    try:
+        dt = col.to_pydatetime() if hasattr(col, 'to_pydatetime') else col
+        period_label = dt.strftime("FY%Y")
+    except Exception:
+        period_label = str(col)
+
+    pad = {"l": 100, "r": 120, "t": 25, "b": 25}
+    usable_w = width - pad["l"] - pad["r"]; node_w = 16
+    chart_h = height - pad["t"] - pad["b"]
+
+    col0 = [{"label": f"Operating CF\n{fm(op_cf)}", "val": op_cf, "color": "#00e5a0"}]
+    col1 = []
+    if capex > op_cf * 0.01:
+        col1.append({"label": f"Capital Exp.\n{fm(capex)}", "val": min(capex, op_cf), "color": "#ff4d6d"})
+    if fcf > 0:
+        col1.append({"label": f"Free Cash Flow\n{fm(fcf)}", "val": fcf, "color": "#3d9cf5"})
+    if not col1:
+        col1.append({"label": f"Capital Exp.\n{fm(capex)}", "val": op_cf, "color": "#ff4d6d"})
+
+    col2 = []
+    if fcf > 0:
+        if dividends > op_cf * 0.01:
+            col2.append({"label": f"Dividends\n{fm(dividends)}", "val": dividends, "color": "#f5a623"})
+        if buybacks > op_cf * 0.01:
+            col2.append({"label": f"Buybacks\n{fm(buybacks)}", "val": buybacks, "color": "#9b7fff"})
+        if debt_repaid > op_cf * 0.01:
+            col2.append({"label": f"Debt Repaid\n{fm(debt_repaid)}", "val": debt_repaid, "color": "#ff4d6d"})
+        remaining = max(0, fcf - dividends - buybacks - debt_repaid)
+        if remaining > op_cf * 0.01:
+            col2.append({"label": f"Retained / Other\n{fm(remaining)}", "val": remaining, "color": "#00e5a0"})
+
+    all_cols = [col0, col1] + ([col2] if col2 else [])
+    n_cols = len(all_cols)
+    cx = [pad["l"] + usable_w * (i / max(1, n_cols - 1)) * 0.85 for i in range(n_cols)] if n_cols > 1 else [pad["l"]]
+
+    for ci, cn_list in enumerate(all_cols):
+        col_total = sum(n["val"] for n in cn_list)
+        gap = 8; gap_total = max(0, (len(cn_list) - 1) * gap)
+        avail_h = chart_h - gap_total; y_cur = pad["t"]
+        for n in cn_list:
+            h = max(16, (n["val"] / col_total) * avail_h) if col_total else 20
+            n["x"] = cx[ci]; n["y"] = y_cur; n["h"] = h; y_cur += h + gap
+
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" style="width:100%;height:auto;font-family:\'DM Sans\',Fira Code,monospace;">\n'
+    svg += f'  <rect width="{width}" height="{height}" fill="#0d0e14" rx="10"/>\n'
+
+    col1_total = sum(n["val"] for n in col1)
+    s_cur = col0[0]["y"]
+    for dn in col1:
+        bh = (dn["val"] / col1_total) * col0[0]["h"] if col1_total else dn["h"]
+        svg += _sankey_band_nse(col0[0]["x"] + node_w, s_cur, s_cur + bh, dn["x"], dn["y"], dn["y"] + dn["h"], dn["color"], 0.35); s_cur += bh
+    if col2:
+        fcf_node = [n for n in col1 if "Free" in n["label"]]
+        if fcf_node:
+            fn = fcf_node[0]; f_cur = fn["y"]
+            col2_total = sum(n["val"] for n in col2)
+            for dn in col2:
+                bh = (dn["val"] / col2_total) * fn["h"] if col2_total else dn["h"]
+            svg += _sankey_band_nse(fn["x"] + node_w, f_cur, f_cur + bh, dn["x"], dn["y"], dn["y"] + dn["h"], dn["color"], 0.35); f_cur += bh
+
+    for ci, cn_list in enumerate(all_cols):
+        for n in cn_list:
+            svg += f'  <rect x="{n["x"]:.1f}" y="{n["y"]:.1f}" width="{node_w}" height="{n["h"]:.1f}" rx="4" fill="{n["color"]}" opacity="0.95"/>\n'
+            lines = n["label"].split("\n")
+            tx = (n["x"] - 6) if ci == 0 else (n["x"] + node_w + 6)
+            anchor = "end" if ci == 0 else "start"
+            ty = n["y"] + n["h"] / 2 - (len(lines) - 1) * 6
+            for li, line in enumerate(lines):
+                fw = "700" if li == 0 else "500"; fs = "10" if li == 0 else "9"
+                fc = "#e8e9f0" if li == 0 else n["color"]
+                svg += f'  <text x="{tx}" y="{ty + li * 13:.1f}" text-anchor="{anchor}" font-size="{fs}" fill="{fc}" font-weight="{fw}">{line}</text>\n'
+
+    svg += f'  <text x="{width/2}" y="{height - 6}" text-anchor="middle" font-size="9" fill="#5c5d6e">{period_label} · All values in ₹ Crores</text>\n'
+    svg += '</svg>'
+    return svg, {"period": period_label}
+
+
+def generate_nse_sankey_panels(data, max_periods=4):
+    """Generate quarterly + annual Sankey panels for all three charts (NSE)."""
+    result = {}
+    for chart_type, builder, ann_key, q_key in [
+        ("income", _build_income_sankey_svg_nse, "financials", "quarterly_income"),
+        ("bs", _build_bs_sankey_svg_nse, "annual_balance_sheet", "balance_sheet"),
+        ("cf", _build_cf_sankey_svg_nse, "annual_cash_flow", "quarterly_cash_flow"),
+    ]:
+        panels = {"quarterly": [], "annual": []}
+        q_df = data.get(q_key)
+        if q_df is not None and not q_df.empty:
+            for col in q_df.columns[:max_periods]:
+                svg, meta = builder(q_df, col)
+                if svg:
+                    panels["quarterly"].append({"svg": svg, "label": meta["period"]})
+        a_df = data.get(ann_key)
+        if a_df is not None and not a_df.empty:
+            for col in a_df.columns[:max_periods]:
+                svg, meta = builder(a_df, col)
+                if svg:
+                    panels["annual"].append({"svg": svg, "label": meta["period"]})
+        result[chart_type] = panels
+    return result
+
+
 def generate_pe_pb_chart_svg(series, label="P/E", color="#3d9cf5", width=520, height=200):
     """Generate a trend line chart SVG for PE or PB ratio over years."""
     headers = series.get("headers", [])
@@ -2101,7 +2503,7 @@ def _serialize_chart_data(data):
         entry = {"d": dates, "o": opens, "h": highs, "l": lows, "c": closes, "v": volumes}
 
         # Pre-compute RSI(14) and MACD for each period
-        if len(closes) >= 14:
+        if len(closes) >= 15:
             import numpy as _np
             c_arr = _np.array(closes, dtype=float)
             delta = _np.diff(c_arr, prepend=c_arr[0])
@@ -2781,6 +3183,41 @@ def generate_html_report(data, scores):
             except Exception:
                 continue
     earnings_hist_json = _json2.dumps(earnings_hist_data, separators=(",", ":"))
+
+    # ── Sankey flow SVG panels (quarterly + annual) ──
+    nse_sankey = generate_nse_sankey_panels(data)
+
+    def _build_sankey_carousel_nse(panel_id, title, panels_dict):
+        q_list = panels_dict.get("quarterly", [])
+        a_list = panels_dict.get("annual", [])
+        if not q_list and not a_list:
+            return ""
+        parts = [f'<div class="section"><div class="section-title" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">']
+        parts.append(f'<span>{title}</span>')
+        parts.append(f'<div class="tf-btns" id="{panel_id}-mode">')
+        if q_list:
+            parts.append(f'<button class="tf-btn active" data-mode="quarterly">Quarterly</button>')
+        if a_list:
+            active = "" if q_list else " active"
+            parts.append(f'<button class="tf-btn{active}" data-mode="annual">Annual</button>')
+        parts.append('</div></div>')
+        for i, p in enumerate(q_list):
+            vis = ' style="display:none;"' if i > 0 else ''
+            parts.append(f'<div class="{panel_id}-panel {panel_id}-quarterly" data-idx="{i}"{vis}>{p["svg"]}</div>')
+        for i, p in enumerate(a_list):
+            vis = ' style="display:none;"' if (q_list or i > 0) else ''
+            parts.append(f'<div class="{panel_id}-panel {panel_id}-annual" data-idx="{i}"{vis}>{p["svg"]}</div>')
+        parts.append(f'<div class="tf-btns" id="{panel_id}-periods" style="margin-top:8px;justify-content:center;">')
+        default_list = q_list if q_list else a_list
+        for i, p in enumerate(default_list):
+            active = " active" if i == 0 else ""
+            parts.append(f'<button class="tf-btn{active}" data-idx="{i}">{p["label"]}</button>')
+        parts.append('</div></div>')
+        return "\n    ".join(parts)
+
+    income_sankey_html = _build_sankey_carousel_nse("sk-inc", f"💰 How {company_name} Makes Its Money", nse_sankey.get("income", {}))
+    bs_sankey_html = _build_sankey_carousel_nse("sk-bs", f"🏦 Snapshot of {company_name}'s Balance Sheet", nse_sankey.get("bs", {}))
+    cf_sankey_html = _build_sankey_carousel_nse("sk-cf", f"💸 Looking into {company_name}'s Cash Flow", nse_sankey.get("cf", {}))
 
     # ── Shareholding section HTML (prefer Screener.in QoQ data) ──
     screener = data.get("screener") or {}
@@ -3606,6 +4043,10 @@ def generate_html_report(data, scores):
     <canvas id="cv-eps-est" style="width:100%;height:260px;display:block;"></canvas>
   </div>
 
+  {income_sankey_html}
+  {bs_sankey_html}
+  {cf_sankey_html}
+
   {qr_section_html}
 
   {pl_section_html}
@@ -4145,6 +4586,65 @@ function drawFinChart(mode) {{
     }});
   }});
 }})();
+
+// Sankey carousel wiring
+function _initSankeyCarousel(id) {{
+  const modeWrap = document.getElementById(id + '-mode');
+  const periodWrap = document.getElementById(id + '-periods');
+  if (!modeWrap) return;
+  const modeBtns = modeWrap.querySelectorAll('.tf-btn');
+
+  function showPanel(mode, idx) {{
+    document.querySelectorAll('.' + id + '-panel').forEach(p => p.style.display = 'none');
+    const targets = document.querySelectorAll('.' + id + '-' + mode);
+    if (!targets.length) return;
+    targets.forEach((p, i) => p.style.display = i === idx ? '' : 'none');
+  }}
+
+  function buildPeriodTabs(mode) {{
+    if (!periodWrap) return;
+    periodWrap.innerHTML = '';
+    const targets = document.querySelectorAll('.' + id + '-' + mode);
+    targets.forEach((p, i) => {{
+      const b = document.createElement('button');
+      b.className = 'tf-btn' + (i === 0 ? ' active' : '');
+      const svg = p.querySelector('svg');
+      const texts = svg ? svg.querySelectorAll('text') : [];
+      let label = 'Period ' + (i + 1);
+      if (texts.length) {{
+        const last = texts[texts.length - 1].textContent;
+        const m = last.match(/([A-Z][a-z]{{2}} \\d{{4}}|FY\\d{{4}}|As of .+?·)/);
+        if (m) label = m[1].replace('As of ','').replace(' ·','');
+      }}
+      b.textContent = label;
+      b.addEventListener('click', () => {{
+        periodWrap.querySelectorAll('.tf-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        showPanel(mode, i);
+      }});
+      periodWrap.appendChild(b);
+    }});
+  }}
+
+  modeBtns.forEach(btn => {{
+    btn.addEventListener('click', () => {{
+      modeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.dataset.mode;
+      buildPeriodTabs(mode);
+      showPanel(mode, 0);
+    }});
+  }});
+  const activeBtn = modeWrap.querySelector('.tf-btn.active');
+  if (activeBtn) {{
+    const mode = activeBtn.dataset.mode;
+    buildPeriodTabs(mode);
+    showPanel(mode, 0);
+  }}
+}}
+_initSankeyCarousel('sk-inc');
+_initSankeyCarousel('sk-bs');
+_initSankeyCarousel('sk-cf');
 
 // EPS Estimate vs Actual chart
 const EPS_EST = {earnings_hist_json};
