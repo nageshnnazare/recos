@@ -51,7 +51,7 @@
 | META | $668.84 | 71/100 | 🟢 BUY | +27.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-22/META_RiskReport.html) |
 | TSLA | $386.42 | 22/100 | 🔴 STRONG SELL | +7.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-22/TSLA_RiskReport.html) |
 | AMD | $284.49 | 55/100 | 🟡 HOLD | +2.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-22/AMD_RiskReport.html) |
-| ASML | $1,458.97 | 61/100 | 🟡 SPECULATIVE BUY | +13.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-22/ASML_RiskReport.html) |
+| ASML | $1,458.97 | 61/100 | 🟡 SPECULATIVE BUY | +14.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-22/ASML_RiskReport.html) |
 | TSM | $368.08 | 75/100 | 🟢 BUY | +25.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-22/TSM_RiskReport.html) |
 | NUAI | $4.33 | 69/100 | 🟢 BUY | +154.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-22/NUAI_RiskReport.html) |
 | STX | $559.90 | 39/100 | 🔴 SELL | -7.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-04-22/STX_RiskReport.html) |
