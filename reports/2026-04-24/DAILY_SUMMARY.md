@@ -87,7 +87,7 @@
 | NMDC | ₹89.29 | 66/100 | 🟡 HOLD | -9.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-04-24/NMDC_RiskReport.html) |
 | BORORENEW | ₹511.25 | 36/100 | 🔴 SELL | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-04-24/BORORENEW_RiskReport.html) |
 | CGPOWER | ₹823.15 | 55/100 | 🟡 HOLD | -12.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-04-24/CGPOWER_RiskReport.html) |
-| SUNPHARMA | ₹1,620.40 | 52/100 | 🟡 HOLD | +20.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-04-24/SUNPHARMA_RiskReport.html) |
+| SUNPHARMA | ₹1,620.40 | 52/100 | 🟡 HOLD | +20.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-04-24/SUNPHARMA_RiskReport.html) |
 
 ---
 *Generated on 2026-04-24 · Data via Yahoo Finance · Not financial advice*
