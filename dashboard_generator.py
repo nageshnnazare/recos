@@ -334,9 +334,17 @@ _TEMPLATE = """<!DOCTYPE html>
 body {{ background:var(--bg); color:var(--text); font-family:var(--sans); font-size:13px; line-height:1.6; -webkit-font-smoothing:antialiased; }}
 .page {{ max-width:1100px; margin:0 auto; padding:24px 22px 60px; }}
 
-.hero {{ display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px 0 16px; border-bottom:1px solid var(--border); margin-bottom:20px; }}
+.hero {{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px 0 16px; border-bottom:1px solid var(--border); margin-bottom:20px; }}
 .hero-title {{ font-family:var(--mono); font-size:15px; font-weight:700; color:#fff; letter-spacing:-0.3px; }}
 .hero-date {{ font-family:var(--mono); font-size:10px; color:var(--text3); }}
+
+.live-btn {{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; font-weight:700;
+  color:#fff; text-decoration:none; padding:7px 16px; border-radius:8px;
+  background:linear-gradient(135deg, rgba(255,77,109,.18), rgba(255,77,109,.08));
+  border:1px solid rgba(255,77,109,.35); transition:all .2s; letter-spacing:0.5px; }}
+.live-btn:hover {{ background:linear-gradient(135deg, rgba(255,77,109,.28), rgba(255,77,109,.14)); border-color:rgba(255,77,109,.55); transform:translateY(-1px); box-shadow:0 4px 16px rgba(255,77,109,.15); }}
+.live-dot {{ width:7px; height:7px; border-radius:50%; background:#ff4d6d; animation:livePulse 1.5s ease-in-out infinite; }}
+@keyframes livePulse {{ 0%,100% {{ opacity:1; box-shadow:0 0 0 0 rgba(255,77,109,.6); }} 50% {{ opacity:.7; box-shadow:0 0 0 5px rgba(255,77,109,0); }} }}
 
 /* ── Market Overview Charts ────────────────────────────────── */
 .mkt-grid {{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px; }}
@@ -417,8 +425,11 @@ body {{ background:var(--bg); color:var(--text); font-family:var(--sans); font-s
 <body>
 <div class="page">
   <div class="hero">
-    <div class="hero-title">Market Analysis Dashboard</div>
-    <div class="hero-date">{today} · Updated {gen_at}</div>
+    <div>
+      <div class="hero-title">Market Analysis Dashboard</div>
+      <div class="hero-date">{today} · Updated {gen_at}</div>
+    </div>
+    <a href="live.html" class="live-btn"><span class="live-dot"></span> LIVE</a>
   </div>
 
   <div class="mkt-grid" id="mkt-grid"></div>
