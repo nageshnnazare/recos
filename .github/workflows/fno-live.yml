@@ -39,6 +39,12 @@ jobs:
           if [ -f index.html ]; then
             cp index.html _site/index.html
           fi
+          if [ -f live.html ]; then
+            cp live.html _site/live.html
+          fi
+          if [ -f .nojekyll ]; then
+            cp .nojekyll _site/.nojekyll
+          fi
 
       - name: Upload Pages artefact
         uses: actions/upload-pages-artifact@v3
