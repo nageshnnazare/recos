@@ -1,76 +1,86 @@
-# 📊 Daily US Stock Risk Report — 2026-10-13
+# 📊 Daily US Stock Risk Report — 2026-10-14
 
 ## 🔔 Action Required
 
 ### 🟢 Value Buy Opportunities
 
-**GOOGL** — $353.78
-- Score: 76/100 | Signal: 🟢 BUY
-- Upside: +21.7% to analyst target
-- Reason: Attractive risk/reward for Communication Services at current levels
-
-**AMZN** — $258.58
-- Score: 68/100 | Signal: 🟢 BUY
-- Upside: +28.1% to analyst target
-- Reason: Attractive risk/reward for Consumer Cyclical at current levels
-
-**NVDA** — $228.52
-- Score: 76/100 | Signal: 🟢 BUY
-- Upside: +43.8% to analyst target
+**MSFT** — $534.17
+- Score: 69/100 | Signal: 🟢 BUY
+- Upside: +10.4% to analyst target
 - Reason: Attractive risk/reward for Technology at current levels
 
-**MU** — $953.19
-- Score: 80/100 | Signal: 🟢 STRONG BUY
-- Upside: +63.7% to analyst target
-- Reason: Strong score with significant upside for Technology
+**GOOGL** — $347.40
+- Score: 74/100 | Signal: 🟢 BUY
+- Upside: +23.9% to analyst target
+- Reason: Attractive risk/reward for Communication Services at current levels
 
-**APH** — $85.89
+**AMZN** — $253.48
+- Score: 69/100 | Signal: 🟢 BUY
+- Upside: +30.7% to analyst target
+- Reason: Attractive risk/reward for Consumer Cyclical at current levels
+
+**NVDA** — $220.37
+- Score: 76/100 | Signal: 🟢 BUY
+- Upside: +49.2% to analyst target
+- Reason: Attractive risk/reward for Technology at current levels
+
+**MU** — $922.75
+- Score: 77/100 | Signal: 🟢 BUY
+- Upside: +69.1% to analyst target
+- Reason: Attractive risk/reward for Technology at current levels
+
+**SNDK** — $1,414.65
+- Score: 70/100 | Signal: 🟢 BUY
+- Upside: +53.6% to analyst target
+- Reason: Attractive risk/reward for Technology at current levels
+
+**AVGO** — $344.60
 - Score: 68/100 | Signal: 🟢 BUY
-- Upside: +19.9% to analyst target
+- Upside: +53.1% to analyst target
 - Reason: Attractive risk/reward for Technology at current levels
 
 ## 📋 Full Watchlist Summary
 
 | Stock | CMP | Score | Signal | Upside | Report |
 |-------|-----|-------|--------|--------|--------|
-| AAPL | $341.27 | 51/100 | 🟡 HOLD | -3.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/AAPL_RiskReport.html) |
-| MSFT | $543.45 | 67/100 | 🟡 SPECULATIVE BUY | +8.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/MSFT_RiskReport.html) |
-| GOOGL | $353.78 | 76/100 | 🟢 BUY | +21.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/GOOGL_RiskReport.html) |
-| AMZN | $258.58 | 68/100 | 🟢 BUY | +28.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/AMZN_RiskReport.html) |
-| NVDA | $228.52 | 76/100 | 🟢 BUY | +43.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/NVDA_RiskReport.html) |
-| META | $762.50 | 63/100 | 🟡 SPECULATIVE BUY | +5.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/META_RiskReport.html) |
-| TSLA | $375.23 | 39/100 | 🔴 SELL | +6.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/TSLA_RiskReport.html) |
-| AMD | $605.53 | 52/100 | 🟡 HOLD | +5.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/AMD_RiskReport.html) |
-| ASML | $1,717.76 | 58/100 | 🟡 SPECULATIVE BUY | +22.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/ASML_RiskReport.html) |
-| TSM | $445.12 | 67/100 | 🟡 SPECULATIVE BUY | +29.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/TSM_RiskReport.html) |
-| NUAI | $4.29 | 37/100 | 🔴 SELL | +172.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/NUAI_RiskReport.html) |
-| STX | $747.20 | 54/100 | 🟡 HOLD | +52.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/STX_RiskReport.html) |
-| MU | $953.19 | 80/100 | 🟢 STRONG BUY | +63.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/MU_RiskReport.html) |
-| RTX | $183.02 | 56/100 | 🟡 HOLD | +25.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/RTX_RiskReport.html) |
-| HOOD | $110.52 | 59/100 | 🟡 SPECULATIVE BUY | +21.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/HOOD_RiskReport.html) |
-| RKLB | $64.22 | 28/100 | 🔴 SELL | +65.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/RKLB_RiskReport.html) |
-| APLD | $22.44 | 43/100 | 🟡 HOLD | +186.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/APLD_RiskReport.html) |
-| POET | $6.32 | 55/100 | 🟡 HOLD | +133.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/POET_RiskReport.html) |
-| SNPS | $494.51 | 61/100 | 🟡 SPECULATIVE BUY | +15.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/SNPS_RiskReport.html) |
-| CDNS | $334.20 | 57/100 | 🟡 HOLD | +21.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/CDNS_RiskReport.html) |
-| MRVL | $268.73 | 57/100 | 🟡 HOLD | +25.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/MRVL_RiskReport.html) |
-| LITE | $987.99 | 49/100 | 🟡 HOLD | +19.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/LITE_RiskReport.html) |
-| ALAB | $325.41 | 55/100 | 🟡 HOLD | +20.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/ALAB_RiskReport.html) |
-| SNDK | $1,482.33 | 67/100 | 🟡 SPECULATIVE BUY | +46.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/SNDK_RiskReport.html) |
-| INTC | $102.81 | 37/100 | 🔴 SELL | +14.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/INTC_RiskReport.html) |
-| ARM | $255.39 | 40/100 | 🟡 HOLD | +13.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/ARM_RiskReport.html) |
-| WDC | $380.71 | 65/100 | 🟡 SPECULATIVE BUY | +75.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/WDC_RiskReport.html) |
-| KLAC | $184.00 | 48/100 | 🟡 HOLD | +26.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/KLAC_RiskReport.html) |
-| LRCX | $301.11 | 53/100 | 🟡 HOLD | +24.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/LRCX_RiskReport.html) |
-| AMAT | $464.24 | 60/100 | 🟡 SPECULATIVE BUY | +36.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/AMAT_RiskReport.html) |
-| AXP | $309.84 | 59/100 | 🟡 SPECULATIVE BUY | +19.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/AXP_RiskReport.html) |
-| AVGO | $357.31 | 66/100 | 🟡 SPECULATIVE BUY | +48.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/AVGO_RiskReport.html) |
-| COH | $0.00 | 36/100 | 🔴 SELL | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/COH_RiskReport.html) |
-| AAOI | $97.78 | 44/100 | 🟡 HOLD | +67.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/AAOI_RiskReport.html) |
-| CRWD | $261.21 | 39/100 | 🔴 SELL | -8.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/CRWD_RiskReport.html) |
-| LMT | $504.02 | 56/100 | 🟡 HOLD | +23.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/LMT_RiskReport.html) |
-| APH | $85.89 | 68/100 | 🟢 BUY | +19.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/APH_RiskReport.html) |
-| PLTR | $208.67 | 60/100 | 🟡 HOLD | -1.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-13/PLTR_RiskReport.html) |
+| AAPL | $343.06 | 56/100 | 🟡 HOLD | -4.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/AAPL_RiskReport.html) |
+| MSFT | $534.17 | 69/100 | 🟢 BUY | +10.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/MSFT_RiskReport.html) |
+| GOOGL | $347.40 | 74/100 | 🟢 BUY | +23.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/GOOGL_RiskReport.html) |
+| AMZN | $253.48 | 69/100 | 🟢 BUY | +30.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/AMZN_RiskReport.html) |
+| NVDA | $220.37 | 76/100 | 🟢 BUY | +49.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/NVDA_RiskReport.html) |
+| META | $736.49 | 65/100 | 🟡 SPECULATIVE BUY | +10.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/META_RiskReport.html) |
+| TSLA | $364.56 | 32/100 | 🔴 SELL | +9.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/TSLA_RiskReport.html) |
+| AMD | $571.14 | 55/100 | 🟡 HOLD | +11.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/AMD_RiskReport.html) |
+| ASML | $1,677.23 | 55/100 | 🟡 HOLD | +25.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/ASML_RiskReport.html) |
+| TSM | $429.17 | 67/100 | 🟡 SPECULATIVE BUY | +34.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/TSM_RiskReport.html) |
+| NUAI | $3.52 | 42/100 | 🟡 HOLD | +231.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/NUAI_RiskReport.html) |
+| STX | $715.11 | 54/100 | 🟡 HOLD | +59.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/STX_RiskReport.html) |
+| MU | $922.75 | 77/100 | 🟢 BUY | +69.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/MU_RiskReport.html) |
+| RTX | $186.15 | 56/100 | 🟡 HOLD | +22.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/RTX_RiskReport.html) |
+| HOOD | $101.04 | 61/100 | 🟡 SPECULATIVE BUY | +33.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/HOOD_RiskReport.html) |
+| RKLB | $59.24 | 28/100 | 🔴 SELL | +77.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/RKLB_RiskReport.html) |
+| APLD | $20.07 | 43/100 | 🟡 HOLD | +220.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/APLD_RiskReport.html) |
+| POET | $5.82 | 58/100 | 🟡 SPECULATIVE BUY | +153.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/POET_RiskReport.html) |
+| SNPS | $478.92 | 65/100 | 🟡 SPECULATIVE BUY | +20.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/SNPS_RiskReport.html) |
+| CDNS | $327.30 | 52/100 | 🟡 HOLD | +24.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/CDNS_RiskReport.html) |
+| MRVL | $251.17 | 56/100 | 🟡 HOLD | +35.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/MRVL_RiskReport.html) |
+| LITE | $900.55 | 47/100 | 🟡 HOLD | +30.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/LITE_RiskReport.html) |
+| ALAB | $303.84 | 57/100 | 🟡 HOLD | +28.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/ALAB_RiskReport.html) |
+| SNDK | $1,414.65 | 70/100 | 🟢 BUY | +53.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/SNDK_RiskReport.html) |
+| INTC | $98.36 | 36/100 | 🔴 SELL | +20.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/INTC_RiskReport.html) |
+| ARM | $240.36 | 43/100 | 🟡 HOLD | +20.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/ARM_RiskReport.html) |
+| WDC | $364.22 | 65/100 | 🟡 SPECULATIVE BUY | +83.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/WDC_RiskReport.html) |
+| KLAC | $178.24 | 49/100 | 🟡 HOLD | +30.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/KLAC_RiskReport.html) |
+| LRCX | $286.30 | 54/100 | 🟡 HOLD | +31.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/LRCX_RiskReport.html) |
+| AMAT | $447.62 | 58/100 | 🟡 SPECULATIVE BUY | +41.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/AMAT_RiskReport.html) |
+| AXP | $305.55 | 61/100 | 🟡 SPECULATIVE BUY | +20.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/AXP_RiskReport.html) |
+| AVGO | $344.60 | 68/100 | 🟢 BUY | +53.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/AVGO_RiskReport.html) |
+| COH | $0.00 | 36/100 | 🔴 SELL | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/COH_RiskReport.html) |
+| AAOI | $86.48 | 47/100 | 🟡 HOLD | +88.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/AAOI_RiskReport.html) |
+| CRWD | $250.21 | 39/100 | 🔴 SELL | -3.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/CRWD_RiskReport.html) |
+| LMT | $520.92 | 57/100 | 🟡 HOLD | +19.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/LMT_RiskReport.html) |
+| APH | $82.50 | 61/100 | 🟡 SPECULATIVE BUY | +24.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/APH_RiskReport.html) |
+| PLTR | $201.12 | 64/100 | 🟡 SPECULATIVE BUY | +2.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/us_reports/2026-10-14/PLTR_RiskReport.html) |
 
 ---
-*Generated on 2026-10-13 · Data via Yahoo Finance · Not financial advice*
+*Generated on 2026-10-14 · Data via Yahoo Finance · Not financial advice*
