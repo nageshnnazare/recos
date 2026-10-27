@@ -1,93 +1,83 @@
-# 📊 Daily Stock Risk Report — 2026-10-26
+# 📊 Daily Stock Risk Report — 2026-10-27
 
 ## 🔔 Action Required
 
 ### 🟢 Value Buy Opportunities
 
-**NSE:HAL** — ₹4,779.30
-- Score: 69/100 | Signal: 🟢 BUY
-- Upside: +16.8% to analyst target
-- Reason: Attractive risk/reward for Industrials at current levels
-
-**NSE:GRSE** — ₹1,867.70
-- Score: 70/100 | Signal: 🟢 BUY
-- Upside: +53.9% to analyst target
-- Reason: Attractive risk/reward for Industrials at current levels
-
-**NSE:BHARTIARTL** — ₹1,915.20
+**NSE:BHARTIARTL** — ₹1,976.10
 - Score: 71/100 | Signal: 🟢 BUY
-- Upside: +21.1% to analyst target
+- Upside: +17.4% to analyst target
 - Reason: Attractive risk/reward for Communication Services at current levels
 
-**NSE:BSE** — ₹3,370.00
-- Score: 71/100 | Signal: 🟢 BUY
-- Upside: +10.6% to analyst target
+**NSE:BSE** — ₹3,447.60
+- Score: 73/100 | Signal: 🟢 BUY
+- Upside: +8.1% to analyst target
 - Reason: Attractive risk/reward for Financial Services at current levels
 
 ## 📋 Full Watchlist Summary
 
 | Stock | CMP | Score | Signal | Upside | Report |
 |-------|-----|-------|--------|--------|--------|
-| CDSL | ₹1,196.60 | 43/100 | 🟡 HOLD | +9.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/CDSL_RiskReport.html) |
-| MCX | ₹3,115.70 | 62/100 | 🟡 SPECULATIVE BUY | +13.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/MCX_RiskReport.html) |
-| GROWW | ₹185.19 | 58/100 | 🟡 SPECULATIVE BUY | +26.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/GROWW_RiskReport.html) |
-| CAMS | ₹663.25 | 56/100 | 🟡 HOLD | +37.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/CAMS_RiskReport.html) |
-| RELIANCE | ₹1,199.30 | 51/100 | 🟡 HOLD | +38.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/RELIANCE_RiskReport.html) |
-| HDFCBANK | ₹687.35 | 61/100 | 🟡 SPECULATIVE BUY | +39.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/HDFCBANK_RiskReport.html) |
-| BEL | ₹363.00 | 51/100 | 🟡 HOLD | +35.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/BEL_RiskReport.html) |
-| HAL | ₹4,779.30 | 69/100 | 🟢 BUY | +16.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/HAL_RiskReport.html) |
-| MAZDOCK | ₹1,879.40 | 58/100 | 🟡 SPECULATIVE BUY | +31.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/MAZDOCK_RiskReport.html) |
-| GRSE | ₹1,867.70 | 70/100 | 🟢 BUY | +53.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/GRSE_RiskReport.html) |
-| BAJFINANCE | ₹919.40 | 63/100 | 🟡 SPECULATIVE BUY | +26.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/BAJFINANCE_RiskReport.html) |
-| PERSISTENT | ₹5,851.50 | 55/100 | 🟡 HOLD | -1.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/PERSISTENT_RiskReport.html) |
-| BHARTIARTL | ₹1,915.20 | 71/100 | 🟢 BUY | +21.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/BHARTIARTL_RiskReport.html) |
-| CAPLIPOINT | ₹2,276.80 | 61/100 | 🟡 SPECULATIVE BUY | +21.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/CAPLIPOINT_RiskReport.html) |
-| WAAREEENER | ₹2,313.30 | 60/100 | 🟡 SPECULATIVE BUY | +40.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/WAAREEENER_RiskReport.html) |
-| PFC | ₹318.45 | 56/100 | 🟡 HOLD | +45.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/PFC_RiskReport.html) |
-| RECLTD | ₹296.80 | 66/100 | 🟡 SPECULATIVE BUY | +36.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/RECLTD_RiskReport.html) |
-| ANANTRAJ | ₹459.45 | 53/100 | 🟡 HOLD | +48.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/ANANTRAJ_RiskReport.html) |
-| DIXON | ₹11,178.00 | 60/100 | 🟡 SPECULATIVE BUY | +33.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/DIXON_RiskReport.html) |
-| KAYNES | ₹3,314.90 | 44/100 | 🟡 HOLD | +10.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/KAYNES_RiskReport.html) |
-| JIOFIN | ₹205.40 | 53/100 | 🟡 HOLD | +41.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/JIOFIN_RiskReport.html) |
-| DEEPAKFERT | ₹1,144.20 | 64/100 | 🟡 SPECULATIVE BUY | +65.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/DEEPAKFERT_RiskReport.html) |
-| WELCORP | ₹2,347.90 | 53/100 | 🟡 HOLD | +17.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/WELCORP_RiskReport.html) |
-| SHAKTIPUMP | ₹367.05 | 56/100 | 🟡 HOLD | +74.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/SHAKTIPUMP_RiskReport.html) |
-| GVT&D | ₹3,766.60 | 57/100 | 🟡 HOLD | +42.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/GVT&D_RiskReport.html) |
-| STLTECH | ₹867.95 | 63/100 | 🟡 SPECULATIVE BUY | +69.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/STLTECH_RiskReport.html) |
-| HBLENGINE | ₹759.55 | 59/100 | 🟡 HOLD | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/HBLENGINE_RiskReport.html) |
-| TATAPOWER | ₹337.05 | 51/100 | 🟡 HOLD | +22.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/TATAPOWER_RiskReport.html) |
-| CUMMINSIND | ₹4,370.00 | 48/100 | 🟡 HOLD | +33.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/CUMMINSIND_RiskReport.html) |
-| CEATLTD | ₹3,114.60 | 45/100 | 🟡 HOLD | +24.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/CEATLTD_RiskReport.html) |
-| BAJAJHLDNG | ₹11,050.00 | 64/100 | 🟡 HOLD | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/BAJAJHLDNG_RiskReport.html) |
-| BSE | ₹3,370.00 | 71/100 | 🟢 BUY | +10.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/BSE_RiskReport.html) |
-| REDINGTON | ₹367.30 | 65/100 | 🟡 SPECULATIVE BUY | +20.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/REDINGTON_RiskReport.html) |
-| PIDILITIND | ₹1,476.70 | 56/100 | 🟡 HOLD | +20.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/PIDILITIND_RiskReport.html) |
-| VBL | ₹407.00 | 58/100 | 🟡 SPECULATIVE BUY | +36.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/VBL_RiskReport.html) |
-| ZYDUSLIFE | ₹1,155.00 | 56/100 | 🟡 HOLD | +5.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/ZYDUSLIFE_RiskReport.html) |
-| NH | ₹1,663.70 | 49/100 | 🟡 HOLD | +35.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/NH_RiskReport.html) |
-| ESCORTS | ₹2,583.40 | 52/100 | 🟡 HOLD | +27.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/ESCORTS_RiskReport.html) |
-| AFFLE | ₹1,316.50 | 54/100 | 🟡 HOLD | +51.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/AFFLE_RiskReport.html) |
-| LAURUSLABS | ₹2,052.00 | 48/100 | 🟡 HOLD | -17.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/LAURUSLABS_RiskReport.html) |
-| MOTILALOFS | ₹933.05 | 59/100 | 🟡 SPECULATIVE BUY | +20.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/MOTILALOFS_RiskReport.html) |
-| IRCON | ₹97.60 | 48/100 | 🟡 HOLD | +39.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/IRCON_RiskReport.html) |
-| RVNL | ₹182.69 | 39/100 | 🔴 SELL | -9.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/RVNL_RiskReport.html) |
-| KRN | ₹1,069.40 | 55/100 | 🟡 HOLD | +23.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/KRN_RiskReport.html) |
-| PRESTIGE | ₹1,388.00 | 42/100 | 🟡 HOLD | +37.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/PRESTIGE_RiskReport.html) |
-| INGERRAND | ₹3,746.50 | 59/100 | 🟡 SPECULATIVE BUY | +34.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/INGERRAND_RiskReport.html) |
-| LUPIN | ₹1,942.00 | 66/100 | 🟡 SPECULATIVE BUY | +26.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/LUPIN_RiskReport.html) |
-| ARE&M | ₹694.25 | 61/100 | 🟡 SPECULATIVE BUY | +42.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/ARE&M_RiskReport.html) |
-| PCBL | ₹275.40 | 48/100 | 🟡 HOLD | +31.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/PCBL_RiskReport.html) |
-| RAILTEL | ₹223.50 | 62/100 | 🟡 SPECULATIVE BUY | +9.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/RAILTEL_RiskReport.html) |
-| BLS | ₹209.00 | 62/100 | 🟡 SPECULATIVE BUY | +57.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/BLS_RiskReport.html) |
-| CESC | ₹124.43 | 51/100 | 🟡 HOLD | +63.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/CESC_RiskReport.html) |
-| IRFC | ₹74.35 | 53/100 | 🟡 HOLD | -19.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/IRFC_RiskReport.html) |
-| INDHOTEL | ₹792.30 | 63/100 | 🟡 SPECULATIVE BUY | +10.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/INDHOTEL_RiskReport.html) |
-| ITC | ₹259.75 | 43/100 | 🟡 HOLD | +25.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/ITC_RiskReport.html) |
-| WELENT | ₹626.00 | 37/100 | 🔴 SELL | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/WELENT_RiskReport.html) |
-| NMDC | ₹66.49 | 61/100 | 🟡 SPECULATIVE BUY | +33.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/NMDC_RiskReport.html) |
-| BORORENEW | ₹382.45 | 51/100 | 🟡 HOLD | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/BORORENEW_RiskReport.html) |
-| CGPOWER | ₹833.25 | 51/100 | 🟡 HOLD | +13.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/CGPOWER_RiskReport.html) |
-| SUNPHARMA | ₹1,740.00 | 58/100 | 🟡 SPECULATIVE BUY | +25.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-26/SUNPHARMA_RiskReport.html) |
+| CDSL | ₹1,218.40 | 43/100 | 🟡 HOLD | +8.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/CDSL_RiskReport.html) |
+| MCX | ₹3,185.30 | 60/100 | 🟡 SPECULATIVE BUY | +10.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/MCX_RiskReport.html) |
+| GROWW | ₹186.95 | 56/100 | 🟡 HOLD | +25.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/GROWW_RiskReport.html) |
+| CAMS | ₹674.05 | 56/100 | 🟡 HOLD | +35.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/CAMS_RiskReport.html) |
+| RELIANCE | ₹1,194.40 | 53/100 | 🟡 HOLD | +39.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/RELIANCE_RiskReport.html) |
+| HDFCBANK | ₹682.35 | 61/100 | 🟡 SPECULATIVE BUY | +40.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/HDFCBANK_RiskReport.html) |
+| BEL | ₹369.35 | 51/100 | 🟡 HOLD | +32.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/BEL_RiskReport.html) |
+| HAL | ₹4,819.40 | 64/100 | 🟡 SPECULATIVE BUY | +15.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/HAL_RiskReport.html) |
+| MAZDOCK | ₹1,769.00 | 58/100 | 🟡 SPECULATIVE BUY | +39.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/MAZDOCK_RiskReport.html) |
+| GRSE | ₹1,934.00 | 67/100 | 🟡 SPECULATIVE BUY | +48.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/GRSE_RiskReport.html) |
+| BAJFINANCE | ₹911.95 | 63/100 | 🟡 SPECULATIVE BUY | +27.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/BAJFINANCE_RiskReport.html) |
+| PERSISTENT | ₹5,831.50 | 55/100 | 🟡 HOLD | -1.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/PERSISTENT_RiskReport.html) |
+| BHARTIARTL | ₹1,976.10 | 71/100 | 🟢 BUY | +17.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/BHARTIARTL_RiskReport.html) |
+| CAPLIPOINT | ₹2,352.00 | 59/100 | 🟡 SPECULATIVE BUY | +17.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/CAPLIPOINT_RiskReport.html) |
+| WAAREEENER | ₹2,278.20 | 60/100 | 🟡 SPECULATIVE BUY | +42.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/WAAREEENER_RiskReport.html) |
+| PFC | ₹313.70 | 56/100 | 🟡 HOLD | +48.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/PFC_RiskReport.html) |
+| RECLTD | ₹285.25 | 60/100 | 🟡 SPECULATIVE BUY | +42.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/RECLTD_RiskReport.html) |
+| ANANTRAJ | ₹466.45 | 53/100 | 🟡 HOLD | +45.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/ANANTRAJ_RiskReport.html) |
+| DIXON | ₹11,268.00 | 60/100 | 🟡 SPECULATIVE BUY | +32.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/DIXON_RiskReport.html) |
+| KAYNES | ₹3,344.20 | 44/100 | 🟡 HOLD | +9.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/KAYNES_RiskReport.html) |
+| JIOFIN | ₹207.94 | 48/100 | 🟡 HOLD | +39.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/JIOFIN_RiskReport.html) |
+| DEEPAKFERT | ₹1,183.40 | 60/100 | 🟡 SPECULATIVE BUY | +60.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/DEEPAKFERT_RiskReport.html) |
+| WELCORP | ₹2,460.10 | 52/100 | 🟡 HOLD | +11.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/WELCORP_RiskReport.html) |
+| SHAKTIPUMP | ₹365.85 | 56/100 | 🟡 HOLD | +74.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/SHAKTIPUMP_RiskReport.html) |
+| GVT&D | ₹4,008.50 | 52/100 | 🟡 HOLD | +33.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/GVT&D_RiskReport.html) |
+| STLTECH | ₹910.90 | 63/100 | 🟡 SPECULATIVE BUY | +61.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/STLTECH_RiskReport.html) |
+| HBLENGINE | ₹788.25 | 63/100 | 🟡 HOLD | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/HBLENGINE_RiskReport.html) |
+| TATAPOWER | ₹339.95 | 45/100 | 🟡 HOLD | +20.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/TATAPOWER_RiskReport.html) |
+| CUMMINSIND | ₹4,511.00 | 46/100 | 🟡 HOLD | +29.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/CUMMINSIND_RiskReport.html) |
+| CEATLTD | ₹3,145.00 | 45/100 | 🟡 HOLD | +23.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/CEATLTD_RiskReport.html) |
+| BAJAJHLDNG | ₹10,823.00 | 64/100 | 🟡 HOLD | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/BAJAJHLDNG_RiskReport.html) |
+| BSE | ₹3,447.60 | 73/100 | 🟢 BUY | +8.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/BSE_RiskReport.html) |
+| REDINGTON | ₹359.10 | 62/100 | 🟡 SPECULATIVE BUY | +23.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/REDINGTON_RiskReport.html) |
+| PIDILITIND | ₹1,455.00 | 54/100 | 🟡 HOLD | +22.1% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/PIDILITIND_RiskReport.html) |
+| VBL | ₹410.50 | 58/100 | 🟡 SPECULATIVE BUY | +35.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/VBL_RiskReport.html) |
+| ZYDUSLIFE | ₹1,168.00 | 57/100 | 🟡 HOLD | +4.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/ZYDUSLIFE_RiskReport.html) |
+| NH | ₹1,707.00 | 55/100 | 🟡 HOLD | +31.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/NH_RiskReport.html) |
+| ESCORTS | ₹2,674.00 | 52/100 | 🟡 HOLD | +23.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/ESCORTS_RiskReport.html) |
+| AFFLE | ₹1,355.00 | 51/100 | 🟡 HOLD | +47.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/AFFLE_RiskReport.html) |
+| LAURUSLABS | ₹2,135.80 | 48/100 | 🟡 HOLD | -20.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/LAURUSLABS_RiskReport.html) |
+| MOTILALOFS | ₹969.00 | 59/100 | 🟡 SPECULATIVE BUY | +15.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/MOTILALOFS_RiskReport.html) |
+| IRCON | ₹98.74 | 45/100 | 🟡 HOLD | +37.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/IRCON_RiskReport.html) |
+| RVNL | ₹180.80 | 39/100 | 🔴 SELL | -8.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/RVNL_RiskReport.html) |
+| KRN | ₹1,122.80 | 54/100 | 🟡 HOLD | +17.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/KRN_RiskReport.html) |
+| PRESTIGE | ₹1,436.00 | 40/100 | 🟡 HOLD | +32.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/PRESTIGE_RiskReport.html) |
+| INGERRAND | ₹3,965.80 | 53/100 | 🟡 HOLD | +26.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/INGERRAND_RiskReport.html) |
+| LUPIN | ₹1,952.00 | 66/100 | 🟡 SPECULATIVE BUY | +25.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/LUPIN_RiskReport.html) |
+| ARE&M | ₹711.20 | 64/100 | 🟡 SPECULATIVE BUY | +38.7% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/ARE&M_RiskReport.html) |
+| PCBL | ₹289.65 | 44/100 | 🟡 HOLD | +24.9% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/PCBL_RiskReport.html) |
+| RAILTEL | ₹230.25 | 59/100 | 🟡 SPECULATIVE BUY | +6.4% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/RAILTEL_RiskReport.html) |
+| BLS | ₹217.85 | 66/100 | 🟡 SPECULATIVE BUY | +51.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/BLS_RiskReport.html) |
+| CESC | ₹123.62 | 51/100 | 🟡 HOLD | +64.8% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/CESC_RiskReport.html) |
+| IRFC | ₹73.48 | 47/100 | 🟡 HOLD | -18.3% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/IRFC_RiskReport.html) |
+| INDHOTEL | ₹811.00 | 63/100 | 🟡 SPECULATIVE BUY | +7.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/INDHOTEL_RiskReport.html) |
+| ITC | ₹256.55 | 45/100 | 🟡 HOLD | +26.6% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/ITC_RiskReport.html) |
+| WELENT | ₹635.90 | 34/100 | 🔴 SELL | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/WELENT_RiskReport.html) |
+| NMDC | ₹67.42 | 61/100 | 🟡 SPECULATIVE BUY | +31.2% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/NMDC_RiskReport.html) |
+| BORORENEW | ₹394.60 | 51/100 | 🟡 HOLD | +0.0% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/BORORENEW_RiskReport.html) |
+| CGPOWER | ₹829.35 | 51/100 | 🟡 HOLD | +14.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/CGPOWER_RiskReport.html) |
+| SUNPHARMA | ₹1,760.90 | 56/100 | 🟡 HOLD | +23.5% | [Report](https://htmlpreview.github.io/?https://github.com/nageshnnazare/recos/blob/main/reports/2026-10-27/SUNPHARMA_RiskReport.html) |
 
 ---
-*Generated on 2026-10-26 · Data via Yahoo Finance · Not financial advice*
+*Generated on 2026-10-27 · Data via Yahoo Finance · Not financial advice*
